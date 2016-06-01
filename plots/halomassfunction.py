@@ -1,6 +1,5 @@
-""" halofassfunction.py
-    Plotting the halo mass function
-"""
+"""halofassfunction.py
+Plotting the halo mass function"""
 
 import matplotlib.pyplot as plt
 import numpy             as np
@@ -9,7 +8,7 @@ from ..sharedtools.mycolordict import AUTUMN_COLORSCHEME as cscheme
 from ..sharedtools             import headerextractor
 
 class Rockstar(object):
-    """Handling generation of the halo mass function of a rockstar output"""
+    """Handling the generation of the halo mass function of a rockstar output"""
 
     def __init__(self, fname, **kwargs):
         """Loading necessary data for plotting halo mass function
@@ -32,8 +31,7 @@ class Rockstar(object):
         pid_col   = k('pid_col')    if 'pid_col'   in kwargs else -1
 
         print('Extracting data using following parameters:')
-        print('\tskiprows:  \t' + str(skiprows) +
-              '\t' + self.headers['column_tags'][skiprows])
+        print('\tskiprows:  \t' + str(skiprows))
         print('\tnum_p_col: \t' + str(num_p_col) +
               '\t' + self.headers['column_tags'][num_p_col])
         print('\tmass_col:  \t' + str(mass_col)  +
@@ -43,26 +41,31 @@ class Rockstar(object):
         print('')
 
         # Extracting data from rockstar output
-        data = np.loadtxt(
+        data = np.genfromtxt(
             fname,
             unpack='true',
             skiprows=skiprows,
             usecols=(num_p_col, mass_col, pid_col),
-            dtype=[('num_p', np.int32), ('mass', np.float64), ('pid', np.int32)])
+            dtype=[
+                ('num_p', np.int),
+                ('mass',  np.float),
+                ('pid',   np.int)
+            ])
 
-        # Selecting host halos (pid = -1)
-        self.hosts = [data[1][i] for i in range(len(data[0])) if data[2][i] == -1]
-        self.headers['Number_of_found_hosts'] = [len(self.hosts), "out of", len(data[0])]
+        self.hosts = [d['mass'] for d in data if d['pid'] == -1]
+
+        self.headers['Number_of_found_hosts'] = [
+            len(self.hosts), "out of", len(data['mass'])]
 
     def histogram(self, **kwargs):
-        """Generating the histogram"""
+        """Calling _histogram function for generating halo mass function"""
         k = kwargs.get
 
         nbins = k('nbins') if 'nbins' in kwargs else 20
 
         self.headers['Number_of_bins'] = str(nbins)
 
-        print('Generating histogram using using following parameters')
+        print('Generating histogram using following parameters')
         print('\tnbins:     \t' + str(nbins))
         print('')
 
@@ -79,16 +82,21 @@ class Rockstar(object):
             if key is not 'column_tags': print(key, value)
 
     def plot(self, **kwargs):
-        """Plotting histogram """
+        """Calling _plot function for plotting the halo mass function"""
+        if not self.hist:
+            print('[error] Histogram data is not available for plotting.')
+            print('        Make sure to run `Rockstar.histogram()` first.')
+            return
+
         k = kwargs.get
 
-        save   = k('save')   if 'save'   in kwargs else False
-        name   = k('name')   if 'name'   in kwargs else self.fname + '.png'
+        save = k('save') if 'save' in kwargs else False
+        name = k('name') if 'name' in kwargs else self.fname + '.png'
 
         if not save:
-            print('\tIn case you want to save your plot, you should pass,')
+            print('In case you want to save your plot, you should pass,')
             print('\t`save=True`')
-            print('\tto the `plot` function.')
+            print('to the `plot` function.')
 
         _plot(name, self.hist, save, **kwargs)
 
@@ -104,13 +112,9 @@ def _histogram(hosts, nbins):
         base=10)
 
     for bmin, bmax in zip(result['bin_edges'][:-1], result['bin_edges'][1:]):
-        binned_hosts = [h for h in hosts[:] if h >= bmin and h < bmax]
-        if len(binned_hosts) > 0:
-            result['n'].append(len(binned_hosts))
-            result['hist'].append(np.mean(binned_hosts))
-        else:
-            result['n'].append(0)
-            result['hist'].append(0)
+        binned_hosts = [h for h in hosts if h >= bmin and h < bmax]
+        result['n'].append(len(binned_hosts))
+        result['hist'].append(np.mean(binned_hosts))
 
     return result
 
@@ -130,6 +134,7 @@ def _plot(fname, hist, beSaved, **kwargs):
         plt.xscale(k('xscale'))
     else:
         plt.xscale('log')
+
     if 'yscale' in kwargs:
         plt.yscale(k('yscale'))
     else:

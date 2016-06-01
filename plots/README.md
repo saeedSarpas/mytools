@@ -1,4 +1,4 @@
-# Plot
+# Plotting modules
 
 ## Halo Mass function
 Mass distribution of dark matter halos.
@@ -16,14 +16,35 @@ A typical usage could be:
 ```python
 >>> from mytools.plots.halomassfunction import Rockstar
 >>> r = Rockstar('filename')
+... Extracting data using following parameters:
+...     skiprows:  	19
+...     num_p_col: 	1	num_p
+...     mass_col:  	3	mbound_vir
+...     pid_col:   	-1	PID
+
 >>> r.histogram()
+Generating histogram using using following parameters
+...     nbins:     	20
+
+... ('Filename', 'filename')
+... ('Total_particles_processed', ['16777216'])
+... ('Number_of_found_hosts', [45241, 'out of', 49198])
+... ('Box_size', ['100.000000', 'Mpc/h'])
+... ('Number_of_bins', '20')
+... ('Particle_mass', ['5.10966e+09', 'Msun/h'])
+
 >>> r.plot()
+... In case you want to save your plot, you should pass,
+...     `save=True`
+... to the `plot` function.
+
+>>>
 ```
 
 ##### `Rockstar(fname, **kwargs)`
 Initializing the rockstar object:
 
-| Argument      | Definition                                        | Default |
+| Argument      | Description                                       | Default |
 | :------------ | :------------------------------------------------ | :-----: |
 | skiprows      | Number of rows to skip from the rockstar output   | 19      |
 | num\_p\_col   | The column number of num\_p (number of particles) | 1       |
@@ -33,14 +54,14 @@ Initializing the rockstar object:
 ##### `Rockstar.histogram(**kwargs)`
 Generating the histogram of hosts:
 
-| Argument      | Definition                                        | Default |
+| Argument      | Description                                       | Default |
 | :------------ | :------------------------------------------------ | :-----: |
 | nbins         | Number of histogram bins                          | 20      |
 
 ##### `Rockstar.plot(**kwargs)`
 Plotting the histogram (halo mass function):
 
-| Argument      | Definition                                        | Default |
+| Argument      | Description                                       | Default |
 | :------------ | :------------------------------------------------ | :-----: |
 | save          | Saving the plot on disk                           | False   |
 | xscale        | The scale of x axis                               | 'log'   |
@@ -53,3 +74,5 @@ Plotting the histogram (halo mass function):
 | xmax          | Right edge of the x axis                          |         |
 | ymin          | Bottom edge of the y axis                         |         |
 | ymax          | Top edge of the y axis                            |         |
+
+*cs: colorscheme from `mytools.sharedtools.colorscheme` module.
