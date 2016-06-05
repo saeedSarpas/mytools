@@ -1,11 +1,10 @@
 """halofassfunction.py
 Plotting the halo mass function"""
 
-import matplotlib.pyplot as plt
-import numpy             as np
+import numpy                as np
 
-from ..sharedtools.mycolordict import AUTUMN_COLORSCHEME as cscheme
-from ..sharedtools             import headerextractor
+from ..sharedtools          import headerextractor
+from ..sharedtools.plotting import errorbars
 
 class Rockstar(object):
     """Handling the generation of the halo mass function of a rockstar output"""
@@ -71,34 +70,48 @@ class Rockstar(object):
 
         self.hist = _histogram(self.hosts, nbins)
 
-        # dn / dlog(M)dV
-        boxvolume = float(self.headers['Box_size'][0])**3
-        for i in range(len(self.hist['n'])):
-            bins = self.hist['bin_edges']
-            dlogMdV = (np.log10(bins[i+1]) - np.log10(bins[i])) * boxvolume
-            self.hist['n'][i] /= dlogMdV
-
         for key, value in self.headers.iteritems():
             if key is not 'column_tags': print(key, value)
 
     def plot(self, **kwargs):
         """Calling _plot function for plotting the halo mass function"""
-        if not self.hist:
+        if not self.plot:
             print('[error] Histogram data is not available for plotting.')
             print('        Make sure to run `Rockstar.histogram()` first.')
             return
 
-        k = kwargs.get
+        plot_params = {'x': [], 'y': [], 'xerr': [], 'yerr': None}
 
-        save = k('save') if 'save' in kwargs else False
-        name = k('name') if 'name' in kwargs else self.fname + '.png'
+        kws = dict(kwargs)
+
+        save = kws['save'] if 'save' in kws else False
+        name = kws['name'] if 'name' in kws else self.fname + '.png'
 
         if not save:
             print('In case you want to save your plot, you should pass,')
-            print('\t`save=True`')
+            print('`save=True`')
             print('to the `plot` function.')
 
-        _plot(name, self.hist, save, **kwargs)
+        if 'xscale' not in kws: kws['xscale'] = 'log'
+        if 'yscale' not in kws: kws['yscale'] = 'log'
+        if 'xlabel' not in kws: kws['xlabel'] = '$M\ [h^{-1}M_{\odot}]$'
+        if 'ylabel' not in kws: kws['ylabel'] = '$dn / d\log(M) dV\ [h^3Mpc^{-3}]$'
+
+        # dn / dlog(M)dV
+        boxvolume = float(self.headers['Box_size'][0])**3
+        for i in range(len(self.hist['n'])):
+            bins = self.hist['bin_edges']
+            dlogMdV = (np.log10(bins[i+1]) - np.log10(bins[i])) * boxvolume
+            plot_params['y'].append(self.hist['n'][i] / dlogMdV)
+
+        # Center of bins
+        bins = zip(self.hist['bin_edges'][1:], self.hist['bin_edges'][:-1])
+        plot_params['x']    = [(f + i) / 2 for i, f in bins]
+
+        # Preparing errors
+        plot_params['xerr'] = [(f - i) / 2 for i, f in bins]
+
+        errorbars(plot_params, name, save, **dict(kws))
 
 
 def _histogram(hosts, nbins):
@@ -117,50 +130,3 @@ def _histogram(hosts, nbins):
         result['hist'].append(np.mean(binned_hosts))
 
     return result
-
-
-def _plot(fname, hist, beSaved, **kwargs):
-    """Plotting halo mass function (fname: filename, hist: should contain
-    'bin_edges' and 'n')"""
-    k = kwargs.get
-
-    param = {}
-    param['label']     = k("label")     if 'label'     in kwargs else ''
-    param['color']     = k("color")     if 'color'     in kwargs else cscheme['linecolor']
-    param['ecolor']    = k("ecolor")    if 'color'     in kwargs else cscheme['ecolor']
-    param['linestyle'] = k("linestyle") if 'linestyle' in kwargs else 'solid'
-
-    if 'xscale' in kwargs:
-        plt.xscale(k('xscale'))
-    else:
-        plt.xscale('log')
-
-    if 'yscale' in kwargs:
-        plt.yscale(k('yscale'))
-    else:
-        plt.yscale('log')
-
-    if 'xmin'   in kwargs: plt.gca().set_xlim(left=k('xmin'))
-    if 'xmax'   in kwargs: plt.gca().set_xlim(right=k('xmax'))
-    if 'ymin'   in kwargs: plt.gca().set_ylim(bottom=k('ymin'))
-    if 'ymax'   in kwargs: plt.gca().set_ylim(top=k('ymax'))
-
-    # Center of bins
-    bin_ranges = zip(hist['bin_edges'][1:], hist['bin_edges'][:-1])
-    centers = [(f + i) / 2 for i, f in bin_ranges]
-
-    # Preparing errors
-    xerr    = [(f - i) / 2 for i, f in bin_ranges]
-
-    plt.errorbar(
-        centers, hist['n'],
-        xerr=xerr,
-        color=param['color'],
-        ecolor=param['ecolor'],
-        linestyle=param['linestyle'],
-        label=param['label'])
-
-    plt.xlabel('$M\ [h^{-1}M_{\odot}]$')
-    plt.ylabel('$dn / d\log(M) dV\ [h^3Mpc^{-3}]$')
-
-    plt.savefig(fname + '.png') if beSaved else plt.show()
