@@ -1,4 +1,4 @@
-# Plotting modules
+# Plots
 
 ## Halo Mass function
 Mass distribution of dark matter halos.
@@ -61,18 +61,20 @@ Generating the histogram of hosts:
 ##### `Rockstar.plot(**kwargs)`
 Plotting the histogram (halo mass function):
 
-| Argument      | Description                                       | Default |
-| :------------ | :------------------------------------------------ | :-----: |
-| save          | Saving the plot on disk                           | False   |
-| xscale        | The scale of x axis                               | 'log'   |
-| yscale        | The scale of y axis                               | 'log'   |
-| label         | Label of the plot                                 | ''      |
-| color         | Color of the line                                 | cs*     |
-| ecolor        | Color of the error bars                           | cs*     |
-| linestyle     | Line style of the plot                            | 'solid' |
-| xmin          | Left edge of the x axis                           |         |
-| xmax          | Right edge of the x axis                          |         |
-| ymin          | Bottom edge of the y axis                         |         |
-| ymax          | Top edge of the y axis                            |         |
+| Argument      | Description               | Default                         |
+| :------------ | :-------------------------| :-----------------------------: |
+| save          | Saving the plot on disk   | False                           |
+| xscale        | The scale of x axis       | 'log'                           |
+| yscale        | The scale of y axis       | 'log'                           |
+| label         | Label of the plot         | ''                              |
+| color         | Color of the line         | cs*                             |
+| ecolor        | Color of the error bars   | cs*                             |
+| linestyle     | Line style of the plot    | 'solid'                         |
+| xmin          | Left edge of the x axis   |                                 |
+| xmax          | Right edge of the x axis  |                                 |
+| ymin          | Bottom edge of the y axis |                                 |
+| ymax          | Top edge of the y axis    |                                 |
+| xlabel        | X axis label              | '$M\ [h^{-1}M_{\odot}]$ '       |
+| ylabel        | Y axis label              | '$dn / d\log(M) dV\ [h^3Mpc^{-3}]$' |
 
 *cs: colorscheme from `mytools.sharedtools.colorscheme` module.
