@@ -23,13 +23,6 @@ class Rockstar(object):
         self.fname = fname
         self.profile = {}
         self.plotparams = {'x': [], 'y': [], 'xerr': None, 'yerr': None}
-        self.datatype = np.dtype([
-            ('id',   np.int32),
-            ('mass', np.float64),
-            ('x',    np.float64),
-            ('y',    np.float64),
-            ('z',    np.float64),
-            ('pid',  np.int32)])
 
         k = kwargs.get
 
@@ -69,7 +62,12 @@ class Rockstar(object):
             unpack='true',
             skiprows=skiprows,
             usecols=(id_col, mass_col, x_col, y_col, z_col, pid_col),
-            dtype=self.datatype)
+            dtype=[('id',   np.int32),
+                   ('mass', np.float64),
+                   ('x',    np.float64),
+                   ('y',    np.float64),
+                   ('z',    np.float64),
+                   ('pid',  np.int32)])
 
     def stackhalos(self, **kwargs):
         """Calling _profile function for generating mass halo profile"""
