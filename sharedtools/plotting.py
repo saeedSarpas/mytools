@@ -2,6 +2,7 @@
 Plotting curves with error bars."""
 
 import matplotlib.pyplot as plt
+
 from ..sharedtools import mycolordict as cdict
 
 def errorbars(plot, fname, save, **kwargs):
@@ -34,6 +35,11 @@ def errorbars(plot, fname, save, **kwargs):
     if 'xmax'   in kwargs: plt.gca().set_xlim(right=k('xmax'))
     if 'ymin'   in kwargs: plt.gca().set_ylim(bottom=k('ymin'))
     if 'ymax'   in kwargs: plt.gca().set_ylim(top=k('ymax'))
+
+    print('Plotting using following parameters:')
+    for key, value in dict(kwargs).iteritems():
+        print(key, value)
+
 
     plt.errorbar(
         plot['x'], plot['y'],

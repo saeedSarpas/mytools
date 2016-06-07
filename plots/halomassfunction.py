@@ -74,7 +74,8 @@ class Rockstar(object):
             if key is not 'column_tags': print(key, value)
 
     def plot(self, **kwargs):
-        """Calling _plot function for plotting the halo mass function"""
+        """Calling errorbars function form plotting module for plotting the
+        halo mass function"""
         if not self.plot:
             print('[error] Histogram data is not available for plotting.')
             print('        Make sure to run `Rockstar.histogram()` first.')
@@ -88,9 +89,8 @@ class Rockstar(object):
         name = kws['name'] if 'name' in kws else self.fname + '.png'
 
         if not save:
-            print('In case you want to save your plot, you should pass,')
-            print('`save=True`')
-            print('to the `plot` function.')
+            print('[note] In case you want to save your plot, make sure to set')
+            print('       `save=True` when you are calling plot function.')
 
         if 'xscale' not in kws: kws['xscale'] = 'log'
         if 'yscale' not in kws: kws['yscale'] = 'log'
