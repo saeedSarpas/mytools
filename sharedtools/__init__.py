@@ -1,3 +1,7 @@
 """Sharedtools module"""
 
-__all__ = ['headerextractor', 'mycolordict', 'plotting']
+__all__ = [
+    'headerextractor',
+    'mycolordict',
+    'plotting',
+    'physicalparameters']
