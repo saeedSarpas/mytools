@@ -9,16 +9,20 @@ def run(fname, ftype):
     inputs = {
         'rockstar': {
             'headers': {
-                'sep': ':',
+                'delimiters': ['=', ':'],
+                'inline_delimiter': ';',
                 'rows': 19,
                 'keys': [
                     'Box_size',
                     'Total_particles_processed',
-                    'Particle_mass'
+                    'Particle_mass',
+                    'Om',
+                    'Ol',
+                    'h'
                 ]
             },
             'column_tags': {
-                'sep': ' ',
+                'delimiter': ' ',
                 'line': 1
             }
         }
@@ -26,18 +30,22 @@ def run(fname, ftype):
 
     with open(fname) as _file:
         _input = inputs[ftype]
-        lines = [next(_file) for _ in range(_input['headers']['rows'])]
-        for line in lines:
-            key, val = line.partition(_input['headers']['sep'])[::2]
-            key = key.strip().strip('#').replace(' ', '_')
-            val = val.strip().strip('\n').split()
-            tmp[key] = val
+        for delimiter in _input['headers']['delimiters']:
+            _file.seek(0)
+            lines = [next(_file) for _ in range(_input['headers']['rows'])]
+            for line in lines:
+                statements = line.split(_input['headers']['inline_delimiter'])
+                for statement in statements:
+                    if delimiter in statement:
+                        key, val = statement.strip('#').strip().partition(delimiter)[::2]
+                        key = key.strip().replace(' ', '_')
+                        val = val.strip().strip('\n').split()
+                        tmp[key] = val
 
         if 'column_tags' in _input:
             _file.seek(_input['column_tags']['line'], 0)
             line = _file.readline().strip('\n')
-            headers['column_tags'] = line.split(_input['column_tags']['sep'])
-
+            headers['column_tags'] = line.split(_input['column_tags']['delimiter'])
 
     headers['Filename'] = fname
 
