@@ -38,7 +38,7 @@ def errorbars(plot, fname, save, **kwargs):
 
     print('Plotting using following parameters:')
     for key, value in dict(kwargs).iteritems():
-        print(key, value)
+        print('\t {:15s}'.format(str(key)) + str(value))
 
 
     plt.errorbar(
