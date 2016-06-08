@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 from ..sharedtools import mycolordict as cdict
 
-def errorbars(plot, fname, save, **kwargs):
+def errorbars(plot, fname, **kwargs):
     """Plotting curves with error bars
     Parameters:
     plot    : Dictionary ('x', 'y', 'xerr', 'yerr')
@@ -55,7 +55,7 @@ def errorbars(plot, fname, save, **kwargs):
     if 'ylabel' in kwargs:
         plt.ylabel(k('ylabel'))
 
-    if save:
+    if 'save' in kwargs and k('save') == True:
         plt.savefig(fname + '.png')
     else:
         plt.show()

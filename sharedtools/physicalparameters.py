@@ -54,7 +54,7 @@ def rhocrit(h_cte, **kwargs):
     else:
         M = _get(munit)
 
-    H = float(h_cte) * 100 / _get('Mpc/km')
+    H_si = h_cte * 100 / _get('Mpc/km')
     G = getG(h=h_cte) if 'perh' in kwargs and k('perh') == True else getG()
 
-    return 3 * H**2 / (8 * pi * G) * _get(lunit)**3 / M
+    return 3 * H_si**2 / (8 * pi * G) * _get(lunit)**3 / M

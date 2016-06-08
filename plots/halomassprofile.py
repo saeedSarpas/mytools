@@ -23,8 +23,8 @@ class Rockstar(object):
         k = kwargs.get
 
         self.fname = fname
-        self.profiles = {}
-        self.plotparams = {'x': [], 'y': [], 'xerr': None, 'yerr': []}
+        self.binnedhalos = {}
+        self.plotparams = {} # 'x': [], 'y': [], 'xerr': None, 'yerr': []
 
         # Extracting header information
         self.headers = headerextractor.run(fname, 'rockstar')
@@ -68,139 +68,101 @@ class Rockstar(object):
             usecols=(id_col, mass_col, x_col, y_col, z_col, pid_col),
             dtype=datatype)
 
-        self.halos = {}
-        self.halos['hosts'] = np.array(
+        self.hosts = np.array(
             [h for h in data if h['pid'] == -1], dtype=datatype)
-        self.halos['subhalos'] = np.array(
+        self.subhalos = np.array(
             [h for h in data if h['pid'] != -1], dtype=datatype)
 
-    def profilesgen(self, **kwargs):
+    def findsubhalos(self, **kwargs):
         """Calculating mass profile of hosts inside a logarithmic mass bin and
         saving the result in self.profiles dictionary"""
 
         k = kwargs.get
 
-        nbins = {}
-        nbins['radius'] = k('nradiusbins') if 'nradiusbins' in kwargs else 20
-        nbins['mass']   = k('nmassbins')   if 'nmassbins'   in kwargs else 8
+        nmassbins = k('nmassbins') if 'nmassbins' in kwargs else 8
+        nsubhalos = k('nsubhalos') if 'nsubhalos' in kwargs else 1
+
+        self.headers['Min_num_of_subhalos'] = nsubhalos
 
         lratio = 1000 # Mpc/h to kpc/h
 
-        self.headers['Number_of_mass_bins']   = nbins['mass']
-        self.headers['Number_of_radius_bins'] = nbins['radius']
-
-        print('Profiling subhalos using following parameters')
-        print('\tnmassbins:  \t' + str(nbins['mass']))
-        print('\tnradiusbins:\t' + str(nbins['radius']))
-        print('\tlratio:     \t' + str(lratio) + ' # Mpc/h to kpc/h')
+        print('Binning host masses using following parameter(s)')
+        print('\tNumber_of_mass_bins:\t' + str(nmassbins))
+        print('\tnsubhalos:          \t' + str(nsubhalos))
+        print('\tlratio:             \t' + str(lratio) + '  # Mpc/h to kpc/h')
         print('')
 
-        mbins = np.logspace(
-            np.log10(np.min(self.halos['hosts']['mass'])),
-            np.log10(np.max(self.halos['hosts']['mass'])),
-            num=nbins['mass']+1,
-            base=10)
+        binnedhosts = _binninghosts(self.hosts, nmassbins)
+        bininfo     = _choosedesiredbin(binnedhosts)
 
-        rhocritperh = rhocrit(self.headers['h'][0], perh=True,
-                              lunit='kpc', munit='msun')
+        self.headers['Number_of_used_hosts'] = len(binnedhosts[bininfo['key']])
 
-        for mmin, mmax in zip(mbins[:-1], mbins[1:]):
-            subhalos = {}
-            hosts = [
-                h for h in self.halos['hosts'] if mmin < h['mass'] <= mmax]
+        for host in binnedhosts[bininfo['key']]['hosts']:
+            foundsubhalos = _findsubhalos(host, self.subhalos, lratio=lratio)
 
-            massbinkey = str(10**((np.log10(mmin * mmax)) / 2))
-            self.profiles[massbinkey] = {}
+            if len(foundsubhalos) > nsubhalos:
+                self.binnedhalos[str(host['mass'])] = foundsubhalos
+            else:
+                continue
 
-            haloradii = []
+    def profilesgen(self, **kwargs):
+        """Calculating mass profile of the selected bin"""
 
-            for host in hosts:
-                satellites = [
-                    h for h in self.halos['subhalos'] if h['pid'] == host['id']]
-
-                if len(satellites) < 1: continue
-
-                # subhalos[str(host['mass'])] = _ wl
-
-                subhalos[str(host['mass'])] = {}
-                subhalos[str(host['mass'])]['mass'] = []
-                subhalos[str(host['mass'])]['dtohost'] = []
-
-                subhalos[str(host['mass'])]['mass'].append(host['mass'])
-                subhalos[str(host['mass'])]['dtohost'].append(0.0)
-
-                for satellite in satellites:
-                    subhalos[str(host['mass'])]['mass'].append(
-                        satellite['mass'])
-                    subhalos[str(host['mass'])]['dtohost'].append(
-                        _dtohost(host, satellite, lratio=lratio))
-
-                haloradius = np.max(subhalos[str(host['mass'])]['dtohost'])
-                haloradii.append(haloradius)
-
-            if len(haloradii) < 1: continue
-
-            rbins = np.logspace(
-                0, np.log10(np.max(haloradii)), num=nbins['radius']+1, base=10)
-
-            for hostmasskey, halos in subhalos.iteritems():
-                self.profiles[massbinkey][hostmasskey] = _profile(
-                    halos,
-                    rbins=rbins,
-                    nrbins=nbins['radius'],
-                    rhocrit=rhocritperh)
-
-        for key, value in self.headers.iteritems():
-            if key is not 'column_tags':
-                print('\t {:30s}'.format(str(key)) + '\t' + str(value))
-
-    def stack(self):
-        """Stacking all mass profiles of a given set of hosts together"""
-
-        if not self.profiles:
-            print('[error] Profiles data are not available for plotting.')
-            print('        Make sure to run `Rockstar.profilesgen()` first.')
+        if not self.binnedhalos:
+            print('[error] Subhalos are not collected yet.')
+            print('        Make sure to run `Rockstar.findsubhalos()` first.')
             return
 
-        key = self._getkeyfrominput()
+        k = kwargs.get
 
-        self.plotparams = _stack(self.profiles[key])
+        nradiusbins = k('nradiusbins') if 'nradiusbins' in kwargs else 20
+        self.headers['Number_of_radius_bins'] = nradiusbins
 
-    def _getkeyfrominput(self):
-        """Getting the self.profiles desired key from user for stacking the
-        halo mass function of it"""
+        print('Profiling host densities using following parameter(s)')
+        print('\tNumber_of_radius_bins:\t' + str(nradiusbins))
+        print('')
 
-        keys = self.profiles.keys()
+        rmax = 0
+        for _, subhalos in self.binnedhalos.iteritems():
+            rhalo = np.max(subhalos['dtohost'])
+            if rhalo > rmax:
+                rmax = rhalo
 
-        while True:
-            print('Index\tAverage host mass\t# of found hosts (with more than one subhalo)')
+        rbins = np.logspace(0, np.log10(rmax), num=nradiusbins+1, base=10)
 
-            valid_inputs = []
-            for idx, key in enumerate(keys):
-                nfoundhosts = len(self.profiles[key])
-                strindex = str(idx) if nfoundhosts > 1 else ' '
-                valid_inputs.append(idx)
-                print(strindex + '\t' + key + '   \t' + str(nfoundhosts))
+        rhocritperh = rhocrit(
+            float(self.headers['h'][0]), perh=True, lunit='kpc', munit='msun')
 
-            index = int(raw_input('Choose one index to stack: '))
+        profiles = {}
+        for hostmass, subhalos in self.binnedhalos.iteritems():
+            profiles[hostmass] = _profile(
+                subhalos,
+                rbins=rbins,
+                nrbins=nradiusbins,
+                rhocrit=rhocritperh)
 
-            if index in valid_inputs:
-                nusedhosts = len(self.profiles[keys[index]])
-                self.headers['Number_of_used_hosts'] = nusedhosts
-
-                return keys[index]
-            else:
-                print('Your input was invalid. Please try again.')
+        self.plotparams = _stack(profiles)
 
     def plot(self, **kwargs):
         """Callin _plot function for plotting the halo mass profile"""
 
+        if not self.plotparams:
+            print('[error] Profiles data are not available.')
+            print('        Make sure to run `Rockstar.profilesgen()` first.')
+            return
+
+        k = kwargs.get
         kws = dict(kwargs)
 
-        name  = kws['name']  if 'name'  in kws else self.fname
-        save  = kws['save']  if 'save'  in kws else False
+        name = kws['name'] if 'name' in kws else self.fname
 
-        if not save:
+        print('Parameters review:')
+        for key, value in self.headers.iteritems():
+            if key is not 'column_tags':
+                print('\t {:30s}'.format(str(key)) + '\t' + str(value))
+        print('')
+
+        if 'save' not in kwargs or ('save' in kwargs and k('save') != True):
             print('[note] In case you want to save your plot, make sure to set')
             print('       `save=True` when you are calling plot function.')
             print('')
@@ -210,7 +172,73 @@ class Rockstar(object):
         if 'xlabel' not in kws: kws['xlabel'] = '$\\log_{10}(r / Kpc)$'
         if 'ylabel' not in kws: kws['ylabel'] = '$\\log_{10}(\\rho / \\rho_{crit})$'
 
-        errorbars(self.plotparams, name, save, **dict(kws))
+        errorbars(self.plotparams, name, **dict(kws))
+
+def _binninghosts(hosts, nmassbins):
+    """Binning hosts"""
+    result = {}
+
+    mbins = np.logspace(
+        np.log10(np.min(hosts['mass'])),
+        np.log10(np.max(hosts['mass'])),
+        num=nmassbins+1,
+        base=10)
+
+    for mmin, mmax in zip(mbins[:-1], mbins[1:]):
+        key = str(10**((np.log10(mmin * mmax)) / 2))
+        result[key] = {}
+        result[key]['massrange'] = (mmin, mmax)
+        result[key]['hosts'] = [h for h in hosts if mmin < h['mass'] <= mmax]
+
+    return result
+
+def _choosedesiredbin(binnedhosts):
+    """Getting desired bin to profile from user"""
+    keys = binnedhosts.keys()
+
+    while True:
+        print('Index\tAverage host mass\tMass range\t\t\t\t# of found hosts')
+
+        validinputs = []
+        for idx, key in enumerate(keys):
+            nfoundhosts = len(binnedhosts[key]['hosts'])
+            strindex = str(idx) if nfoundhosts > 1 else ' '
+
+            validinputs.append(idx)
+
+            print(strindex + '\t' +
+                  key + '   \t' +
+                  str(binnedhosts[key]['massrange']) +'  \t' +
+                  str(nfoundhosts))
+
+        index = int(raw_input('Choose one index to stack: '))
+
+        if index in validinputs:
+            return {'min': binnedhosts[keys[index]]['massrange'][0],
+                    'max': binnedhosts[keys[index]]['massrange'][1],
+                    'key': keys[index]}
+        else:
+            print('Your input was invalid. Please try again.')
+
+def _findsubhalos(host, subhalos, **kwargs):
+    """Find subhalos for a giving host"""
+
+    result = {'mass': [], 'dtohost': []}
+
+    lratio = kwargs.get('lratio') if 'lratio' in kwargs else 1
+
+    satellites = [h for h in subhalos if h['pid'] == host['id']]
+
+    result['mass'].append(host['mass'])
+    result['dtohost'].append(0.0)
+
+    for satellite in satellites:
+        result['mass'].append(
+            satellite['mass'])
+        result['dtohost'].append(
+            _dtohost(host, satellite, lratio=lratio))
+
+    return result
 
 
 def _dtohost(host, subhalo, **kwargs):
@@ -224,7 +252,7 @@ def _dtohost(host, subhalo, **kwargs):
 
     return sqrt(dx2 + dy2+ dz2) * lratio
 
-def _profile(halos, **kwargs):
+def _profile(subhalos, **kwargs):
     """Calculating halo mass profile for a given set of halos"""
 
     k = kwargs.get
@@ -235,13 +263,13 @@ def _profile(halos, **kwargs):
         rbins = k('rbins')
     else:
         rbins = np.logspace(
-            0, np.max(halos['dtohost']), num=k('nrbins'), base=10)
+            0, np.max(subhalos['dtohost']), num=k('nrbins'), base=10)
 
     rhocritical = k('rhocrit') if 'rhocrit' in kwargs else 1
 
     for r in rbins:
         total_mass = 0.0
-        for mass, dtohost in zip(halos['mass'], halos['dtohost']):
+        for mass, dtohost in zip(subhalos['mass'], subhalos['dtohost']):
             if r <= dtohost:
                 total_mass += mass
 
@@ -280,6 +308,6 @@ def _stack(halos):
         result['yerr'].append(
             sqrt(sum([(d - mean_density)**2 for d in densities])) / len(densities))
 
-        print('Stacking and profiling ' + str(nhalos) + ' subhalos successfully')
+    print('Stacked ' + str(nhalos) + ' subhalos successfully')
 
     return result
