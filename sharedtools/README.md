@@ -71,3 +71,98 @@ keywords. Following we list these parameters.
 |               | Label of the x axis                               |           |
 | ylabel        | String                                            |           |
 |               | Label of the y axis                               |           |
+
+## Reportgenerator module
+Generating a LaTex report
+
+### `Report(fname, title, **kwargs)`
+Initializing the Report object.
+
+| Argument      | Description                                       | Default   |
+| :------------ | :------------------------------------------------ | :-------: |
+| fname         | String                                            |           |
+|               | The name of the tex file                          |           |
+| title         | String                                            |           |
+|               | Title of the report                               |           |
+| authors       | List of strings (optional)                        |           |
+|               | Authors name. Beside this you should set emails.  |           |
+| emails        | List of strings (optional)                        |           |
+|               | Authors emails. Necessary for creating the title. |           |
+| abstract      | String (optional)                                 |           |
+|               | Abstract of the report.                           |           |
+
+### `Report.section(title, **kwargs)`
+Creating a new section.
+
+| Argument      | Description                                       | Default   |
+| :------------ | :------------------------------------------------ | :-------: |
+| title         | String                                            |           |
+|               | Title of the section.                             |           |
+| text          | String (optional)                                 |           |
+|               | Descriptiotn of the section.                      |           |
+
+### `Report.subsection(title, **kwargs)`
+Creating a new subsection.
+
+| Argument      | Description                                       | Default   |
+| :------------ | :------------------------------------------------ | :-------: |
+| title         | String                                            |           |
+|               | Title of the subsection.                          |           |
+| text          | String (optional)                                 |           |
+|               | Descriptiotn of the subsection.                   |           |
+
+### `Report.subsubsection(title, **kwargs)`
+Creating a new subsubsection.
+
+| Argument      | Description                                       | Default   |
+| :------------ | :------------------------------------------------ | :-------: |
+| title         | String                                            |           |
+|               | Title of the subsubsection.                       |           |
+| text          | String (optional)                                 |           |
+|               | Descriptiotn of the subsubsection.                |           |
+
+### `Report.addparagraph(text)`
+Adding a new paragraph of text to the report.
+
+| Argument      | Description                                       | Default   |
+| :------------ | :------------------------------------------------ | :-------: |
+| text          | String                                            |           |
+|               | Paragraph text.                                   |           |
+
+### `Report.addfigure(path, **kwargs)`
+Addding a new figure to the report.
+
+| Argument      | Description                                       | Default   |
+| :------------ | :------------------------------------------------ | :-------: |
+| path          | String                                            |           |
+|               | Ralative path to the picture                      |           |
+| specifier     | String (optional)                                 |           |
+|               | Figure specifier, e.g. h or h!                    | 'h'       |
+| attrs         | String (optional)                                 |           |
+|               | Includegraphics attributes, e.g. 'width=7cm'      |           |
+| caption       | String (optional)                                 |           |
+|               | Figure caption.                                   |           |
+
+This function returns the figure label.
+
+### `Report.addtableofadict(dictionary, **kwargs)`
+Addding a new figure to the report.
+
+| Argument      | Description                                       | Default   |
+| :------------ | :------------------------------------------------ | :-------: |
+| dictionary    | dict                                              |           |
+|               | Set of keywords values for filling the table      |           |
+| specifier     | String (optional)                                 |           |
+|               | Table specifier, e.g. h or h!                     | 'h!'      |
+| caption       | String (optional)                                 |           |
+|               | Table caption.                                    |           |
+
+This function returns the table label.
+
+### `Report.finish(**kwargs)`
+Finalizing the report document.
+
+| Argument      | Description                                       | Default   |
+| :------------ | :------------------------------------------------ | :-------: |
+| refrences     | String (optional)                                 |           |
+|               | Path to the refrencese bib file.                  |           |
