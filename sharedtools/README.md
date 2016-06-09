@@ -156,6 +156,8 @@ Addding a new figure to the report.
 |               | Table specifier, e.g. h or h!                     | 'h!'      |
 | caption       | String (optional)                                 |           |
 |               | Table caption.                                    |           |
+| excludekeys   | Array of strings                                  |           |
+|               | Keys to be filtered                               |           |
 
 This function returns the table label.
 
