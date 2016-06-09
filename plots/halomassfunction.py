@@ -1,10 +1,11 @@
 """halofassfunction.py
 Plotting the halo mass function"""
 
-import numpy                as np
+import numpy                       as np
 
-from ..sharedtools          import headerextractor
-from ..sharedtools.plotting import errorbars
+from ..sharedtools                 import headerextractor
+from ..sharedtools.plotting        import errorbars
+from ..sharedtools.reportgenerator import Report
 
 class Rockstar(object):
     """Handling the generation of the halo mass function of a rockstar output"""
@@ -17,6 +18,7 @@ class Rockstar(object):
         from the root directory of the Rockstar project"""
 
         self.fname = fname
+        self.plotname = ''
         self.hist = {}
 
         k = kwargs.get
@@ -76,21 +78,24 @@ class Rockstar(object):
     def plot(self, **kwargs):
         """Calling errorbars function form plotting module for plotting the
         halo mass function"""
-        if not self.plot:
+        if not self.hist:
             print('[error] Histogram data is not available for plotting.')
             print('        Make sure to run `Rockstar.histogram()` first.')
             return
 
-        plot_params = {'x': [], 'y': [], 'xerr': [], 'yerr': None}
+        plot_params = {'x': [], 'y': [], 'xerr': None, 'yerr': None}
 
+        k = kwargs.get
         kws = dict(kwargs)
 
-        save = kws['save'] if 'save' in kws else False
-        name = kws['name'] if 'name' in kws else self.fname + '.png'
+        name = kws['name'] if 'name' in kws else self.fname
 
-        if not save:
+        if 'save' in kwargs and k('save') == True:
+            self.plotname = name
+        else:
             print('[note] In case you want to save your plot, make sure to set')
             print('       `save=True` when you are calling plot function.')
+            print('')
 
         if 'xscale' not in kws: kws['xscale'] = 'log'
         if 'yscale' not in kws: kws['yscale'] = 'log'
@@ -108,10 +113,28 @@ class Rockstar(object):
         bins = zip(self.hist['bin_edges'][1:], self.hist['bin_edges'][:-1])
         plot_params['x']    = [(f + i) / 2 for i, f in bins]
 
-        # Preparing errors
-        plot_params['xerr'] = [(f - i) / 2 for i, f in bins]
+        errorbars(plot_params, name, **dict(kws))
 
-        errorbars(plot_params, name, save, **dict(kws))
+    def report(self):
+        """Generating a short report of the result"""
+
+        if not self.plotname:
+            print('[error] The plot has not saved on disk yet.')
+            print('        Make sure to run `Rockstar.plot(save=True)` first.')
+            return
+
+        report = Report(
+            self.plotname,
+            'Halo mass function',
+            authors=['Saeed Sarpas'],
+            emails=['saeed@astro.uni-bonn.de'])
+
+        report.section(self.fname)
+        report.addfigure(self.plotname + '.png', specifier='h',
+                         attrs='width=0.8\\textwidth', caption='')
+        report.addtableofadict(self.headers, specifier='h',
+                               excludekeys=['column_tags'])
+        report.finish()
 
 
 def _histogram(hosts, nbins):
