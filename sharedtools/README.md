@@ -168,3 +168,17 @@ Finalizing the report document.
 | :------------ | :------------------------------------------------ | :-------: |
 | refrences     | String (optional)                                 |           |
 |               | Path to the refrencese bib file.                  |           |
+
+## Gadgetreader module
+Reading Gadget snapshops
+
+### `Gadget(fname)`
+Initializing the Report object.
+
+| Argument      | Description                                       | Default   |
+| :------------ | :------------------------------------------------ | :-------: |
+| fname         | String                                            |           |
+|               | The name of Gadget snapshot file                  |           |
+
+### `Gadget.load()`
+Loading Gadget data into a numpy array and return it.

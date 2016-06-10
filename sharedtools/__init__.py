@@ -5,4 +5,5 @@ __all__ = [
     'mycolordict',
     'plotting',
     'physicalparameters',
-    'reportgenerator']
+    'reportgenerator',
+    'gadgetreader']
