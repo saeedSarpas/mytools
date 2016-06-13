@@ -7,7 +7,7 @@ import sys
 import numpy                          as np
 
 from ..sharedtools                    import headerextractor
-from ..sharedtools.plotting           import errorbars
+from ..sharedtools.plotting           import errorbars, save
 from ..sharedtools.physicalparameters import rhocrit
 from ..sharedtools.gadgetreader       import Gadget
 
@@ -158,8 +158,6 @@ class Rockstar(object):
         k = kwargs.get
         kws = dict(kwargs)
 
-        name = kws['name'] if 'name' in kws else self.rfname
-
         print('Parameters review:')
         for key, value in self.headers.iteritems():
             if key is not 'column_tags':
@@ -176,7 +174,12 @@ class Rockstar(object):
         if 'xlabel' not in kws: kws['xlabel'] = '$\\log_{10}(r / Kpc)$'
         if 'ylabel' not in kws: kws['ylabel'] = '$\\log_{10}(\\rho / \\rho_{crit})$'
 
-        errorbars(self.plotparams, name, **dict(kws))
+        errorbars(self.plotparams, **dict(kws))
+
+        if 'save' in kwargs and k('save') == True:
+            name = kws['name'] if 'name' in kws else self.rfname
+            save(name)
+
 
 def _binninghosts(hosts, nmassbins):
     """Binning hosts"""

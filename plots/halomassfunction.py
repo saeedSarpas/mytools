@@ -4,7 +4,7 @@ Plotting the halo mass function"""
 import numpy                       as np
 
 from ..sharedtools                 import headerextractor
-from ..sharedtools.plotting        import errorbars
+from ..sharedtools.plotting        import errorbars, save
 from ..sharedtools.reportgenerator import Report
 
 class Rockstar(object):
@@ -88,19 +88,15 @@ class Rockstar(object):
         k = kwargs.get
         kws = dict(kwargs)
 
-        name = kws['name'] if 'name' in kws else self.fname
-
-        if 'save' in kwargs and k('save') == True:
-            self.plotname = name
-        else:
+        if 'save' not in kwargs or ('save' in kwargs and k('save') != True):
             print('[note] In case you want to save your plot, make sure to set')
             print('       `save=True` when you are calling plot function.')
             print('')
 
         if 'xscale' not in kws: kws['xscale'] = 'log'
         if 'yscale' not in kws: kws['yscale'] = 'log'
-        if 'xlabel' not in kws: kws['xlabel'] = '$M\ [h^{-1}M_{\odot}]$'
-        if 'ylabel' not in kws: kws['ylabel'] = '$dn / d\log(M) dV\ [h^3Mpc^{-3}]$'
+        if 'xlabel' not in kws: kws['xlabel'] = '$M\\ [h^{-1}M_{\\odot}]$'
+        if 'ylabel' not in kws: kws['ylabel'] = '$dn / d\\log(M) dV\\ [h^3Mpc^{-3}]$'
 
         # dn / dlog(M)dV
         boxvolume = float(self.headers['Box_size'][0])**3
@@ -113,7 +109,13 @@ class Rockstar(object):
         bins = zip(self.hist['bin_edges'][1:], self.hist['bin_edges'][:-1])
         plot_params['x']    = [(f + i) / 2 for i, f in bins]
 
-        errorbars(plot_params, name, **dict(kws))
+        errorbars(plot_params, **dict(kws))
+
+        if 'save' in kwargs and k('save') == True:
+            name = kws['name'] if 'name' in kws else self.fname
+
+            self.plotname = name
+            save(self.plotname)
 
     def report(self):
         """Generating a short report of the result"""
