@@ -16,6 +16,12 @@ def run(fname, ftype):
                     'Box_size',
                     'Total_particles_processed',
                     'Particle_mass',
+                    'FOF_linking_length',
+                    'Unbound_Threshold',
+                    'FOF_Refinement_Threshold',
+                    'Force_resolution_assumed',
+                    'Rockstar_Version',
+                    'Units',
                     'Om',
                     'Ol',
                     'h'

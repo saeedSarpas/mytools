@@ -13,11 +13,20 @@ class Gadget(object):
         self.fname = fname
         self._file = open(fname, 'rb')
         self.headers = self._readheader()
+        self.data = []
+        self.dtype = np.dtype([('id', np.int),
+                               ('x', np.float64),
+                               ('y', np.float64),
+                               ('z', np.float64)])
 
     def load(self):
         """Load gadget data"""
-        data = self._readdata()
-        return data
+        self.data = self._readdata()
+        return self.data
+
+    def index(self, col='x'):
+        """Sorting the data array for a given column"""
+        return np.sort(self.data, order=col)
 
     def _readheader(self):
         """Extracting gadget header"""
@@ -44,11 +53,7 @@ class Gadget(object):
         positions = struct.unpack(fmtstring, self._file.read(positionslen))
         data = np.array(
             np.zeros((self.headers['nparticles'])),
-            dtype=np.dtype([
-                ('id', np.int),
-                ('x', np.float64),
-                ('y', np.float64),
-                ('z', np.float64)]))
+            dtype=self.dtype)
         for i in range(self.headers['nparticles']):
             data['id'][i] = i
             data['x'][i] = positions[i*3]

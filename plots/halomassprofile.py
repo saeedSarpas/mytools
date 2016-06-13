@@ -1,60 +1,60 @@
-"""halofassprofile.py
+"""halomassprofile.py
 Plotting the halo mass profile"""
 
 from math                             import sqrt, pi
 
+import sys
 import numpy                          as np
 
 from ..sharedtools                    import headerextractor
 from ..sharedtools.plotting           import errorbars
 from ..sharedtools.physicalparameters import rhocrit
+from ..sharedtools.gadgetreader       import Gadget
 
 class Rockstar(object):
     """Handling necessary actions for generating halo mass profile for
     Rockstar output files"""
 
-    def __init__(self, fname, **kwargs):
+    def __init__(self, rockstar_fname, gadget_fname, **kwargs):
         """Initializing and extracting data for plotting halo mass profile.
         Note that the normal output of Rockstar does not contain the parent
         id of the halos, for generating outputs with parent ids, run:
         `./util/find_parent <normal rockstar output path>`
         from the root directory of the Rockstar project"""
-
         k = kwargs.get
 
-        self.fname = fname
-        self.binnedhalos = {}
+        self.rfname = rockstar_fname
+        self.gfname = gadget_fname
+        self.binnedhosts = []
         self.plotparams = {} # 'x': [], 'y': [], 'xerr': None, 'yerr': []
+        self.hosts = {}
+        self.rbins = []
 
         # Extracting header information
-        self.headers = headerextractor.run(fname, 'rockstar')
+        self.headers = headerextractor.run(rockstar_fname, 'rockstar')
+        # [TODO]: Extracting positions unit from Rockstar header
+        self.lratio = 1000
 
-        skiprows  = k('skiprows')  if 'skiprows'  in kwargs else 19
-        id_col    = k('id_col')    if 'id_col'    in kwargs else 0
-        mass_col  = k('mass_col')  if 'mass_col'  in kwargs else 3
-        x_col     = k('x_col')     if 'x_col'     in kwargs else 8
-        y_col     = k('y_col')     if 'y_col'     in kwargs else 9
-        z_col     = k('z_col')     if 'z_col'     in kwargs else 10
-        pid_col   = k('pid_col')   if 'pid_col'   in kwargs else -1
+        column_num = {}
+        column_num['id']   = k('id_col')   if 'id_col'   in kwargs else 0
+        column_num['mass'] = k('mass_col') if 'mass_col' in kwargs else 3
+        column_num['r']    = k('r_col')    if 'r_col'    in kwargs else 4
+        column_num['x']    = k('x_col')    if 'x_col'    in kwargs else 8
+        column_num['y']    = k('y_col')    if 'y_col'    in kwargs else 9
+        column_num['z']    = k('z_col')    if 'z_col'    in kwargs else 10
+        column_num['pid']  = k('pid_col')  if 'pid_col'  in kwargs else -1
 
-        print('Extracting data using following parameters:')
-        print('\tskiprows:  \t' + str(skiprows))
-        print('\tid_col:    \t' + str(id_col)   +
-              '\t' + self.headers['column_tags'][id_col])
-        print('\tmass_col:  \t' + str(mass_col)   +
-              '\t' + self.headers['column_tags'][mass_col])
-        print('\tx:         \t' + str(x_col)   +
-              '\t' + self.headers['column_tags'][x_col])
-        print('\ty:         \t' + str(y_col)   +
-              '\t' + self.headers['column_tags'][y_col])
-        print('\tz:         \t' + str(z_col)   +
-              '\t' + self.headers['column_tags'][z_col])
-        print('\tpid_col:   \t' + str(pid_col)   +
-              '\t' + self.headers['column_tags'][pid_col])
-        print('')
+        skiprows = k('skiprows') if 'skiprows' in kwargs else 19
+
+        print('Extracting follwing data from Rockstar by skipping ' \
+              + str(skiprows) + ' rows:')
+        for key, value in column_num.iteritems():
+            print('\t{:8}\t{:4}\t{:15}'.format(
+                str(key) + '_col', str(value), self.headers['column_tags'][value]))
 
         datatype = [('id',   np.int32),
                     ('mass', np.float64),
+                    ('r',    np.float64),
                     ('x',    np.float64),
                     ('y',    np.float64),
                     ('z',    np.float64),
@@ -62,86 +62,90 @@ class Rockstar(object):
 
         # Extracting data from rockstar output
         data = np.genfromtxt(
-            fname,
+            rockstar_fname,
             unpack='true',
             skiprows=skiprows,
-            usecols=(id_col, mass_col, x_col, y_col, z_col, pid_col),
+            usecols=(
+                column_num['id'],
+                column_num['mass'],
+                column_num['r'],
+                column_num['x'],
+                column_num['y'],
+                column_num['z'],
+                column_num['pid']),
             dtype=datatype)
 
-        self.hosts = np.array(
+        # Filter subhalos
+        self.data = np.array(
             [h for h in data if h['pid'] == -1], dtype=datatype)
-        self.subhalos = np.array(
-            [h for h in data if h['pid'] != -1], dtype=datatype)
 
-    def findsubhalos(self, **kwargs):
+    def selecthosts(self, **kwargs):
         """Calculating mass profile of hosts inside a logarithmic mass bin and
         saving the result in self.profiles dictionary"""
 
         k = kwargs.get
 
         nmassbins = k('nmassbins') if 'nmassbins' in kwargs else 8
-        nsubhalos = k('nsubhalos') if 'nsubhalos' in kwargs else 1
-
-        self.headers['Min_num_of_subhalos'] = nsubhalos
-
-        lratio = 1000 # Mpc/h to kpc/h
 
         print('Binning host masses using following parameter(s)')
         print('\tNumber_of_mass_bins:\t' + str(nmassbins))
-        print('\tnsubhalos:          \t' + str(nsubhalos))
-        print('\tlratio:             \t' + str(lratio) + '  # Mpc/h to kpc/h')
         print('')
 
-        binnedhosts = _binninghosts(self.hosts, nmassbins)
-        bininfo     = _choosedesiredbin(binnedhosts)
+        binnedhosts = _binninghosts(self.data, nmassbins)
 
-        self.headers['Number_of_used_hosts'] = len(binnedhosts[bininfo['key']])
+        binkey = _selectbin(binnedhosts)
+        self.binnedhosts = binnedhosts[binkey]
 
-        for host in binnedhosts[bininfo['key']]['hosts']:
-            foundsubhalos = _findsubhalos(host, self.subhalos, lratio=lratio)
+        self.headers['Number_of_hosts'] = len(self.binnedhosts)
 
-            if len(foundsubhalos) > nsubhalos:
-                self.binnedhalos[str(host['mass'])] = foundsubhalos
-            else:
-                continue
-
-    def profilesgen(self, **kwargs):
+    def generateprofiles(self, **kwargs):
         """Calculating mass profile of the selected bin"""
 
-        if not self.binnedhalos:
-            print('[error] Subhalos are not collected yet.')
-            print('        Make sure to run `Rockstar.findsubhalos()` first.')
+        if not self.binnedhosts:
+            print('[error] Hosts are not collected yet.')
+            print('        Make sure to run `Rockstar.selecthosts()` first.')
             return
 
         k = kwargs.get
 
-        nradiusbins = k('nradiusbins') if 'nradiusbins' in kwargs else 20
-        self.headers['Number_of_radius_bins'] = nradiusbins
+        _write('Loading Gadget snapthot (Hang tight, it may take some time)')
+        gadget = Gadget(self.gfname)
+        self.headers['Scale_factor'] = gadget.headers['time']
+        gadget.load()
+        _write(' [done]\n')
 
-        print('Profiling host densities using following parameter(s)')
-        print('\tNumber_of_radius_bins:\t' + str(nradiusbins))
-        print('')
+        _write('Indexing positions (Hang tight, it may take some time)')
+        sortedx = gadget.index('x')
+        _write(' [done]\n')
 
-        rmax = 0
-        for _, subhalos in self.binnedhalos.iteritems():
-            rhalo = np.max(subhalos['dtohost'])
-            if rhalo > rmax:
-                rmax = rhalo
+        # Radial binning
+        nrbins = k('nrbins') if 'nrbins' in kwargs else 50
+        ## rmin: half of force softening length
+        ## rmax: twice the size of the biggest R_vir
+        rmin = float(self.headers['Force_resolution_assumed'][0]) * self.lratio / 2
+        rmax = 2 * np.max([h['r'] for h in self.binnedhosts])
+        self.rbins = np.logspace(
+            np.log10(rmin), np.log10(rmax), num=nrbins, base = 10)
 
-        rbins = np.logspace(0, np.log10(rmax), num=nradiusbins+1, base=10)
+        # Mass of particles
+        mparticlesperh = float(self.headers['Particle_mass'][0])
 
+        # rho_crit. unit: M_sun / kpc^3 / h
         rhocritperh = rhocrit(
-            float(self.headers['h'][0]), perh=True, lunit='kpc', munit='msun')
+            float(self.headers['h'][0]), munit='msun', lunit='kpc', perh=True)
 
-        profiles = {}
-        for hostmass, subhalos in self.binnedhalos.iteritems():
-            profiles[hostmass] = _profile(
-                subhalos,
-                rbins=rbins,
-                nrbins=nradiusbins,
-                rhocrit=rhocritperh)
+        for idx, host in enumerate(self.binnedhosts):
+            _write('\rGenerating halo mass profiles [%d out of %d]',
+                   (idx + 1, self.headers['Number_of_hosts']))
 
-        self.plotparams = _stack(profiles)
+            key = str(host['mass'])
+            thehost = self.hosts[key] = {}
+            thehost['dtohost'] = _sorteddtohost(host, sortedx, self.lratio)
+            thehost['profile'] = _densitycalc(
+                self.hosts[key]['dtohost'], self.rbins, mparticlesperh, rhocritperh)
+        _write(' [done]\n')
+
+        self.plotparams = _stackprofiles(self.hosts, self.rbins)
 
     def plot(self, **kwargs):
         """Callin _plot function for plotting the halo mass profile"""
@@ -154,12 +158,12 @@ class Rockstar(object):
         k = kwargs.get
         kws = dict(kwargs)
 
-        name = kws['name'] if 'name' in kws else self.fname
+        name = kws['name'] if 'name' in kws else self.rfname
 
         print('Parameters review:')
         for key, value in self.headers.iteritems():
             if key is not 'column_tags':
-                print('\t {:30s}'.format(str(key)) + '\t' + str(value))
+                print('\t{:15}\t{:15}'.format(str(key), str(value)))
         print('')
 
         if 'save' not in kwargs or ('save' in kwargs and k('save') != True):
@@ -185,129 +189,78 @@ def _binninghosts(hosts, nmassbins):
         base=10)
 
     for mmin, mmax in zip(mbins[:-1], mbins[1:]):
-        key = str(10**((np.log10(mmin * mmax)) / 2))
-        result[key] = {}
-        result[key]['massrange'] = (mmin, mmax)
-        result[key]['hosts'] = [h for h in hosts if mmin < h['mass'] <= mmax]
+        key = 10**((np.log10(mmin * mmax)) / 2)
+        result[str(key)] = [h for h in hosts if mmin < h['mass'] <= mmax]
 
     return result
 
-def _choosedesiredbin(binnedhosts):
+def _selectbin(binnedhosts):
     """Getting desired bin to profile from user"""
     keys = binnedhosts.keys()
 
     while True:
-        print('Index\tAverage host mass\tMass range\t\t\t\t# of found hosts')
-
+        print('Index\tAverage host mass\t# of found hosts')
         validinputs = []
         for idx, key in enumerate(keys):
-            nfoundhosts = len(binnedhosts[key]['hosts'])
+            nfoundhosts = len(binnedhosts[key])
             strindex = str(idx) if nfoundhosts > 1 else ' '
-
             validinputs.append(idx)
+            print(strindex + '\t' + key + '   \t' + str(nfoundhosts))
 
-            print(strindex + '\t' +
-                  key + '   \t' +
-                  str(binnedhosts[key]['massrange']) +'  \t' +
-                  str(nfoundhosts))
-
-        index = int(raw_input('Choose one index to stack: '))
-
+        index = int(raw_input('Choose one index: '))
         if index in validinputs:
-            return {'min': binnedhosts[keys[index]]['massrange'][0],
-                    'max': binnedhosts[keys[index]]['massrange'][1],
-                    'key': keys[index]}
+            return keys[index]
         else:
             print('Your input was invalid. Please try again.')
 
-def _findsubhalos(host, subhalos, **kwargs):
-    """Find subhalos for a giving host"""
+def _sorteddtohost(host, sorted_particles, lratio):
+    """Calculating the particles distance to their hosts"""
+    result = []
+    x, r = host['x'] * lratio, host['r']
+    minid = np.searchsorted(sorted_particles['x'], x - r)
+    maxid = np.searchsorted(sorted_particles['x'], x + r)
+    for i in range(minid, maxid):
+        y, z = host['y'] * lratio, host['z'] * lratio
+        if(y - r < sorted_particles['y'][i] < y + r
+           and z - r < sorted_particles['z'][i] < z + r):
+            dx2 = (sorted_particles['x'][i] - x)**2
+            dy2 = (sorted_particles['y'][i] - y)**2
+            dz2 = (sorted_particles['z'][i] - z)**2
+            result.append(sqrt(dx2 + dy2 + dz2))
+    return np.sort(result)
 
-    result = {'mass': [], 'dtohost': []}
-
-    lratio = kwargs.get('lratio') if 'lratio' in kwargs else 1
-
-    satellites = [h for h in subhalos if h['pid'] == host['id']]
-
-    result['mass'].append(host['mass'])
-    result['dtohost'].append(0.0)
-
-    for satellite in satellites:
-        result['mass'].append(
-            satellite['mass'])
-        result['dtohost'].append(
-            _dtohost(host, satellite, lratio=lratio))
-
-    return result
-
-
-def _dtohost(host, subhalo, **kwargs):
-    """Calculating the distance of the subhalo to its host"""
-
-    lratio = kwargs.get('lratio') if 'lratio' in kwargs else 1
-
-    dx2 = (subhalo['x'] - host['x'])**2
-    dy2 = (subhalo['y'] - host['y'])**2
-    dz2 = (subhalo['z'] - host['z'])**2
-
-    return sqrt(dx2 + dy2+ dz2) * lratio
-
-def _profile(subhalos, **kwargs):
-    """Calculating halo mass profile for a given set of halos"""
-
-    k = kwargs.get
-
-    result = {'density': [], 'radius': []}
-
-    if 'rbins' in kwargs and type(k('rbins')).__module__ == np.__name__:
-        rbins = k('rbins')
-    else:
-        rbins = np.logspace(
-            0, np.max(subhalos['dtohost']), num=k('nrbins'), base=10)
-
-    rhocritical = k('rhocrit') if 'rhocrit' in kwargs else 1
-
+def _densitycalc(sorteddtohost, rbins, mparticles, rho_crit):
+    """Calculating halo mass profile"""
+    result = []
     for r in rbins:
-        total_mass = 0.0
-        for mass, dtohost in zip(subhalos['mass'], subhalos['dtohost']):
-            if r <= dtohost:
-                total_mass += mass
-
-        result['radius'].append(r)
-        density = total_mass / (4/3 * pi * r**3)
-        result['density'].append(density / rhocritical)
-
+        # Index of the last particle with dtohost smaller or equal to r
+        nparticles = np.searchsorted(sorteddtohost, r, side='right')
+        # density unit: M_sun / kpc^3 / h
+        density_perh = nparticles * mparticles / (4/3 * pi * r**3)
+        result.append(density_perh / rho_crit)
     return result
 
-def _stack(halos):
+def _stackprofiles(hosts, rbins):
     """Stacking all profiles together"""
 
     result = {'x': [], 'y': [], 'xerr': None, 'yerr': []}
 
-    maxlength = 0
-    for _, profile in halos.iteritems():
-        if len(profile['density']) > maxlength:
-            maxlength = len(profile['density'])
+    for i in range(len(rbins)):
+        rhos = []
+        for _, host in hosts.iteritems():
+            rhos.append(host['profile'][i])
+        rho_mean = sum(rhos) / len(rbins)
+        result['y'].append(rho_mean)
+        rho_error = sum([sqrt((r  - rho_mean)**2) for r in rhos]) / len(rbins)
+        if rho_error < rho_mean:
+            result['yerr'].append(rho_error)
+        else:
+            result['yerr'].append(rho_mean)
 
-    nhalos = 0
-    for i in range(maxlength):
-        densities = []
-
-        for hostmass, profile in halos.iteritems():
-            if i < len(profile['density']):
-                key = hostmass
-                index = i
-                densities.append(profile['density'][i])
-
-        nhalos += len(densities)
-
-        mean_density = sum(densities) / len(densities)
-
-        result['x'].append(halos[key]['radius'][index])
-        result['y'].append(mean_density)
-        result['yerr'].append(
-            sqrt(sum([(d - mean_density)**2 for d in densities])) / len(densities))
-
-    print('Stacked ' + str(nhalos) + ' subhalos successfully')
-
+    result['x'] = rbins
     return result
+
+def _write(text, args=()):
+    """Printing into stdout using sys.stdout.write"""
+    sys.stdout.write(text % args)
+    sys.stdout.flush()

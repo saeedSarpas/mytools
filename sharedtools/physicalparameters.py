@@ -23,10 +23,6 @@ def _get(const):
     else:
         raise LookupError(str(const) + 'does not exist in constants')
 
-def getMperh(munit, h_cte):
-    """Mass per h"""
-    return _get(munit) / h_cte
-
 def getG(**kwargs):
     """Gravitational constant"""
 
@@ -49,12 +45,13 @@ def rhocrit(h_cte, **kwargs):
     lunit = k('lunit') if 'lunit' in kwargs else 'm'
     munit = k('munit') if 'munit' in kwargs else 'kg'
 
-    if 'perh' in kwargs and k('perh') == True:
-        M = getMperh(munit, float(h_cte))
-    else:
-        M = _get(munit)
 
     H_si = h_cte * 100 / _get('Mpc/km')
-    G = getG(h=h_cte) if 'perh' in kwargs and k('perh') == True else getG()
+    G_si = getG()
 
-    return 3 * H_si**2 / (8 * pi * G) * _get(lunit)**3 / M
+    rho = (3 * H_si**2 / (8 * pi * G_si)) * _get(lunit)**3 / _get(munit)
+
+    if 'perh' in kwargs and k('perh') == True:
+        return rho / h_cte
+    else:
+        return rho
