@@ -1,8 +1,6 @@
 """plotwitherrorbars.py
 Plotting curves with error bars."""
 
-import matplotlib.pyplot as plt
-
 from ..sharedtools import mycolordict as cdict
 
 def _getparams(**kwargs):
@@ -20,7 +18,7 @@ def _getparams(**kwargs):
 
     return params
 
-def _setplotattrs(**kwargs):
+def _setplotattrs(plt, **kwargs):
     """Setting plot parameters if available"""
     k = kwargs.get
 
@@ -35,7 +33,7 @@ def _setplotattrs(**kwargs):
     if 'ymin' in kwargs: plt.gca().set_ylim(bottom=k('ymin'))
     if 'ymax' in kwargs: plt.gca().set_ylim(top=k('ymax'))
 
-def errorbars(plot, **kwargs):
+def errorbars(plt, plotparams, **kwargs):
     """Plotting curves with error bars"""
     params = _getparams(**kwargs)
 
@@ -43,29 +41,48 @@ def errorbars(plot, **kwargs):
     for key, value in dict(kwargs).iteritems():
         print('\t {:15s}'.format(str(key)) + str(value))
 
-    _setplotattrs(**kwargs)
+    _setplotattrs(plt, **kwargs)
 
     plt.errorbar(
-        plot['x'], plot['y'],
-        xerr=plot['xerr'], yerr=plot['yerr'],
+        plotparams['x'], plotparams['y'],
+        xerr=plotparams['xerr'], yerr=plotparams['yerr'],
         color=params['color'],
         ecolor=params['ecolor'],
         linestyle=params['linestyle'],
         label=params['label'])
 
     if 'shaded' in kwargs and kwargs.get('shaded') is True:
-        if 'yerr' in plot:
-            yneg = [y - yerr for y, yerr in zip(plot['y'], plot['yerr'])]
-            ypos = [y + yerr for y, yerr in zip(plot['y'], plot['yerr'])]
+        if 'yerr' in plotparams:
+            yyerr = zip(plotparams['y'], plotparams['yerr'])
+            yneg = [y - yerr for y, yerr in yyerr]
+            ypos = [y + yerr for y, yerr in yyerr]
             plt.fill_between(
-                plot['x'], yneg, ypos,
+                plotparams['x'], yneg, ypos,
                 facecolor=cdict.get(params['scheme'])['facecolor'],
                 edgecolor=cdict.get(params['scheme'])['facecolor'],
                 interpolate=True)
 
+    return plt
+
+def plotline(plt, plotparams, **kwargs):
+    """Plotting line"""
+    params = _getparams(**kwargs)
+
+    print('Plotting using following parameters:')
+    for key, value in dict(kwargs).iteritems():
+        print('\t {:15s}'.format(str(key)) + str(value))
+
+    _setplotattrs(plt, **kwargs)
+
+    plt.plot(
+        plotparams['x'], plotparams['y'],
+        color=params['color'],
+        linestyle=params['linestyle'],
+        label=params['label'])
+
     if 'show' in kwargs and kwargs.get('show') is True:
         plt.show()
 
-def save(fname):
+def save(plt, fname):
     """Saving plot on disk"""
     plt.savefig(fname + 'png')
