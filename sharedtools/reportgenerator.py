@@ -18,9 +18,10 @@ class Report(object):
         styledtitle = '\\textsc{{\\small Report}\\\\' + title + '\\vspace{8mm}}'
         self._mainfile = open(fname + '.tex', 'w')
         mwrite = self._mainfile.write
-        mwrite('\\documentclass[11pt]{article}\n\n')
+        mwrite('\\documentclass[9pt]{article}\n\n')
         mwrite('\\usepackage{amsmath}\n')
-        mwrite('\\usepackage[a4paper, top=1cm, right=1cm, bottom=1cm, left=1cm]{geometry}\n')
+        mwrite('\\usepackage{booktabs}\n')
+        mwrite('\\usepackage[a4paper, top=1.2cm, right=1.5cm, bottom=2cm, left=1cm]{geometry}\n')
         mwrite('\\usepackage{graphicx}\n\n')
         mwrite('\\begin{document}\n')
         mwrite('\t% --top matter-- %\n')
@@ -33,8 +34,9 @@ class Report(object):
             mwrite('\t\\noindent\\begin{minipage}{0.7\\textwidth}\n')
             mwrite('\t\\begin{abstract}\n')
             mwrite(k('abstract\n'))
+            mwrite('\t\\end{abstract}\n')
             mwrite('\\end{minipage}\n')
-        mwrite('\\newpage\n')
+        mwrite('\t\\newpage\n')
         self.indent = '\t'
 
     def section(self, title, **kwargs):
@@ -95,15 +97,14 @@ class Report(object):
         excludekeys = k('excludekeys') if 'excludekeys' in kwargs else []
         mwrite(self.indent + '\\begin{table}[' + specifier + ']\n')
         mwrite(self.indent + '\t\\centering\n')
-        mwrite(self.indent + '\t\\begin{tabular}{|l |l |}\n')
-        mwrite(self.indent + '\t\t\\hline\n')
+        mwrite(self.indent + '\t\\begin{tabular}{l l}\n')
         mwrite(self.indent + '\t\tParameter & Value \\\\\n')
-        mwrite(self.indent + '\t\t\\hline\n')
+        mwrite(self.indent + '\t\t\\toprule\n')
         for key, value in dictionary.iteritems():
             if str(key) not in excludekeys:
                 mwrite(self.indent + '\t\t' + safetext(str(key)) + ' & ' +
                        safetext(str(value)) + '\\\\\n')
-                mwrite(self.indent + '\t\t\\hline\n')
+                mwrite(self.indent + '\t\t\\midrule\n')
         mwrite(self.indent + '\t\\end{tabular}\n')
         if 'caption' in kwargs:
             mwrite(self.indent + '\t' + k('caption') + '\n')
@@ -127,4 +128,4 @@ def labelgenerator(prefix, size=10, chars=string.ascii_letters + string.digits):
 
 def safetext(text):
     """Returning a latex safe textk"""
-    return text.replace('_', '\\_')
+    return text.replace('_', '\\_').replace("'", '')

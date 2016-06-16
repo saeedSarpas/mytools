@@ -27,9 +27,13 @@ CDICT = {
         },
         'ecolor': '#febb00',
         'linecolor': '#000000',
-        'facecolor': '#fef4ea'
+        'facecolor': '#fef4ea',
+        'background': '#f2f2f2',
+        'gridcolor': '#ffffff',
+        'axiscolor': '#444444'
     }
 }
 
 def get(colorscheme):
+    """Return colorscheme"""
     return CDICT[str(colorscheme)]

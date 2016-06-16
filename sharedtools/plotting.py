@@ -22,6 +22,8 @@ def _setplotattrs(plt, **kwargs):
     """Setting plot parameters if available"""
     k = kwargs.get
 
+    cscheme = cdict.get(k('scheme')) if 'scheme' in kwargs else cdict.get('AUTUMN_COLORSCHEME')
+
     if 'xscale' in kwargs: plt.xscale(k('xscale'))
     if 'yscale' in kwargs: plt.yscale(k('yscale'))
 
@@ -33,6 +35,23 @@ def _setplotattrs(plt, **kwargs):
     if 'ymin' in kwargs: plt.gca().set_ylim(bottom=k('ymin'))
     if 'ymax' in kwargs: plt.gca().set_ylim(top=k('ymax'))
 
+    plt.gca().spines["top"].set_visible(False)
+    plt.gca().spines["right"].set_visible(False)
+
+    plt.gca().get_xaxis().tick_bottom()
+    plt.gca().spines['bottom'].set_color(cscheme['axiscolor'])
+    plt.gca().yaxis.label.set_color(cscheme['axiscolor'])
+    plt.gca().tick_params(axis='y', colors=cscheme['axiscolor'])
+
+    plt.gca().get_yaxis().tick_left()
+    plt.gca().spines['left'].set_color(cscheme['axiscolor'])
+    plt.gca().xaxis.label.set_color(cscheme['axiscolor'])
+    plt.gca().tick_params(axis='x', colors=cscheme['axiscolor'])
+
+    plt.gca().set_axis_bgcolor(cscheme['background'])
+    plt.grid(
+        color=cscheme['gridcolor'], linestyle='solid', linewidth=1, zorder=0)
+
 def errorbars(plt, plotparams, **kwargs):
     """Plotting curves with error bars"""
     params = _getparams(**kwargs)
@@ -40,6 +59,7 @@ def errorbars(plt, plotparams, **kwargs):
     print('Plotting using following parameters:')
     for key, value in dict(kwargs).iteritems():
         print('\t {:15s}'.format(str(key)) + str(value))
+    print('')
 
     _setplotattrs(plt, **kwargs)
 
@@ -71,6 +91,7 @@ def plotline(plt, plotparams, **kwargs):
     print('Plotting using following parameters:')
     for key, value in dict(kwargs).iteritems():
         print('\t {:15s}'.format(str(key)) + str(value))
+    print('')
 
     _setplotattrs(plt, **kwargs)
 
@@ -83,6 +104,8 @@ def plotline(plt, plotparams, **kwargs):
     if 'show' in kwargs and kwargs.get('show') is True:
         plt.show()
 
-def save(plt, fname):
+    return plt
+
+def save(plt, fname, extension):
     """Saving plot on disk"""
-    plt.savefig(fname + 'png')
+    plt.savefig(fname + extension)
