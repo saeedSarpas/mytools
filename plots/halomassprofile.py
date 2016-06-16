@@ -1,15 +1,18 @@
 """halomassprofile.py
 Plotting the halo mass profile"""
 
+from __future__                       import print_function
 from math                             import sqrt, pi
 
 import sys
 import numpy                          as np
+import matplotlib.pyplot              as plt
 
 from ..sharedtools                    import headerextractor
-from ..sharedtools.plotting           import errorbars, save
+from ..sharedtools.plotting           import plotline, errorbars, save
 from ..sharedtools.physicalparameters import rhocrit
 from ..sharedtools.gadgetreader       import Gadget
+from ..sharedtools.reportgenerator    import Report
 
 class Rockstar(object):
     """Handling necessary actions for generating halo mass profile for
@@ -23,9 +26,13 @@ class Rockstar(object):
         from the root directory of the Rockstar project"""
         k = kwargs.get
 
-        self.rfname = rockstar_fname
-        self.gfname = gadget_fname
-        self.binnedhosts = []
+        self.names = {
+            'rfname': rockstar_fname,
+            'gfname': gadget_fname,
+            'plot': '',
+            'bin': ''}
+
+        self.sortedparticles = []
         self.plotparams = {} # 'x': [], 'y': [], 'xerr': None, 'yerr': []
         self.hosts = {}
         self.rbins = []
@@ -33,7 +40,7 @@ class Rockstar(object):
         # Extracting header information
         self.headers = headerextractor.run(rockstar_fname, 'rockstar')
         # [TODO]: Extracting positions unit from Rockstar header
-        self.lratio = 1000
+        self.lratio = 1000 # Mpc to kpc
 
         column_num = {}
         column_num['id']   = k('id_col')   if 'id_col'   in kwargs else 0
@@ -44,10 +51,7 @@ class Rockstar(object):
         column_num['z']    = k('z_col')    if 'z_col'    in kwargs else 10
         column_num['pid']  = k('pid_col')  if 'pid_col'  in kwargs else -1
 
-        skiprows = k('skiprows') if 'skiprows' in kwargs else 19
-
-        print('Extracting follwing data from Rockstar by skipping ' \
-              + str(skiprows) + ' rows:')
+        print('Extracting Rockstar data')
         for key, value in column_num.iteritems():
             print('\t{:8}\t{:4}\t{:15}'.format(
                 str(key) + '_col', str(value), self.headers['column_tags'][value]))
@@ -64,7 +68,7 @@ class Rockstar(object):
         data = np.genfromtxt(
             rockstar_fname,
             unpack='true',
-            skiprows=skiprows,
+            skiprows=19,
             usecols=(
                 column_num['id'],
                 column_num['mass'],
@@ -76,7 +80,7 @@ class Rockstar(object):
             dtype=datatype)
 
         # Filter subhalos
-        self.data = np.array(
+        self.rockstar = np.array(
             [h for h in data if h['pid'] == -1], dtype=datatype)
 
     def selecthosts(self, **kwargs):
@@ -85,67 +89,80 @@ class Rockstar(object):
 
         k = kwargs.get
 
-        nmassbins = k('nmassbins') if 'nmassbins' in kwargs else 8
+        nmassbins = k('nmassbins') if 'nmassbins' in kwargs else 12
 
         print('Binning host masses using following parameter(s)')
         print('\tNumber_of_mass_bins:\t' + str(nmassbins))
         print('')
 
-        binnedhosts = _binninghosts(self.data, nmassbins)
+        self.hosts = _binninghosts(self.rockstar, nmassbins)
+        self.names['bin'] = _selectbin(self.hosts)
 
-        binkey = _selectbin(binnedhosts)
-        self.binnedhosts = binnedhosts[binkey]
+        hostmasses = [m['mass'] for m in self.hosts[self.names['bin']]]
+        self.headers['Min_halo_mass_in_bin'] = np.min(hostmasses)
+        self.headers['Max_halo_mass_in_bin'] = np.max(hostmasses)
+        self.headers['Number_of_hosts'] = len(self.hosts[self.names['bin']])
 
-        self.headers['Number_of_hosts'] = len(self.binnedhosts)
+    def loadgadgetsnap(self):
+        """Loading sorted Gadget snapshot"""
+
+        _write("Loading and indexing gadget snapshot (hang tight, it may take some time)")
+        self.sortedparticles, self.headers['scale_factor'] = _loadgadgetsnap(
+            self.names['gfname'])
+        _write(" [done]\n")
 
     def generateprofiles(self, **kwargs):
         """Calculating mass profile of the selected bin"""
 
-        if not self.binnedhosts:
+        total_particles = int(self.headers['Total_particles_processed'][0])
+        if len(self.sortedparticles) != total_particles:
+            print('[error] Sorted particle positions are not available.')
+            print('        Make sure to run `Rockstar.loadgadgetsnap()` first.')
+            return
+
+        if not self.hosts or not self.names['bin']:
             print('[error] Hosts are not collected yet.')
             print('        Make sure to run `Rockstar.selecthosts()` first.')
             return
 
         k = kwargs.get
+        hosts = self.hosts[self.names['bin']]
 
-        _write('Loading Gadget snapthot (Hang tight, it may take some time)')
-        gadget = Gadget(self.gfname)
-        self.headers['Scale_factor'] = gadget.headers['time']
-        gadget.load()
-        _write(' [done]\n')
-
-        _write('Indexing positions (Hang tight, it may take some time)')
-        sortedx = gadget.index('x')
-        _write(' [done]\n')
-
-        # Radial binning
         nrbins = k('nrbins') if 'nrbins' in kwargs else 50
+
         ## rmin: half of force softening length
         ## rmax: twice the size of the biggest R_vir
-        rmin = float(self.headers['Force_resolution_assumed'][0]) * self.lratio / 2
-        rmax = 2 * np.max([h['r'] for h in self.binnedhosts])
-        self.rbins = np.logspace(
-            np.log10(rmin), np.log10(rmax), num=nrbins, base = 10)
+        softening = float(self.headers['Force_resolution_assumed'][0])
+        rmin = softening * self.lratio / 2
+        rmax = 2 * np.max([h['r'] for h in hosts])
 
-        # Mass of particles
+        self.rbins = np.logspace(
+            np.log10(rmin), np.log10(rmax), num=nrbins, base=10)
+
+        # Mass of particles.
         mparticlesperh = float(self.headers['Particle_mass'][0])
 
         # rho_crit. unit: M_sun / kpc^3 / h
         rhocritperh = rhocrit(
             float(self.headers['h'][0]), munit='msun', lunit='kpc', perh=True)
 
-        for idx, host in enumerate(self.binnedhosts):
+        tmp = {}
+        for idx, host in enumerate(hosts):
             _write('\rGenerating halo mass profiles [%d out of %d]',
                    (idx + 1, self.headers['Number_of_hosts']))
 
             key = str(host['mass'])
-            thehost = self.hosts[key] = {}
-            thehost['dtohost'] = _sorteddtohost(host, sortedx, self.lratio)
-            thehost['profile'] = _densitycalc(
-                self.hosts[key]['dtohost'], self.rbins, mparticlesperh, rhocritperh)
+            tmp[key] = {}
+            tmp[key]['dtohost'] = _sorteddtohost(
+                host, self.sortedparticles, self.lratio)
+            tmp[key]['profile'] = _densitycalc(
+                tmp[key]['dtohost'],
+                self.rbins,
+                mparticlesperh,
+                rhocritperh)
         _write(' [done]\n')
 
-        self.plotparams = _stackprofiles(self.hosts, self.rbins)
+        self.plotparams = _stackprofiles(tmp, self.rbins)
 
     def plot(self, **kwargs):
         """Callin _plot function for plotting the halo mass profile"""
@@ -155,7 +172,6 @@ class Rockstar(object):
             print('        Make sure to run `Rockstar.profilesgen()` first.')
             return
 
-        k = kwargs.get
         kws = dict(kwargs)
 
         print('Parameters review:')
@@ -164,21 +180,68 @@ class Rockstar(object):
                 print('\t{:15}\t{:15}'.format(str(key), str(value)))
         print('')
 
-        if 'save' not in kwargs or ('save' in kwargs and k('save') != True):
-            print('[note] In case you want to save your plot, make sure to set')
+        if 'save' not in kws or ('save' in kws and kws['save'] is not True):
+            print('[NOTE] In case you want to save your plot, make sure to set')
             print('       `save=True` when you are calling plot function.')
             print('')
 
         if 'xscale' not in kws: kws['xscale'] = 'log'
         if 'yscale' not in kws: kws['yscale'] = 'log'
-        if 'xlabel' not in kws: kws['xlabel'] = '$\\log_{10}(r / Kpc)$'
+        if 'xlabel' not in kws: kws['xlabel'] = '$\\log_{10}(r / kpc)$'
         if 'ylabel' not in kws: kws['ylabel'] = '$\\log_{10}(\\rho / \\rho_{crit})$'
 
-        errorbars(self.plotparams, **dict(kws))
+        errorbarsplt = errorbars(plt, self.plotparams, **dict(kws))
 
-        if 'save' in kwargs and k('save') == True:
-            name = kws['name'] if 'name' in kws else self.rfname
-            save(name)
+        if 'nfw' in kwargs and kwargs.get('nfw') is True:
+            for i in range(len(self.rbins)):
+                if self.plotparams['y'][i] < 200:
+                    r_vir = (self.plotparams['x'][i-1] + self.plotparams['x'][i]) / 2
+            _, c, rho_0 = _plotnfw(errorbarsplt,
+                                   float(self.names['bin']),
+                                   self.rbins,
+                                   r_vir,
+                                   float(self.headers['scale_factor']),
+                                   **dict(kws))
+            self.headers['NFW_c'] = c
+            self.headers['NFW_rho_0'] = rho_0
+
+        if 'save' in kws and kws['save'] is True:
+            self.names['plot'] = kws['name'] if 'name' in kws else self.names['rfname']
+            save(errorbarsplt, self.names['plot'], '.png')
+
+        if 'show' in kws and kws['show'] is True:
+            errorbarsplt.show()
+
+    def report(self):
+        """Generating a short report of the result"""
+
+        if not self.names['plot']:
+            print('[error] The plot has not saved on disk yet.')
+            print('        Make sure to run `Rockstar.plot(save=True)` first.')
+            return
+
+        report = Report(
+            self.names['plot'],
+            'Halo mass function',
+            authors=['Saeed Sarpas'],
+            emails=['saeed@astro.uni-bonn.de'])
+
+        report.section(self.names['rfname'])
+        report.addfigure(self.names['plot'] + '.png',
+                         specifier='h',
+                         attrs='width=0.6\\textwidth',
+                         caption='')
+        report.addtableofadict(self.headers, specifier='h',
+                               excludekeys=['column_tags'])
+        report.finish()
+
+
+def _loadgadgetsnap(fname):
+    """Loading and indexing Gadget snapshot"""
+    gadget = Gadget(fname)
+    gadget.load()
+    sortedx = gadget.index('x')
+    return sortedx, gadget.headers['time']
 
 
 def _binninghosts(hosts, nmassbins):
@@ -258,7 +321,7 @@ def _stackprofiles(hosts, rbins):
         if rho_error < rho_mean:
             result['yerr'].append(rho_error)
         else:
-            result['yerr'].append(rho_mean)
+            result['yerr'].append(.99999 * rho_mean)
 
     result['x'] = rbins
     return result
@@ -267,3 +330,23 @@ def _write(text, args=()):
     """Printing into stdout using sys.stdout.write"""
     sys.stdout.write(text % args)
     sys.stdout.flush()
+
+def _plotnfw(pyplotobj, mass, rbins, r_vir, a, **kwargs):
+    """Generating NFW profile"""
+
+    # Calculating concentration from Dolag et. al. 2003 for LCDM
+    c = a * 9.59 * (mass / 10**14)**(-0.102)
+
+    r_s = r_vir / c
+
+    rho_0 = mass / (4 * pi * r_s**3 * (np.log(1 + c) - (c / (c + 1))))
+
+    plot = {'x': [], 'y': []}
+    for r in rbins:
+        plot['x'].append(r)
+        plot['y'].append(
+            rho_0 / ((r / r_s) * (1 + (r / r_s))**2))
+
+    nfwplt = plotline(pyplotobj, plot, **kwargs)
+
+    return nfwplt, c, rho_0
