@@ -1,11 +1,14 @@
 """halofassfunction.py
 Plotting the halo mass function"""
 
+from __future__                    import print_function
+
 import numpy                       as np
+import matplotlib.pyplot           as plt
 
 from ..sharedtools                 import headerextractor
 from ..sharedtools.plotting        import errorbars, save
-from ..sharedtools.reportgenerator import Report
+from ..sharedtools.reportgenerator import Report, safetext
 
 class Rockstar(object):
     """Handling the generation of the halo mass function of a rockstar output"""
@@ -78,20 +81,20 @@ class Rockstar(object):
     def plot(self, **kwargs):
         """Calling errorbars function form plotting module for plotting the
         halo mass function"""
+        k = kwargs.get
+        kws = dict(kwargs)
+
         if not self.hist:
             print('[error] Histogram data is not available for plotting.')
             print('        Make sure to run `Rockstar.histogram()` first.')
             return
 
-        plot_params = {'x': [], 'y': [], 'xerr': None, 'yerr': None}
-
-        k = kwargs.get
-        kws = dict(kwargs)
-
         if 'save' not in kwargs or ('save' in kwargs and k('save') != True):
             print('[note] In case you want to save your plot, make sure to set')
             print('       `save=True` when you are calling plot function.')
             print('')
+
+        plot_params = {'x': [], 'y': [], 'xerr': None, 'yerr': None}
 
         if 'xscale' not in kws: kws['xscale'] = 'log'
         if 'yscale' not in kws: kws['yscale'] = 'log'
@@ -107,15 +110,16 @@ class Rockstar(object):
 
         # Center of bins
         bins = zip(self.hist['bin_edges'][1:], self.hist['bin_edges'][:-1])
-        plot_params['x']    = [(f + i) / 2 for i, f in bins]
+        plot_params['x'] = [(f + i) / 2 for i, f in bins]
 
-        errorbars(plot_params, **dict(kws))
+        errorbarsplt = errorbars(plt, plot_params, **dict(kws))
 
-        if 'save' in kwargs and k('save') == True:
-            name = kws['name'] if 'name' in kws else self.fname
+        if 'save' in kwargs and k('save') is True:
+            self.plotname = kws['name'] if 'name' in kws else self.fname
+            save(errorbarsplt, self.plotname, '.png')
 
-            self.plotname = name
-            save(self.plotname)
+        if 'show' in kws and kws['show'] is True:
+            errorbarsplt.show()
 
     def report(self):
         """Generating a short report of the result"""
@@ -131,9 +135,9 @@ class Rockstar(object):
             authors=['Saeed Sarpas'],
             emails=['saeed@astro.uni-bonn.de'])
 
-        report.section(self.fname)
+        report.section(safetext(self.fname))
         report.addfigure(self.plotname + '.png', specifier='h',
-                         attrs='width=0.8\\textwidth', caption='')
+                         attrs='width=0.6\\textwidth', caption='')
         report.addtableofadict(self.headers, specifier='h',
                                excludekeys=['column_tags'])
         report.finish()
