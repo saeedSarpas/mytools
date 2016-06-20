@@ -106,6 +106,7 @@ def plotline(plt, plotparams, **kwargs):
 
     return plt
 
-def save(plt, fname, extension):
+def save(plt, fname):
     """Saving plot on disk"""
-    plt.savefig(fname + extension)
+    plt.savefig(fname)
+    plt.clf()

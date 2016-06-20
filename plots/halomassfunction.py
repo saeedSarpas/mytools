@@ -3,6 +3,7 @@ Plotting the halo mass function"""
 
 from __future__                    import print_function
 
+import os.path
 import numpy                       as np
 import matplotlib.pyplot           as plt
 
@@ -20,8 +21,10 @@ class Rockstar(object):
         `./util/find_parent <normal rockstar output path>`
         from the root directory of the Rockstar project"""
 
-        self.fname = fname
-        self.plotname = ''
+        self.path = {
+            'rockstar': fname,
+            'plot': ''
+        }
         self.hist = {}
 
         k = kwargs.get
@@ -76,7 +79,8 @@ class Rockstar(object):
         self.hist = _histogram(self.hosts, nbins)
 
         for key, value in self.headers.iteritems():
-            if key is not 'column_tags': print(key, value)
+            if key is not 'column_tags':
+                print('\t{:25}\t{:15}'.format(str(key), str(value)))
 
     def plot(self, **kwargs):
         """Calling errorbars function form plotting module for plotting the
@@ -115,8 +119,11 @@ class Rockstar(object):
         errorbarsplt = errorbars(plt, plot_params, **dict(kws))
 
         if 'save' in kwargs and k('save') is True:
-            self.plotname = kws['name'] if 'name' in kws else self.fname
-            save(errorbarsplt, self.plotname, '.png')
+            if 'name' in kws:
+                self.path['plot'] = os.path.splitext(kws['name'])[0] + '.png'
+            else:
+                self.path['plot'] = os.path.splitext(self.path['rockstar'])[0] + '_hmf.png'
+            save(errorbarsplt, self.path['plot'])
 
         if 'show' in kws and kws['show'] is True:
             errorbarsplt.show()
@@ -124,22 +131,25 @@ class Rockstar(object):
     def report(self):
         """Generating a short report of the result"""
 
-        if not self.plotname:
+        if not self.path['plot']:
             print('[error] The plot has not saved on disk yet.')
             print('        Make sure to run `Rockstar.plot(save=True)` first.')
             return
 
         report = Report(
-            self.plotname,
+            self.path['plot'],
             'Halo mass function',
             authors=['Saeed Sarpas'],
             emails=['saeed@astro.uni-bonn.de'])
 
-        report.section(safetext(self.fname))
-        report.addfigure(self.plotname + '.png', specifier='h',
-                         attrs='width=0.6\\textwidth', caption='')
-        report.addtableofadict(self.headers, specifier='h',
-                               excludekeys=['column_tags'])
+        report.section(safetext(self.path['rockstar']))
+        report.figure(self.path['plot'],
+                      specifier='h',
+                      attrs='width=0.6\\textwidth',
+                      caption='')
+        report.dict2table(self.headers,
+                          specifier='h',
+                          excludekeys=['column_tags'])
         report.finish()
 
 
@@ -156,6 +166,9 @@ def _histogram(hosts, nbins):
     for bmin, bmax in zip(result['bin_edges'][:-1], result['bin_edges'][1:]):
         binned_hosts = [h for h in hosts if h >= bmin and h < bmax]
         result['n'].append(len(binned_hosts))
-        result['hist'].append(np.mean(binned_hosts))
+        if len(binned_hosts) != 0:
+            result['hist'].append(np.mean(binned_hosts))
+        else:
+            result['hist'].append(0)
 
     return result

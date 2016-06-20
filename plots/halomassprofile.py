@@ -5,6 +5,7 @@ from __future__                       import print_function
 from math                             import sqrt, pi
 
 import sys
+import os.path
 import numpy                          as np
 import matplotlib.pyplot              as plt
 
@@ -18,7 +19,7 @@ class Rockstar(object):
     """Handling necessary actions for generating halo mass profile for
     Rockstar output files"""
 
-    def __init__(self, rockstar_fname, gadget_fname, **kwargs):
+    def __init__(self, rockstar_fpath, **kwargs):
         """Initializing and extracting data for plotting halo mass profile.
         Note that the normal output of Rockstar does not contain the parent
         id of the halos, for generating outputs with parent ids, run:
@@ -26,11 +27,11 @@ class Rockstar(object):
         from the root directory of the Rockstar project"""
         k = kwargs.get
 
-        self.names = {
-            'rfname': rockstar_fname,
-            'gfname': gadget_fname,
-            'plot': '',
-            'bin': ''}
+        self.path = {
+            'rockstar': rockstar_fpath,
+            'plot': ''}
+
+        self.binname = ''
 
         self.sortedparticles = []
         self.plotparams = {} # 'x': [], 'y': [], 'xerr': None, 'yerr': []
@@ -38,7 +39,7 @@ class Rockstar(object):
         self.rbins = []
 
         # Extracting header information
-        self.headers = headerextractor.run(rockstar_fname, 'rockstar')
+        self.headers = headerextractor.run(rockstar_fpath, 'rockstar')
         # [TODO]: Extracting positions unit from Rockstar header
         self.lratio = 1000 # Mpc to kpc
 
@@ -66,7 +67,7 @@ class Rockstar(object):
 
         # Extracting data from rockstar output
         data = np.genfromtxt(
-            rockstar_fname,
+            rockstar_fpath,
             unpack='true',
             skiprows=19,
             usecols=(
@@ -96,19 +97,19 @@ class Rockstar(object):
         print('')
 
         self.hosts = _binninghosts(self.rockstar, nmassbins)
-        self.names['bin'] = _selectbin(self.hosts)
+        self.binname = _selectbin(self.hosts)
 
-        hostmasses = [m['mass'] for m in self.hosts[self.names['bin']]]
+        hostmasses = [m['mass'] for m in self.hosts[self.binname]]
         self.headers['Min_halo_mass_in_bin'] = np.min(hostmasses)
         self.headers['Max_halo_mass_in_bin'] = np.max(hostmasses)
-        self.headers['Number_of_hosts'] = len(self.hosts[self.names['bin']])
+        self.headers['Number_of_hosts'] = len(self.hosts[self.binname])
 
-    def loadgadgetsnap(self):
+    def loadgadgetsnap(self, fname):
         """Loading sorted Gadget snapshot"""
 
         _write("Loading and indexing gadget snapshot (hang tight, it may take some time)")
         self.sortedparticles, self.headers['scale_factor'] = _loadgadgetsnap(
-            self.names['gfname'])
+            fname)
         _write(" [done]\n")
 
     def generateprofiles(self, **kwargs):
@@ -120,13 +121,13 @@ class Rockstar(object):
             print('        Make sure to run `Rockstar.loadgadgetsnap()` first.')
             return
 
-        if not self.hosts or not self.names['bin']:
+        if not self.hosts or not self.binname:
             print('[error] Hosts are not collected yet.')
             print('        Make sure to run `Rockstar.selecthosts()` first.')
             return
 
         k = kwargs.get
-        hosts = self.hosts[self.names['bin']]
+        hosts = self.hosts[self.binname]
 
         nrbins = k('nrbins') if 'nrbins' in kwargs else 50
 
@@ -196,8 +197,9 @@ class Rockstar(object):
             for i in range(len(self.rbins)):
                 if self.plotparams['y'][i] < 200:
                     r_vir = (self.plotparams['x'][i-1] + self.plotparams['x'][i]) / 2
+            kws['color'] = '#0000ff'
             _, c, rho_0 = _plotnfw(errorbarsplt,
-                                   float(self.names['bin']),
+                                   float(self.binname),
                                    self.rbins,
                                    r_vir,
                                    float(self.headers['scale_factor']),
@@ -206,8 +208,11 @@ class Rockstar(object):
             self.headers['NFW_rho_0'] = rho_0
 
         if 'save' in kws and kws['save'] is True:
-            self.names['plot'] = kws['name'] if 'name' in kws else self.names['rfname']
-            save(errorbarsplt, self.names['plot'], '.png')
+            if 'name' in kws:
+                self.path['plot'] = os.path.splitext(kws['name'])[0] + '.png'
+            else:
+                self.path['plot'] = os.path.splitext(self.path['rockstar'])[0] + '_hmp.png'
+            save(errorbarsplt, self.path['plot'])
 
         if 'show' in kws and kws['show'] is True:
             errorbarsplt.show()
@@ -215,24 +220,25 @@ class Rockstar(object):
     def report(self):
         """Generating a short report of the result"""
 
-        if not self.names['plot']:
+        if not self.path['plot']:
             print('[error] The plot has not saved on disk yet.')
             print('        Make sure to run `Rockstar.plot(save=True)` first.')
             return
 
         report = Report(
-            self.names['plot'],
+            self.path['plot'],
             'Halo mass function',
             authors=['Saeed Sarpas'],
             emails=['saeed@astro.uni-bonn.de'])
 
-        report.section(self.names['rfname'])
-        report.addfigure(self.names['plot'] + '.png',
-                         specifier='h',
-                         attrs='width=0.6\\textwidth',
-                         caption='')
-        report.addtableofadict(self.headers, specifier='h',
-                               excludekeys=['column_tags'])
+        report.section(self.path['rockstar'])
+        report.figure(self.path['plot'],
+                      specifier='h',
+                      attrs='width=0.6\\textwidth',
+                      caption='')
+        report.dict2table(self.headers,
+                          specifier='h',
+                          excludekeys=['column_tags'])
         report.finish()
 
 
