@@ -16,12 +16,13 @@ class Report(object):
             for author, email in zip(k('authors'), k('emails')):
                 styledauthors += author + ' \\thanks{' + email + '}, '
         styledtitle = '\\textsc{{\\small Report}\\\\' + title + '\\vspace{8mm}}'
-        self._mainfile = open(fname + '.tex', 'w')
-        mwrite = self._mainfile.write
+        self._file = open(fname + '.tex', 'w')
+        mwrite = self._file.write
         mwrite('\\documentclass[9pt]{article}\n\n')
         mwrite('\\usepackage{amsmath}\n')
         mwrite('\\usepackage{booktabs}\n')
-        mwrite('\\usepackage[a4paper, top=1.2cm, right=1.5cm, bottom=2cm, left=1cm]{geometry}\n')
+        mwrite('\\usepackage[a4paper, top=1.2cm, right=1.5cm, bottom=2cm,' \
+               'left=1cm]{geometry}\n')
         mwrite('\\usepackage{graphicx}\n\n')
         mwrite('\\begin{document}\n')
         mwrite('\t% --top matter-- %\n')
@@ -32,67 +33,71 @@ class Report(object):
         if 'abstract' in kwargs:
             mwrite('\t\\vspace{45mm}\n')
             mwrite('\t\\noindent\\begin{minipage}{0.7\\textwidth}\n')
-            mwrite('\t\\begin{abstract}\n')
-            mwrite(k('abstract\n'))
-            mwrite('\t\\end{abstract}\n')
-            mwrite('\\end{minipage}\n')
+            mwrite('\t\t\\begin{abstract}\n')
+            mwrite('\t\t\t' + k('abstract') + '\n')
+            mwrite('\t\t\\end{abstract}\n')
+            mwrite('\t\\end{minipage}\n')
         mwrite('\t\\newpage\n')
         self.indent = '\t'
 
     def section(self, title, **kwargs):
         """Creating a section and putting description text (if available)"""
         k = kwargs.get
-        mwrite = self._mainfile.write
+        mwrite = self._file.write
         mwrite('\t\\section{' + title + '}\n')
         if 'text' in kwargs:
-            mwrite('\t\t\\noindent' + k('text') + '\n\n')
+            mwrite('\t\t\\noindent' + k('text') + '\\\\\n\n')
         self.indent = '\t\t'
 
     def subsection(self, title, **kwargs):
         """Creating a subsection and putting description text (if available)"""
         k = kwargs.get
-        mwrite = self._mainfile.write
+        mwrite = self._file.write
         mwrite('\t\t\\subsection{' + title + '}\n')
         if 'text' in kwargs:
-            mwrite('\t\t\t\\noindent' + k('text') + '\n\n')
+            mwrite('\t\t\t\\noindent' + k('text') + '\\\\\n\n')
         self.indent = '\t\t\t'
 
     def subsubsection(self, title, **kwargs):
         """Creating a subsubsection and putting description text (if available)
         """
         k = kwargs.get
-        mwrite = self._mainfile.write
+        mwrite = self._file.write
         mwrite('\t\t\t\\subsubsection{' + title + '}\n')
         if 'text' in kwargs:
-            mwrite('\t\t\t\t\\noindent' + k('text') + '\n')
+            mwrite('\t\t\t\t\\noindent' + k('text') + '\\\\\n\n')
         self.indent = '\t\t\t\t'
 
-    def addparagraph(self, text):
+    def paragraph(self, text):
         """Adding text to the document"""
-        mwrite = self._mainfile.write
-        mwrite(self.indent + text + '\\\\\n')
-        mwrite('\n')
+        mwrite = self._file.write
+        mwrite(self.indent + text + '\\\\\n\n')
 
-    def addfigure(self, path, **kwargs):
+    def newpage(self):
+        """Adding \newpage"""
+        self._file.write(self.indent + '\\newpage\n\n')
+
+    def figure(self, path, **kwargs):
         """Adding figure to the document"""
         k = kwargs.get
-        mwrite = self._mainfile.write
+        mwrite = self._file.write
         specifier = k('specifier') if 'specifier' in kwargs else 'h'
         attrs = k('attrs') if 'attrs' in kwargs else ''
         mwrite(self.indent + '\\begin{figure}[' + specifier + ']\n')
         mwrite(self.indent + '\t\\centering\n')
-        mwrite(self.indent + '\t\\includegraphics[' + attrs + ']{' + path + '}\n')
+        mwrite(self.indent + '\t\\includegraphics[' + attrs + ']{' + path +
+               '}\n')
         if 'caption' in kwargs:
-            mwrite(self.indent + '\t' + k('caption') + '\n')
+            mwrite(self.indent + '\t\\caption{' + k('caption') + '}\n')
         label = labelgenerator('fig:')
         mwrite(self.indent + '\t\\label{' + label + '}\n')
         mwrite(self.indent + '\\end{figure}\n')
         return label
 
-    def addtableofadict(self, dictionary, **kwargs):
+    def dict2table(self, dictionary, **kwargs):
         """Adding a table of keys and values of a dictionary to the document"""
         k = kwargs.get
-        mwrite = self._mainfile.write
+        mwrite = self._file.write
         specifier = k('specifier') if 'specifier' in kwargs else 'h!'
         excludekeys = k('excludekeys') if 'excludekeys' in kwargs else []
         mwrite(self.indent + '\\begin{table}[' + specifier + ']\n')
@@ -111,16 +116,18 @@ class Report(object):
         label = labelgenerator('tab:')
         mwrite(self.indent + '\t\\label{' + label + '}\n')
         mwrite(self.indent + '\\end{table}\n')
+        return label
 
     def finish(self, **kwargs):
         """Finishing the document by adding bibliography (if available) and also
         ending the document"""
         k = kwargs.get
-        mwrite = self._mainfile.write
+        mwrite = self._file.write
         if 'refrences' in kwargs:
             mwrite('\n\t\\bibliography{' + k('refrences') + '}{}\n')
             mwrite('\t\\bibliographystyle{plain}\n\n')
         mwrite('\\end{document}\n')
+        self._file.close()
 
 def labelgenerator(prefix, size=10, chars=string.ascii_letters + string.digits):
     """Generating label for figures, tables, etc."""
