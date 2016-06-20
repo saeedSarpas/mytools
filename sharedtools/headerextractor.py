@@ -21,7 +21,6 @@ def run(fname, ftype):
                     'FOF_Refinement_Threshold',
                     'Force_resolution_assumed',
                     'Rockstar_Version',
-                    'Units',
                     'Om',
                     'Ol',
                     'h'
