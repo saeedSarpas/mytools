@@ -14,6 +14,7 @@ from ..sharedtools.plotting           import plotline, errorbars, save
 from ..sharedtools.physicalparameters import rhocrit
 from ..sharedtools.gadgetreader       import Gadget
 from ..sharedtools.reportgenerator    import Report
+from ..sharedtools.nfwprofile         import generateNFW
 
 class Rockstar(object):
     """Handling necessary actions for generating halo mass profile for
@@ -107,22 +108,24 @@ class Rockstar(object):
     def loadgadgetsnap(self, fname):
         """Loading sorted Gadget snapshot"""
 
-        _write("Loading and indexing gadget snapshot (hang tight, it may take some time)")
-        self.sortedparticles, self.headers['scale_factor'] = _loadgadgetsnap(
-            fname)
-        _write(" [done]\n")
+        print("Loading and indexing gadget snapshot \
+              (hang tight, it may take some time)")
+
+        self.sortedparticles, scale_factor = _loadgadgetsnap(fname)
+        self.headers['scale_factor'] = scale_factor
 
     def generateprofiles(self, **kwargs):
         """Calculating mass profile of the selected bin"""
 
         total_particles = int(self.headers['Total_particles_processed'][0])
+
         if len(self.sortedparticles) != total_particles:
             print('[error] Sorted particle positions are not available.')
             print('        Make sure to run `Rockstar.loadgadgetsnap()` first.')
             return
 
         if not self.hosts or not self.binname:
-            print('[error] Hosts are not collected yet.')
+            print('[error] Hosts are not selected yet.')
             print('        Make sure to run `Rockstar.selecthosts()` first.')
             return
 
@@ -191,19 +194,20 @@ class Rockstar(object):
         if 'xlabel' not in kws: kws['xlabel'] = '$\\log_{10}(r / kpc)$'
         if 'ylabel' not in kws: kws['ylabel'] = '$\\log_{10}(\\rho / \\rho_{crit})$'
 
-        errorbarsplt = errorbars(plt, self.plotparams, **dict(kws))
+        pltobj = errorbars(plt, self.plotparams, **dict(kws))
 
         if 'nfw' in kwargs and kwargs.get('nfw') is True:
-            for i in range(len(self.rbins)):
-                if self.plotparams['y'][i] < 200:
-                    r_vir = (self.plotparams['x'][i-1] + self.plotparams['x'][i]) / 2
+            hosts = self.hosts[self.binname]
+            r_vir = sum([h['r'] for h in hosts]) / len(hosts)
+            print('r_vir = ' + str(r_vir))
             kws['color'] = '#0000ff'
-            _, c, rho_0 = _plotnfw(errorbarsplt,
-                                   float(self.binname),
-                                   self.rbins,
-                                   r_vir,
-                                   float(self.headers['scale_factor']),
-                                   **dict(kws))
+            a = float(self.headers['scale_factor'])
+            nfwparams, c, rho_0 = generateNFW(float(self.binname),
+                                              r_vir,
+                                              (1 - a) / a,rbins=self.rbins)
+
+            plotline(pltobj, nfwparams, **dict(kws))
+
             self.headers['NFW_c'] = c
             self.headers['NFW_rho_0'] = rho_0
 
@@ -212,10 +216,10 @@ class Rockstar(object):
                 self.path['plot'] = os.path.splitext(kws['name'])[0] + '.png'
             else:
                 self.path['plot'] = os.path.splitext(self.path['rockstar'])[0] + '_hmp.png'
-            save(errorbarsplt, self.path['plot'])
+            save(pltobj, self.path['plot'])
 
         if 'show' in kws and kws['show'] is True:
-            errorbarsplt.show()
+            pltobj.show()
 
     def report(self):
         """Generating a short report of the result"""
@@ -321,9 +325,9 @@ def _stackprofiles(hosts, rbins):
         rhos = []
         for _, host in hosts.iteritems():
             rhos.append(host['profile'][i])
-        rho_mean = sum(rhos) / len(rbins)
+        rho_mean = sum(rhos) / len(rhos)
         result['y'].append(rho_mean)
-        rho_error = sum([sqrt((r  - rho_mean)**2) for r in rhos]) / len(rbins)
+        rho_error = sum([sqrt((r  - rho_mean)**2) for r in rhos]) / len(rhos)
         if rho_error < rho_mean:
             result['yerr'].append(rho_error)
         else:
@@ -336,23 +340,3 @@ def _write(text, args=()):
     """Printing into stdout using sys.stdout.write"""
     sys.stdout.write(text % args)
     sys.stdout.flush()
-
-def _plotnfw(pyplotobj, mass, rbins, r_vir, a, **kwargs):
-    """Generating NFW profile"""
-
-    # Calculating concentration from Dolag et. al. 2003 for LCDM
-    c = a * 9.59 * (mass / 10**14)**(-0.102)
-
-    r_s = r_vir / c
-
-    rho_0 = mass / (4 * pi * r_s**3 * (np.log(1 + c) - (c / (c + 1))))
-
-    plot = {'x': [], 'y': []}
-    for r in rbins:
-        plot['x'].append(r)
-        plot['y'].append(
-            rho_0 / ((r / r_s) * (1 + (r / r_s))**2))
-
-    nfwplt = plotline(pyplotobj, plot, **kwargs)
-
-    return nfwplt, c, rho_0
