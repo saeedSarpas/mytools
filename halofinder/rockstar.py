@@ -114,16 +114,36 @@ class Rockstar(object):
 def _extractkeyvalue(statement, delimiter, dictionary):
     """Extracting data from a statement using a delimiter and inserting them
     into a given dictionary (headers)
+
+    Parameters
+    ----------
+    statement : str
+    delimiter : str
+        A string for using as a delimiter for paritioning the statement
+    dictionary : dict
+        A dictionary for adding keys, values into it
     """
     key, val = statement.strip().partition(delimiter)[::2]
+
     key = key.strip().replace(' ', '_')
     val = val.strip().strip('\n').split()
+
     dictionary[key] = val
 
-def _2number(s):
+def _2number(string):
     """Converting a string to int or float
+
+    Parameters
+    ----------
+    string : str
+        A string for converting to int or float
+
+    Returns
+    -------
+    int or float
     """
+
     try:
-        return int(s)
+        return int(string)
     except ValueError:
-        return float(s)
+        return float(string)
