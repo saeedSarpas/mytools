@@ -1,4 +1,24 @@
-"""This module contains different color dictionary for plotting"""
+"""This module contains different color dictionaries for plotting"""
+
+def get(colorscheme):
+    """Return colorscheme
+
+    Parameter
+    ---------
+    colorscheme : str
+        Color scheme name
+
+    Returns
+    -------
+    dict
+        A color scheme dictionary
+    """
+
+    if colorscheme in CDICT.keys():
+        return CDICT[str(colorscheme)]
+    else:
+        return CDICT[CDICT.keys()[0]]
+
 
 CDICT = {
     'AUTUMN_COLORSCHEME': {
@@ -33,7 +53,3 @@ CDICT = {
         'axiscolor': '#444444'
     }
 }
-
-def get(colorscheme):
-    """Return colorscheme"""
-    return CDICT[str(colorscheme)]
