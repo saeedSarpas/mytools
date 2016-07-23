@@ -29,7 +29,7 @@ class Rockstar(object):
         """
 
         self.path = path
-        self.data = []
+        self.datatype, self.data = [], []
 
         # Extracting header information
         self.headers = {'units': {}}
@@ -95,7 +95,7 @@ class Rockstar(object):
 
         zip_tag_elem = zip(self.headers['column_tags'], testline)
 
-        datatype, usecols = [], []
+        usecols = []
 
         for i, (tag, elem) in enumerate(zip_tag_elem):
             if len(only) > 0 and tag not in only:
@@ -103,13 +103,13 @@ class Rockstar(object):
             if tag in exclude:
                 continue
 
-            datatype.append((tag, np.dtype(type(_2number(elem)).__name__)))
+            self.datatype.append((tag, np.dtype(type(_2number(elem)).__name__)))
             usecols.append(i)
 
         self.data = np.genfromtxt(self.path,
                                   skiprows=19,
                                   usecols=usecols,
-                                  dtype=datatype)
+                                  dtype=self.datatype)
 
 def _extractkeyvalue(statement, delimiter, dictionary):
     """Extracting data from a statement using a delimiter and inserting them
