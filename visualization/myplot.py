@@ -1,4 +1,4 @@
-"""plot.py """
+"""myplot.py """
 
 from __future__ import print_function
 import matplotlib.pyplot as plt
@@ -131,6 +131,11 @@ class MyPlot(object):
             linestyle=params['linestyle'],
             label=params['label'])
 
+
+    def legend(self):
+        """Add legend to plot"""
+
+        self.plt.gca().legend()
 
     def save(self, name):
         """Saving plot
