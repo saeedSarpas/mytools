@@ -3,7 +3,10 @@ The aim of this module is to load a rockstar ascii file into an rockstar
 object variable.
 """
 
+from __future__ import print_function
+
 import numpy as np
+
 
 class Rockstar(object):
     """Loading Rockstar ascii file
@@ -17,6 +20,8 @@ class Rockstar(object):
     -------
     load(only=[], exclude=[])
         Loading Rockstar file to an object variable (Rockstar.data)
+    setheader()
+        Add new attribute to headers
 
     Examples
     --------
@@ -65,7 +70,7 @@ class Rockstar(object):
 
         _file.close()
 
-    def load(self, only=[], exclude=[]):
+    def load(self, only=[], exclude=[], onlyhosts=False):
         """Loading Rockstar ascii file to Rockstar.data
 
         Parameters
@@ -74,10 +79,12 @@ class Rockstar(object):
             A list of column tags to load
         exclude : list of str, optional
             A list of column tags to exclude them from loading
+        onlyhosts : bool, optional
+            Keep only host halos
 
         Examples
         --------
-        >>> rockstar.load(only=['id', 'PID'])
+        >>> rockstar.load(only=['id', 'PID'], onlyhosts=True)
         """
 
         with open(self.path) as _file:
@@ -89,14 +96,13 @@ class Rockstar(object):
         _file.close()
 
         if len(testline) != len(self.headers['column_tags']):
-            headers = self.headers['column_tags'][:len(testline) - 1]
-            headers.append('PID')
-            self.headers['column_tags'] = headers
+            tmp_headers = self.headers['column_tags'][:len(testline) - 1]
+            tmp_headers.append('PID')
+            self.headers['column_tags'] = tmp_headers
 
         zip_tag_elem = zip(self.headers['column_tags'], testline)
 
-        usecols = []
-
+        self.datatype, usecols, headers = [], [], []
         for i, (tag, elem) in enumerate(zip_tag_elem):
             if len(only) > 0 and tag not in only:
                 continue
@@ -104,12 +110,37 @@ class Rockstar(object):
                 continue
 
             self.datatype.append((tag, np.dtype(type(_2number(elem)).__name__)))
+            headers.append(tag)
             usecols.append(i)
+
+        self.headers['included_columns'] = headers
+
+        if len(self.datatype) < 1:
+            raise LookupError('datatype array is empty')
 
         self.data = np.genfromtxt(self.path,
                                   skiprows=19,
                                   usecols=usecols,
                                   dtype=self.datatype)
+
+        if onlyhosts:
+            if 'PID' not in self.headers['included_columns']:
+                raise KeyError("Can't find PID")
+
+            self.data = np.array(
+                [d for d in self.data if d['PID'] == -1],
+                dtype=self.datatype)
+
+    def setheader(self, key, value):
+        """Add new attribute to headers
+
+        Parameters
+        ----------
+        key : str
+        value :
+        """
+        self.headers[key] = value
+
 
 def _extractkeyvalue(statement, delimiter, dictionary):
     """Extracting data from a statement using a delimiter and inserting them
@@ -129,6 +160,7 @@ def _extractkeyvalue(statement, delimiter, dictionary):
     val = val.strip().strip('\n').split()
 
     dictionary[key] = val
+
 
 def _2number(string):
     """Converting a string to int or float
