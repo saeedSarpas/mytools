@@ -29,8 +29,8 @@ class RockstarHMF(object):
 
         >>> rhmf = RHMF('/path/to/rockstar/file')
         ... /path/to/rockstar/file:
-        ... label: <some_label> ⏎
-        ... color: <some_color> ⏎
+        ... label: <some_label>
+        ... color: <some_color>
 
         >>> rhmf.hmf()
 
