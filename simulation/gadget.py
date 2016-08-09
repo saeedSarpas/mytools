@@ -25,13 +25,21 @@ class Gadget(object):
         self._file = open(path, 'rb')
         self.headers = self._readheader()
         self.data = []
-        self.dtype = np.dtype([('id', np.int),
-                               ('x', np.float64),
+        self.dtype = np.dtype([('x', np.float64),
                                ('y', np.float64),
                                ('z', np.float64)])
 
-    def load(self):
+    def load(self, sorting=False, col='x'):
         """Load gadget snapshot into a numpy array
+
+        Parameters
+        ----------
+        lratio : float
+            Length conversion
+        sorting : bool, optional
+            Whether sorting the data or not
+        col : str, optional
+            Specifying the sorting refrence
 
         Returns
         -------
@@ -42,28 +50,13 @@ class Gadget(object):
         >>> gadget.load()
         """
 
-        self.data = self._readdata()
+        data = self._readdata()
 
-        return self.data
+        if sorting is True:
+            self.data = np.sort(data, order=col)
+        else:
+            self.data = data
 
-    def index(self, col='x'):
-        """Sorting the data based on a given column
-
-        Parameters
-        ----------
-        x : str
-            the name of the column to be sorted
-
-        Returns
-        -------
-        numpy.ndarray
-
-        Examples
-        --------
-        >>> gadget.index(col='z')
-        """
-
-        return np.sort(self.data, order=col)
 
     def _readheader(self):
         """Extracting gadget header
@@ -100,9 +93,8 @@ class Gadget(object):
         fmtstring = "{0:d}f4x".format(self.headers['nparticles']*3)
         positions = struct.unpack(fmtstring, self._file.read(positionslen))
 
-        tmp = []
+        tmp = [(0.0, 0.0, 0.0)] * self.headers['nparticles']
         for i in range(self.headers['nparticles']):
-            tmp.append(
-                (i, positions[i*3], positions[i*3 + 1], positions[i*3 + 2]))
+            tmp[i] = (positions[i*3], positions[i*3 + 1], positions[i*3 + 2])
 
         return np.array(tmp, dtype=self.dtype)
