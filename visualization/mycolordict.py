@@ -20,6 +20,21 @@ def get(colorscheme):
         return CDICT[CDICT.keys()[0]]
 
 
+def helpercolors(colorscheme):
+    """Helper colors generator
+
+    Getting helper colors one by one
+
+    Parameters
+    ----------
+    colorscheme : str
+    """
+
+    cdict = get(colorscheme)
+    for color in cdict['helper_colors']:
+        yield color
+
+
 CDICT = {
     'AUTUMN_COLORSCHEME': {
         'dict': {
@@ -45,6 +60,8 @@ CDICT = {
                 (1, 0.1921568627450980, 0.1921568627450980)
             ]
         },
+        'helper_colors': [
+            '#2e3740', '#798c8a', '#4c5359', '#1d2025', '#d0d9d8'],
         'ecolor': '#febb00',
         'linecolor': '#000000',
         'facecolor': '#fef4ea',
