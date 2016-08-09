@@ -58,7 +58,7 @@ class RockstarHMF(object):
 
         for _, value in self.params.iteritems():
             value['rockstar'].setheader('Number_of_bins', nbins)
-            value['hmf'] = MyHMF(value['rockstar'].data['mbound_vir'], 100)
+            value['hmf'] = MyHMF(value['rockstar'].halos['mbound_vir'], 100)
             value['hmf'].hmf(nbins)
 
     def plot(self, name):

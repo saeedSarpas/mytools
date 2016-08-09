@@ -18,8 +18,10 @@ class Rockstar(object):
 
     Methods
     -------
-    load(only=[], exclude=[])
+    load()
         Loading Rockstar file to an object variable (Rockstar.data)
+    binning()
+        Binning halos based on their masses
     setheader()
         Add new attribute to headers
 
@@ -30,11 +32,11 @@ class Rockstar(object):
     """
 
     def __init__(self, path):
-        """Initializing Rockstar object by extracting header information
-        """
+        """Constructor for Rockstar class"""
 
         self.path = path
-        self.datatype, self.data = [], []
+        self.datatype, self.halos = [], []
+        self.binnedhalos = {}
 
         # Extracting header information
         self.headers = {'units': {}}
@@ -118,17 +120,37 @@ class Rockstar(object):
         if len(self.datatype) < 1:
             raise LookupError('datatype array is empty')
 
-        self.data = np.genfromtxt(self.path,
-                                  skiprows=19,
-                                  usecols=usecols,
-                                  dtype=self.datatype)
+        self.halos = np.genfromtxt(self.path,
+                                   skiprows=19,
+                                   usecols=usecols,
+                                   dtype=self.datatype)
 
         if onlyhosts:
             if 'PID' not in self.headers['included_columns']:
                 raise KeyError("Can't find PID")
 
-            self.data = np.array(
-                [d for d in self.data if d['PID'] == -1],
+            self.halos = np.array(
+                [d for d in self.halos if d['PID'] == -1],
+                dtype=self.datatype)
+
+    def binning(self, mbins):
+        """Binning halos based on a given mass bins
+
+        Parameters
+        ----------
+        mbins : array of float
+            Mass bins edges
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> mbins = np.logspace(10, 15, num=21, base=10)
+        >>> rockstar.binning(mbins)
+        """
+
+        for idx, (minm, maxm) in enumerate(zip(mbins[:-1], mbins[1:])):
+            self.binnedhalos[idx] = np.array(
+                [h for h in self.halos if minm < h['mbound_vir'] <= maxm],
                 dtype=self.datatype)
 
     def setheader(self, key, value):
@@ -139,6 +161,7 @@ class Rockstar(object):
         key : str
         value :
         """
+
         self.headers[key] = value
 
 
