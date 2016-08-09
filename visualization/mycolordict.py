@@ -34,6 +34,20 @@ def helpercolors(colorscheme):
     for color in cdict['helper_colors']:
         yield color
 
+def primarycolors(colorscheme):
+    """Primary colors generator
+
+    Returning primary colors one by one
+
+    Parameters
+    ----------
+    colorscheme : str
+    """
+
+    cdict = get(colorscheme)
+    for color in cdict['primary_colors']:
+        yield color
+
 
 CDICT = {
     'AUTUMN_COLORSCHEME': {
@@ -62,11 +76,19 @@ CDICT = {
         },
         'helper_colors': [
             '#2e3740', '#798c8a', '#4c5359', '#1d2025', '#d0d9d8'],
+        'primary_colors': [
+            '#581845', '#900C3F', '#C70039', '#FF5733', '#FFC30F'],
         'ecolor': '#febb00',
         'linecolor': '#000000',
         'facecolor': '#fef4ea',
         'background': '#f2f2f2',
         'gridcolor': '#ffffff',
         'axiscolor': '#444444'
+    },
+    'SANDSTONE': {
+        'helper_colors': [
+            '#7584AD', '#314570', '#AED1D6', '#E09873', '#A37F6F'],
+        'primary_colors': [
+            '#1e0a0b', '#4a2245', '#8a2245', '#cb3c3e', '#f9703c', '#ff861d']
     }
 }

@@ -15,7 +15,7 @@ from ..simulation.gadget import Gadget
 from ..halomassprofile.myhmp import MyHMP
 from ..halomassprofile.nfw import NFW
 from ..visualization.myplot import MyPlot
-from ..visualization.mycolordict import helpercolors
+from ..visualization.mycolordict import helpercolors, primarycolors
 
 
 class RockstarGadgetHMP(object):
@@ -59,7 +59,6 @@ class RockstarGadgetHMP(object):
             print(split(rpath)[1] + ' (snapshot: ' + split(gpath)[1] + '):')
 
             pointer['label'] = raw_input('label: ')
-            pointer['color'] = raw_input('color: ')
             lratio = float(
                 raw_input('Rockstar2Gadget length conversion: '))
 
@@ -129,10 +128,11 @@ class RockstarGadgetHMP(object):
         myplot = MyPlot()
 
         nfwplots = []
-        helpercolor = helpercolors('AUTUMN_COLORSCHEME')
+        primarycolor = primarycolors('SANDSTONE')
+        helpercolor = helpercolors('SANDSTONE')
 
         for _, value in self.params.iteritems():
-            kws['color'] = value['color']
+            kws['color'] = primarycolor.next()
             myplot.plot({'x': value['hmp'].r, 'y': value['hmp'].rho_rhocrit},
                         label=value['label'],
                         **dict(kws))

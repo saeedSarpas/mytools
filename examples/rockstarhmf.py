@@ -8,6 +8,7 @@ from ..halofinder.rockstar import Rockstar
 from ..halomassfunction.myhmf import MyHMF
 from ..halomassfunction.tinker08 import Tinker08
 from ..visualization.myplot import MyPlot
+from ..visualization.mycolordict import helpercolors, primarycolors
 
 
 class RockstarHMF(object):
@@ -46,7 +47,6 @@ class RockstarHMF(object):
             print(path + ':')
             self.params[path] = {}
             self.params[path]['label'] = raw_input('label:')
-            self.params[path]['color'] = raw_input('color:')
             self.params[path]['rockstar'] = Rockstar(path)
             self.params[path]['rockstar'].load(
                 only=['mbound_vir', 'PID'], onlyhosts=True)
@@ -71,14 +71,17 @@ class RockstarHMF(object):
         kws['ylabel'] = '$dn / d\\ln(M) dV\\ [h^3Mpc^{-3}]$'
 
         myplot = MyPlot()
+        primarycolor = primarycolors('SANDSTONE')
+        helpercolor = helpercolors('SANDSTONE')
+
         for _, value in self.params.iteritems():
-            kws['color'] = value['color']
+            kws['color'] = primarycolor.next()
             myplot.plot({'x': value['hmf'].m, 'y': value['hmf'].dndlnmdv},
                         label=value['label'],
                         **dict(kws))
 
         tinkerplot = Tinker08()
-        kws['color'] = "#666666"
+        kws['color'] = helpercolor.next()
         myplot.plot(tinkerplot, label='Tinker 2008', **dict(kws))
 
         myplot.legend()
