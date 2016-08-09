@@ -1,3 +1,5 @@
 """Halomassprofile"""
 
-__all__ = ['nfw']
+__all__ = [
+    'nfw',
+    'myhmp']
