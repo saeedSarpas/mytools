@@ -121,7 +121,7 @@ class Rockstar(object):
             raise LookupError('datatype array is empty')
 
         self.halos = np.genfromtxt(self.path,
-                                   skiprows=19,
+                                   skip_header=19,
                                    usecols=usecols,
                                    dtype=self.datatype)
 
