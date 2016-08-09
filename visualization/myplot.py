@@ -132,10 +132,14 @@ class MyPlot(object):
             label=params['label'])
 
 
-    def legend(self):
+    def legend(self, bgcolor=cdict.get('AUTUMN_COLORSCHEME')['gridcolor']):
         """Add legend to plot"""
 
-        self.plt.gca().legend()
+        legend = self.plt.gca().legend()
+        frame = legend.get_frame()
+        frame.set_linewidth(0.0)
+        frame.set_facecolor(bgcolor)
+        frame.set_alpha(0.7)
 
     def save(self, name):
         """Saving plot
