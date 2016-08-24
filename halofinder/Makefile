@@ -7,11 +7,13 @@ TESTLIBS = -lcgreen
 _FILES = load_rockstar_bin \
          ./../memory/allocate \
          ./../io/open_file \
-         ./../io/read_from
+         ./../io/read_from \
+         sort_rockstar_halos
 FILES = $(patsubst %,%.c,$(_FILES))
 FILE_OBJS = $(patsubst %,%.o,$(_FILES))
 
-_TESTS = load_rockstar_bin_test
+_TESTS = load_rockstar_bin_test \
+         sort_rockstar_halos_test
 TESTS = $(patsubst %,%.c,$(_TESTS))
 TEST_OBJS = $(patsubst %,%.o,$(_TESTS))
 
