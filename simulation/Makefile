@@ -1,16 +1,18 @@
-CC = gcc-5.3.0
+CC = gcc
 CFLAGS = -Wall -std=gnu11
 
 TESTRUNNER = cgreen-runner
 TESTLIBS = -lcgreen
 
 _FILES = load_gadget_snap \
+         sort_gadget_snap \
          ./../memory/allocate \
          ./../io/read_from
 FILES = $(patsubst %,%.c,$(_FILES))
 FILE_OBJS = $(patsubst %,%.o,$(_FILES))
 
-_TESTS = load_gadget_snap_test
+_TESTS = load_gadget_snap_test \
+         sort_gadget_snap_test
 TESTS = $(patsubst %,%.c,$(_TESTS))
 TEST_OBJS = $(patsubst %,%.o,$(_TESTS))
 
