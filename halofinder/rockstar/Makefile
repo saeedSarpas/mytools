@@ -5,10 +5,10 @@ TESTRUNNER = cgreen-runner
 TESTLIBS = -lcgreen
 
 _FILES = load_rockstar_bin \
-         ./../memory/allocate \
-         ./../io/open_file \
-         ./../io/read_from \
-         sort_rockstar_halos
+         sort_rockstar_halos \
+         ./../../memory/allocate \
+         ./../../io/open_file \
+         ./../../io/read_from
 FILES = $(patsubst %,%.c,$(_FILES))
 FILE_OBJS = $(patsubst %,%.o,$(_FILES))
 
@@ -27,8 +27,8 @@ $(_TESTS):
 	$(CC) $(CFLAGS) -fPIC -c $(TESTS)
 
 compile : $(_FILES) $(_TESTS)
-	cd ./../io; make compile
-	cd ./../memory; make compile
+	make -C ./../../io compile
+	make -C ./../../memory compile
 	$(CC) $(CFLAGS) -shared -o halo_finder_tests.so $(FILE_OBJS) $(TEST_OBJS) $(TESTLIBS)
 
 test : compile
