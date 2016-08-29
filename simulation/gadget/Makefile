@@ -6,8 +6,8 @@ TESTLIBS = -lcgreen
 
 _FILES = load_gadget_snap \
          sort_gadget_snap \
-         ./../memory/allocate \
-         ./../io/read_from
+         ./../../memory/allocate \
+         ./../../io/read_from
 FILES = $(patsubst %,%.c,$(_FILES))
 FILE_OBJS = $(patsubst %,%.o,$(_FILES))
 
@@ -26,8 +26,8 @@ $(_TESTS):
 	$(CC) $(CFLAGS) -fPIC -c $(TESTS)
 
 compile : $(_FILES) $(_TESTS)
-	cd ./../io; make compile
-	cd ./../memory; make compile
+	make -C ./../../io compile
+	make -C ./../../memory compile
 	$(CC) $(CFLAGS) -shared -o simulation_tests.so $(FILE_OBJS) $(TEST_OBJS) $(TESTLIBS)
 
 test : compile

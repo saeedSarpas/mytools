@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "gadget_data_type.h"
-#include "./../memory/allocate.h"
-#include "./../io/read_from.h"
+#include "./../../memory/allocate.h"
+#include "./../../io/read_from.h"
 
 
 void sort_gadget_snap(struct gadget*);
