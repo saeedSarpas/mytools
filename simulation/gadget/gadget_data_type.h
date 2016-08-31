@@ -2,6 +2,7 @@
 #define GADGET_DATA_TYPE_H
 
 #include <inttypes.h>
+#include "./../shared_simulation_data_type.h"
 
 #define BINARY_HEADER_SIZE 256
 #define VERSION_MAX_SIZE 12
@@ -26,20 +27,9 @@ typedef struct gadget_header
 } gadget_header;
 
 
-typedef struct gadget_particle
-{
-  int id;
-  float Pos[3];
-  float Vel[3];
-  /* float Mass; */
-  /* int Type; */
-  /* float Rho, U, Temp, Ne; */
-} gadget_particle;
-
-
 typedef struct gadget {
   gadget_header *headers;
-  gadget_particle *particles;
+  particle *particles;
 } gadget;
 
 

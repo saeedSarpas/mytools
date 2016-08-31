@@ -23,15 +23,15 @@ void sort_gadget_snap(struct gadget *g){
   for(i = 0; i < 6; i++){
     if(g->headers->npart[i] != 0)
       qsort((void*)&g->particles[offset], g->headers->npart[i],
-            sizeof(struct gadget_particle), compare_id);
+            sizeof(struct particle), compare_id);
     offset += g->headers->npart[i];
   }
 }
 
 
 int compare_id(const void *h1, const void *h2){
-	const struct gadget_particle *elem1 = h1;
-	const struct gadget_particle *elem2 = h2;
+	const struct particle *elem1 = h1;
+	const struct particle *elem2 = h2;
 
 	if (elem1->id < elem2->id)
 		return -1;

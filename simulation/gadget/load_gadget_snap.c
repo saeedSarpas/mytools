@@ -32,7 +32,7 @@ struct gadget* load_gadget_snap(FILE *file){
   for(i = 0; i < 6; i++)
     tot_num_particles += g->headers->npart[i];
 
-  g->particles = allocate(tot_num_particles, sizeof(struct gadget_particle));
+  g->particles = allocate(tot_num_particles, sizeof(struct particle));
 
   /* Loading positions */
   SKIPINT;
