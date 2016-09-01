@@ -7,8 +7,8 @@ typedef struct particle
   int id;
   float Pos[3];
   float Vel[3];
-  /* float Mass; */
-  /* int Type; */
+  float Mass;
+  int Type; // enum ('Gas', 'Halo', 'Disk', 'Bulge', 'Stars', 'Bndry')
   /* float Rho, U, Temp, Ne; */
 } particle;
 

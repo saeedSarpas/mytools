@@ -15,6 +15,7 @@ Describe(load_gadget_snap);
 
 #define GADGET_SNAP_ADDR "./rockstar.bin"
 #define NUMHALOPARTS 10
+#define DUMMYMASS 1.23456
 #define HALOMASS 1E10
 #define NUMSTARS 100
 #define STARMASS 1E6
@@ -29,11 +30,11 @@ Describe(load_gadget_snap);
 BeforeEach(load_gadget_snap)
 {
   int i, j;
-  FILE *file;
-  file = fopen(GADGET_SNAP_ADDR, "wb");
+  FILE *snapshot;
+  snapshot = fopen(GADGET_SNAP_ADDR, "wb");
 
   int _dummy_int = 1;
-#define SKIPINT fwrite(&_dummy_int, sizeof(_dummy_int), 1, file)
+#define SKIPINT fwrite(&_dummy_int, sizeof(_dummy_int), 1, snapshot)
 
   /* Filling headers */
   struct gadget_header gh;
@@ -46,8 +47,13 @@ BeforeEach(load_gadget_snap)
   gh.npart[4] = NUMSTARS;
   gh.mass[4] = STARMASS;
 
+  int ntot_withmasses = 0;
+  for(i = 0; i < 6; i++)
+    if(gh.mass[i] == 0)
+      ntot_withmasses += gh.npart[i];
+
   SKIPINT;
-  fwrite(&gh, sizeof(struct gadget_header), 1, file);
+  fwrite(&gh, sizeof(struct gadget_header), 1, snapshot);
   SKIPINT;
 
   /* Filling positions */
@@ -55,7 +61,7 @@ BeforeEach(load_gadget_snap)
   SKIPINT;
   for(i = 0; i < 6; i++)
     for(j = 0; j < gh.npart[i]; j++)
-      fwrite(&pos, sizeof(float), 3, file);
+      fwrite(&pos, sizeof(float), 3, snapshot);
   SKIPINT;
 
   /* Filling velocities */
@@ -63,7 +69,7 @@ BeforeEach(load_gadget_snap)
   SKIPINT;
   for(i = 0; i < 6; i++)
     for(j = 0; j < gh.npart[i]; j++)
-      fwrite(&vel, sizeof(float), 3, file);
+      fwrite(&vel, sizeof(float), 3, snapshot);
   SKIPINT;
 
   /* Filling ids */
@@ -72,13 +78,23 @@ BeforeEach(load_gadget_snap)
   for(i = 0; i < 6; i++){
     for(j = 0; j < gh.npart[i]; j++){
       temp_id = j + offset;
-      fwrite(&temp_id, sizeof(int), 1, file);
+      fwrite(&temp_id, sizeof(int), 1, snapshot);
     }
     offset += gh.npart[i];
   }
   SKIPINT;
 
-  fclose(file);
+  if(ntot_withmasses > 0) SKIPINT;
+
+  float dummy_mass = DUMMYMASS;
+  for(i = 0; i < 6; i++)
+    for(j = 0; j < gh.npart[i]; j++)
+      if(gh.mass[i] == 0)
+        fwrite(&dummy_mass, sizeof(float), 1, snapshot);
+
+  if(ntot_withmasses > 0) SKIPINT;
+
+  fclose(snapshot);
 }
 
 
@@ -104,6 +120,11 @@ Ensure(load_gadget_snap, loads_snapshot_properly)
       assert_that(g->particles[j + offset].Vel[0], is_equal_to(XVEL));
       assert_that(g->particles[j + offset].Vel[1], is_equal_to(YVEL));
       assert_that(g->particles[j + offset].Vel[2], is_equal_to(ZVEL));
+      if(g->headers->mass[i] == 0.0)
+        assert_that(g->particles[j + offset].Mass, is_equal_to(DUMMYMASS));
+      else
+        assert_that(g->particles[j + offset].Mass,
+                    is_equal_to(g->headers->mass[i]));
     }
     offset += g->headers->npart[i];
   }
