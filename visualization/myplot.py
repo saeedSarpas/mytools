@@ -2,6 +2,8 @@
 
 from __future__ import print_function
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import numpy as np
 from ..visualization import mycolordict as cdict
 
 
@@ -130,6 +132,57 @@ class MyPlot(object):
             color=params['color'],
             linestyle=params['linestyle'],
             label=params['label'])
+
+
+    def density(self, plotdata, vmin=None, vmax=None, **kwargs):
+        """Density plot
+
+        Parameters:
+        ----------
+        plotdata : 2D Array
+        vmin : float or None
+            Minumum value of colormapping
+        scheme : str, optional
+            Color scheme name
+        label : str, optional
+            Plot label
+        color : str, optional
+            Color of the plot
+        ecolor : str, optional
+            Color of the error bars
+        shaded : bool, optional
+            Shadow under the y-error bars
+        linestyle : str, optional
+            Style of the line, e.g., 'solid'
+        xscale, yscale : str, optional
+            Scale of the axis, e.g., 'log', 'linear'
+        xmin, xmax, ymin, ymax : float, optional
+            Axis boundries
+        xlabel, ylabel : str, optional
+            Axis labels
+        """
+
+        params = _getparams(**kwargs)
+
+        if vmin is None:
+            vmin = np.amin(plotdata)
+        if vmax is None:
+            vmax = np.amax(plotdata)
+
+        if len(dict(kwargs).keys()) > 0:
+            print('Plotting using following parameters:')
+            for key, value in dict(kwargs).iteritems():
+                print('\t {:15s}'.format(str(key)) + str(value))
+            print('\t {:15s}'.format('vmin: ' + str(vmin)))
+            print('\t {:15s}'.format('vmax: ' + str(vmax)))
+            print('')
+
+        self._setplotattrs(**kwargs)
+
+        cm = mcolors.LinearSegmentedColormap(
+            'CustomMap', cdict.get(params['scheme'])['cdict'])
+
+        self.plt.imshow(plotdata, cmap=cm, vmin=vmin, vmax=vmax)
 
 
     def legend(self, bgcolor=cdict.get('AUTUMN_COLORSCHEME')['gridcolor']):
