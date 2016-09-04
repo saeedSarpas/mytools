@@ -1,0 +1,52 @@
+CC := gcc
+CFLAGS := -Wall -std=gnu11
+
+MAKE := make compile
+
+TESTRUNNER := cgreen-runner
+TESTLIBS := -lcgreen
+
+FILES := $(addsuffix .c,$(_FILES))
+FILE_OBJS := $(addsuffix .o,$(_FILES))
+
+TESTS := $(addsuffix .c,$(_TESTS))
+TEST_OBJS := $(addsuffix .o,$(_TESTS))
+
+DEPDIRS := $(dir $(_DEPS))
+DEP_OBJS := $(addsuffix .o,$(_DEPS))
+
+define dep_compile
+@cd $(1) && $(MAKE) $(\n)
+endef
+
+.PHONY : all test compile clean
+all : test
+
+$(_FILES):
+	@$(CC) $(CFLAGS) -fPIC -c $(FILES)
+	@echo "[CC]\t$(CFLAGS) -fPIC -c $(FILES)"
+
+$(_TESTS): $(_FILES)
+	@$(CC) $(CFLAGS) -fPIC -c $(TESTS)
+	@echo "[CC]\t$(CFLAGS) -fPIC -c $(FILES)"
+
+dep_compile :
+	@echo "Compiling dependencies:"
+	$(foreach dir, $(DEPDIRS), $(call dep_compile, $(dir)))
+
+compile : $(_FILES) dep_compile
+	@$(CC) $(CFLAGS) -shared -o $(MODULE_NAME)_tests.so $(FILE_OBJS) $(TEST_OBJS) $(DEP_OBJS) $(TESTLIBS)
+	@echo "[CC]\t-shared $(CFLAGS) -o $(MODULE_NAME)_tests.so"
+
+test : $(_TESTS) compile
+	@echo "----------------------------------------------------------------------"
+	@echo "[TESTRUNNER]\t$(MODULE_NAME)_tests.so"
+	@$(TESTRUNNER) $(MODULE_NAME)_tests.so
+
+clean :
+	rm -f *.so *.o $(FILE_OBJS) $(TEST_OBJS)
+
+define \n
+
+
+endef

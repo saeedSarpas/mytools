@@ -1,38 +1,13 @@
-CC = gcc
-CFLAGS = -Wall -std=gnu11
+MODULE_NAME := rockstar
 
-TESTRUNNER = cgreen-runner
-TESTLIBS = -lcgreen
+_FILES := load_rockstar_bin \
+         sort_rockstar_halos
 
-_FILES = load_rockstar_bin \
-         sort_rockstar_halos \
-         ./../../memory/allocate \
+_TESTS := load_rockstar_bin_test \
+         sort_rockstar_halos_test
+
+_DEPS := ./../../memory/allocate \
          ./../../io/open_file \
          ./../../io/read_from
-FILES = $(patsubst %,%.c,$(_FILES))
-FILE_OBJS = $(patsubst %,%.o,$(_FILES))
 
-_TESTS = load_rockstar_bin_test \
-         sort_rockstar_halos_test
-TESTS = $(patsubst %,%.c,$(_TESTS))
-TEST_OBJS = $(patsubst %,%.o,$(_TESTS))
-
-.PHONY : all test compile clean
-all : test
-
-$(_FILES):
-	$(CC) $(CFLAGS) -fPIC -c $(FILES)
-
-$(_TESTS):
-	$(CC) $(CFLAGS) -fPIC -c $(TESTS)
-
-compile : $(_FILES) $(_TESTS)
-	make -C ./../../io compile
-	make -C ./../../memory compile
-	$(CC) $(CFLAGS) -shared -o halo_finder_tests.so $(FILE_OBJS) $(TEST_OBJS) $(TESTLIBS)
-
-test : compile
-	$(TESTRUNNER) halo_finder_tests.so
-
-clean :
-	@rm -f *.so *.o $(FILE_OBJS) $(TEST_OBJS)
+include ./../../Makefile_main
