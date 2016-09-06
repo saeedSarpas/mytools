@@ -17,7 +17,7 @@ AfterEach(allocate) {}
 
 Ensure(allocate, works_properly)
 {
-  double *ptr = allocate(sizeof(double), 2);
+  double *ptr = allocate(2, sizeof(double));
   assert_that(ptr, is_non_null);
   free(ptr);
 }
