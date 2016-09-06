@@ -38,12 +38,14 @@ static struct avl_node *min_node(struct avl_node *);
  */
 struct avl_node* avl_insert(struct avl_node *node, int key)
 {
-  if (node == NULL) return new_node(key);
+  if(node == NULL) return new_node(key);
 
-  if (key < node->key)
+  if(key < node->key)
     node->left = avl_insert(node->left, key);
-  else
+  else if(key > node->key)
     node->right = avl_insert(node->right, key);
+  else
+    return node;
 
   // Update height of the parents
   node->height = max(height(node->left), height(node->right)) + 1;
@@ -157,18 +159,36 @@ struct avl_node *avl_delete(struct avl_node *root, int key)
 
 
 /*
- * Traversing through the tree
+ * Traversing through the tree in an ascending order
  *
  * param: node the root node
  * param: func pointer to a function for operating on each node
  */
 void inorder_traversal(struct avl_node *node, void (*func)(struct avl_node*))
 {
-  if (node != NULL) {
-    inorder_traversal(node->left, func);
-    func(node);
-    inorder_traversal(node->right, func);
-   }
+  if(node == NULL)
+    return;
+
+  inorder_traversal(node->left, func);
+  func(node);
+  inorder_traversal(node->right, func);
+}
+
+
+/*
+ * Traversing throught the tree in a way to meet all parents before their childs
+ *
+ * param: node the root node
+ * param: func pointer to a function for operating on each node
+ */
+void preorder_traversal(struct avl_node *node, void (*func)(struct avl_node*))
+{
+  if(node == NULL)
+    return;
+
+  func(node);
+  preorder_traversal(node->left, func);
+  preorder_traversal(node->right, func);
 }
 
 
