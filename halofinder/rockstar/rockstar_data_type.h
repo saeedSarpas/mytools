@@ -2,6 +2,7 @@
 #define ROCKSTAR_DATA_TYPE_H
 
 #include <inttypes.h>
+#include "./../shared_halofinder_data_type.h"
 
 #define BINARY_HEADER_SIZE 256
 #define VERSION_MAX_SIZE 12
@@ -35,8 +36,8 @@ typedef struct rockstar_halo {
 
 typedef struct rockstar {
   rockstar_header *headers;
-  rockstar_halo *halos;
-  int64_t *particles;
+  halo *halos;
+  int64_t *particle_ids;
 } rockstar;
 
 

@@ -2,9 +2,7 @@
 #define LOAD_ROCKSTAR_H
 
 
-#include "./../../memory/allocate.h"
-#include "./../../io/open_file.h"
-#include "./../../io/read_from.h"
+#include <stdio.h>
 #include "./rockstar_data_type.h"
 
 

@@ -27,13 +27,13 @@ BeforeEach(sort_rockstar_halos)
 
   int64_t _int64_t = INT64;
 
-  /* Filling headers */
+  // Filling headers
   struct rockstar_header rh;
   rh.num_halos = NUMHALOS;
   rh.num_particles = NUMHALOS * NUMPARTS;
   fwrite(&rh, sizeof(struct rockstar_header), 1, file);
 
-  /* Filling halos info */
+  // Filling halos info
   int i;
   for (i = NUMHALOS; i > 0; i--) {
     int index = NUMHALOS - i;
@@ -41,13 +41,13 @@ BeforeEach(sort_rockstar_halos)
 
     struct rockstar_halo h;
     h.id = i;
-    h.m = i * 10e10;
+    h.m = i * 1e10;
     h.num_p = NUMPARTS;
     h.p_start = p_start;
     fwrite(&h, sizeof(struct rockstar_halo), 1, file);
   }
 
-  /* Filling particle ids */
+  // Filling particle ids
   for (i = 0; i < NUMHALOS; i++)
     fwrite(&_int64_t, sizeof(int64_t), NUMPARTS, file);
 
@@ -67,11 +67,13 @@ Ensure(sort_rockstar_halos, sorts_halos_properly_based_on_their_mass)
   struct rockstar *r = load_rockstar_bin(fp);
   fclose(fp);
 
-  sort_rockstar_halos(r->halos, r->headers->num_halos, "m");
+  sort_rockstar_halos(r->halos, r->headers->num_halos, compare_mass);
 
   int i;
   for (i = 1; i < NUMHALOS; i++)
     assert_true(r->halos[i].m >= r->halos[i-1].m);
+
+  free(r);
 }
 
 Ensure(sort_rockstar_halos, sorts_halos_properly_based_on_their_id)
@@ -80,20 +82,11 @@ Ensure(sort_rockstar_halos, sorts_halos_properly_based_on_their_id)
   struct rockstar *r = load_rockstar_bin(fp);
   fclose(fp);
 
-  sort_rockstar_halos(r->halos, r->headers->num_halos, "id");
+  sort_rockstar_halos(r->halos, r->headers->num_halos, compare_id);
 
   int i;
   for (i = 1; i < NUMHALOS; i++)
     assert_true(r->halos[i].id >= r->halos[i-1].id);
-}
 
-
-TestSuite *sort_rockstar_halos_tests()
-{
-  TestSuite *suite = create_test_suite();
-  add_test_with_context(suite, sort_rockstar_halos,
-                        sorts_halos_properly_based_on_their_mass);
-  add_test_with_context(suite, sort_rockstar_halos,
-                        sorts_halos_properly_based_on_their_id);
-  return suite;
+  free(r);
 }
