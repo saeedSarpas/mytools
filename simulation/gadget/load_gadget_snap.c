@@ -6,8 +6,8 @@
  *
  * param: snapshot Gadget snapshot file
  *
- * NOTE: it only works with single snapshot file and only load ids, positions
- * and velocities
+ * NOTE: it only works with single snapshot file and only load ids, positions,
+ * velocities and masses
  *
  * author: Saeed Sarpas
  */

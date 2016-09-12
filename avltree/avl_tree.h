@@ -8,14 +8,14 @@
 typedef struct avl_node
 {
   struct avl_node *left, *right;
-  int key;
+  int64_t key;
   int height;
   void *data;
 } avl_node;
 
 
-struct avl_node* avl_insert(struct avl_node*, int);
-struct avl_node *avl_delete(struct avl_node*, int);
+struct avl_node* avl_insert(struct avl_node*, int64_t);
+struct avl_node *avl_delete(struct avl_node*, int64_t);
 void inorder_traversal(struct avl_node*, void (*func)(struct avl_node*));
 void preorder_traversal(struct avl_node*, void (*func)(struct avl_node*));
 

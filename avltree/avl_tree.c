@@ -19,13 +19,30 @@
 #include "./../memory/allocate.h"
 
 
-static struct avl_node* new_node(int);
 static int max(int, int);
 static int height(struct avl_node*);
 static int get_balance(struct avl_node*);
 static struct avl_node* right_rotate(struct avl_node*);
 static struct avl_node* left_rotate(struct avl_node*);
 static struct avl_node *min_node(struct avl_node *);
+
+
+/*
+ * creating a new node
+ *
+ * param: key an unique integer key
+ */
+static struct avl_node* new_node(int64_t key)
+{
+  struct avl_node* node = allocate(1, sizeof(struct avl_node));
+
+  node->key = key;
+  node->left = NULL;
+  node->right = NULL;
+  node->height = 1;
+
+  return node;
+}
 
 
 /*
@@ -36,7 +53,7 @@ static struct avl_node *min_node(struct avl_node *);
  *
  * TODO: currently insert only accepts integer keys
  */
-struct avl_node* avl_insert(struct avl_node *node, int key)
+struct avl_node* avl_insert(struct avl_node *node, int64_t key)
 {
   if(node == NULL) return new_node(key);
 
@@ -87,7 +104,7 @@ struct avl_node* avl_insert(struct avl_node *node, int key)
  *
  * TODO: currently delete only accepts integer keys
  */
-struct avl_node *avl_delete(struct avl_node *root, int key)
+struct avl_node *avl_delete(struct avl_node *root, int64_t key)
 {
   // Normal BST delete
   if(root == NULL) return root;
@@ -189,24 +206,6 @@ void preorder_traversal(struct avl_node *node, void (*func)(struct avl_node*))
   func(node);
   preorder_traversal(node->left, func);
   preorder_traversal(node->right, func);
-}
-
-
-/*
- * creating a new node
- *
- * param: key an unique integer key
- */
-static struct avl_node* new_node(int key)
-{
-  struct avl_node* node = allocate(1, sizeof(struct avl_node));
-
-  node->key = key;
-  node->left = NULL;
-  node->right = NULL;
-  node->height = 1;
-
-  return node;
 }
 
 
