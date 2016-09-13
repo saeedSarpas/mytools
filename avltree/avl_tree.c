@@ -24,15 +24,36 @@ static int height(struct avl_node*);
 static int get_balance(struct avl_node*);
 static struct avl_node* right_rotate(struct avl_node*);
 static struct avl_node* left_rotate(struct avl_node*);
-static struct avl_node *min_node(struct avl_node *);
+static struct avl_node* min_node(struct avl_node*);
+static struct avl_node* delete_node(struct avl_node*);
+
+
+/*
+ * finding a node using its key
+ *
+ * param: root the root node
+ * param: key an unique integer key
+ */
+struct avl_node* avl_find(struct avl_node *root, int64_t key)
+{
+  if(root == NULL) return root;
+
+  if(key < root->key)
+    root = avl_find(root->left, key);
+  else if(key > root->key)
+    root = avl_find(root->right, key);
+
+  return root;
+}
 
 
 /*
  * creating a new node
  *
  * param: key an unique integer key
+ * param: data data to be assigned to the node
  */
-static struct avl_node* new_node(int64_t key)
+static struct avl_node* new_node(int64_t key, void *data)
 {
   struct avl_node* node = allocate(1, sizeof(struct avl_node));
 
@@ -40,6 +61,7 @@ static struct avl_node* new_node(int64_t key)
   node->left = NULL;
   node->right = NULL;
   node->height = 1;
+  node->data = data;
 
   return node;
 }
@@ -53,14 +75,14 @@ static struct avl_node* new_node(int64_t key)
  *
  * TODO: currently insert only accepts integer keys
  */
-struct avl_node* avl_insert(struct avl_node *node, int64_t key)
+struct avl_node* avl_insert(struct avl_node *node, int64_t key, void *data)
 {
-  if(node == NULL) return new_node(key);
+  if(node == NULL) return new_node(key, data);
 
   if(key < node->key)
-    node->left = avl_insert(node->left, key);
+    node->left = avl_insert(node->left, key, data);
   else if(key > node->key)
-    node->right = avl_insert(node->right, key);
+    node->right = avl_insert(node->right, key, data);
   else
     return node;
 
@@ -114,35 +136,11 @@ struct avl_node *avl_delete(struct avl_node *root, int64_t key)
   else if(key > root->key)
     root->right = avl_delete(root->right, key);
   else{
-    // node with only one child or no child
-    if((root->left == NULL) || (root->right == NULL)){
-      struct avl_node *temp = root->left ? root->left : root->right;
-
-      // No child case
-      if(temp == NULL){
-        temp = root;
-        root = NULL;
-      } else {
-        // One child case
-        *root = *temp;
-      }
-
-      free(temp);
-    } else {
-      // node with two children: Get the inorder successor (smallest
-      // in the right subtree)
-      struct avl_node* temp = min_node(root->right);
-
-      // Copy the inorder successor's data to this node
-      root->key = temp->key;
-
-      // Delete the inorder successor
-      root->right = avl_delete(root->right, temp->key);
-    }
+    root = delete_node(root);
   }
 
   // If the tree had only one node then return
-  if (root == NULL) return root;
+  if(root == NULL) return root;
 
   // Update height of the parents
   root->height = max(height(root->left), height(root->right)) + 1;
@@ -206,6 +204,21 @@ void preorder_traversal(struct avl_node *node, void (*func)(struct avl_node*))
   func(node);
   preorder_traversal(node->left, func);
   preorder_traversal(node->right, func);
+}
+
+
+/*
+ * Disposing the tree
+ *
+ * param: node the root node
+ */
+void avl_dispose(struct avl_node *root)
+{
+  struct avl_node *min;
+  while(root != NULL){
+    min = min_node(root);
+    root = avl_delete(root, min->key);
+  }
 }
 
 
@@ -288,6 +301,11 @@ static struct avl_node *left_rotate(struct avl_node *x)
 }
 
 
+/*
+ * Find the minimum of the tree
+ *
+ * param: node
+ */
 static struct avl_node *min_node(struct avl_node *node)
 {
   struct avl_node *current = node;
@@ -297,4 +315,42 @@ static struct avl_node *min_node(struct avl_node *node)
     current = current->left;
 
   return current;
+}
+
+
+/*
+ * Delete a given node
+ *
+ * param: node
+ */
+static struct avl_node* delete_node(struct avl_node *node)
+{
+  // node with only one child or no child
+  if((node->left == NULL) || (node->right == NULL)){
+    struct avl_node *temp = node->left ? node->left : node->right;
+
+    // No child case
+    if(temp == NULL){
+      temp = node;
+      node = NULL;
+    } else {
+      // One child case
+      *node = *temp;
+    }
+
+    free(temp);
+    return node;
+  } else {
+    // node with two children: Get the inorder successor (smallest
+    // in the right subtree)
+    struct avl_node* temp = min_node(node->right);
+
+    // Copy the inorder successor's data to this node
+    node->key = temp->key;
+
+    // Delete the inorder successor
+    node->right = avl_delete(node->right, temp->key);
+  }
+
+  return node;
 }
