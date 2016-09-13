@@ -7,7 +7,7 @@
  * param: snapshot Gadget snapshot file
  *
  * NOTE: it only works with single snapshot file and only load ids, positions,
- * velocities and masses
+ * velocities, type and masses
  *
  * author: Saeed Sarpas
  */
@@ -15,10 +15,8 @@
 
 #include <stdlib.h>
 #include "load_gadget_snap.h"
-#include "./../shared_simulation_data_type.h"
 #include "./../../memory/allocate.h"
 #include "./../../io/read_from.h"
-#include "./../../avltree/avl_tree.h"
 
 
 struct gadget* load_gadget_snap(FILE *snapshot)
@@ -41,9 +39,10 @@ struct gadget* load_gadget_snap(FILE *snapshot)
       ntot_withmasses += g->headers->npart[i];
   }
 
-  struct particle *particles = allocate(tot_num_particles, sizeof(struct particle));
+  struct particle *particles = allocate(tot_num_particles,
+                                        sizeof(struct particle));
 
-  /* Loading positions */
+/* Loading positions */
   SKIPINT;
   int offset = 0;
   for(i = 0; i < 6; i++){
@@ -53,7 +52,7 @@ struct gadget* load_gadget_snap(FILE *snapshot)
   }
   SKIPINT;
 
-  /* Loading velocities */
+/* Loading velocities */
   SKIPINT;
   offset = 0;
   for(i = 0; i < 6; i++){
@@ -63,13 +62,13 @@ struct gadget* load_gadget_snap(FILE *snapshot)
   }
   SKIPINT;
 
-  /* Loading ids */
+/* Loading ids */
   SKIPINT;
   for(i = 0; i < tot_num_particles; i++)
     read_from(snapshot, 1, sizeof(int), &particles[i].id);
   SKIPINT;
 
-  /* Loading masses */
+/* Loading masses */
   if(ntot_withmasses > 0) SKIPINT;
 
   offset = 0;
@@ -87,12 +86,10 @@ struct gadget* load_gadget_snap(FILE *snapshot)
 
   if(ntot_withmasses > 0) SKIPINT;
 
-  g->particles = NULL;
-  for(i = 0; i < tot_num_particles; i++){
-    struct particle *tmp = allocate(1, sizeof(struct particle));
-    *tmp = particles[i];
-    g->particles = avl_insert(g->particles, particles[i].id, tmp);
-  }
+  g->particles = allocate(tot_num_particles, sizeof(struct particle));
+
+  for(i = 0; i < tot_num_particles; i++)
+    g->particles[particles[i].id] = particles[i];
 
   free(particles);
 

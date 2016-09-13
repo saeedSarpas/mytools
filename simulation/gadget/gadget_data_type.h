@@ -2,7 +2,7 @@
 #define GADGET_DATA_TYPE_H
 
 #include <inttypes.h>
-#include "./../../avltree/avl_tree.h"
+#include "./../shared_simulation_data_type.h"
 
 #define BINARY_HEADER_SIZE 256
 #define VERSION_MAX_SIZE 12
@@ -29,7 +29,7 @@ typedef struct gadget_header
 
 typedef struct gadget {
   struct gadget_header *headers;
-  struct avl_node *particles;
+  struct particle *particles;
 } gadget;
 
 

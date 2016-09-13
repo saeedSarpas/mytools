@@ -8,8 +8,6 @@
 
 #include <cgreen/cgreen.h>
 #include "load_gadget_snap.h"
-#include "./../shared_simulation_data_type.h"
-#include "./../../avltree/avl_tree.h"
 
 
 Describe(load_gadget_snap);
@@ -79,7 +77,7 @@ BeforeEach(load_gadget_snap)
   SKIPINT;
   for(i = 0; i < 6; i++){
     for(j = 0; j < gh.npart[i]; j++){
-      temp_id = j + offset;
+      temp_id = (gh.npart[i] - 1) - j + offset; // Reverse the order of ids
       fwrite(&temp_id, sizeof(int), 1, snapshot);
     }
     offset += gh.npart[i];
@@ -113,35 +111,21 @@ Ensure(load_gadget_snap, loads_snapshot_properly)
   fclose(fp);
 
   int i, j, offset = 0;
-  struct avl_node *found_node;
   for(i = 0; i < 6; i++){
     for(j = 0; j < g->headers->npart[i]; j += 5){
-      found_node = avl_find(g->particles, j + offset);
-      assert_that(((struct particle*)(found_node->data))->id,
-                  is_equal_to(j + offset));
-      assert_that(((struct particle*)(found_node->data))->Pos[0],
-                  is_equal_to(XPOS));
-      assert_that(((struct particle*)(found_node->data))->Pos[1],
-                  is_equal_to(YPOS));
-      assert_that(((struct particle*)(found_node->data))->Pos[2],
-                  is_equal_to(ZPOS));
-      assert_that(((struct particle*)(found_node->data))->Vel[0],
-                  is_equal_to(XVEL));
-      assert_that(((struct particle*)(found_node->data))->Vel[1],
-                  is_equal_to(YVEL));
-      assert_that(((struct particle*)(found_node->data))->Vel[2],
-                  is_equal_to(ZVEL));
+      assert_that(g->particles[j + offset].id, is_equal_to(j + offset));
+      assert_that(g->particles[j + offset].Pos[0], is_equal_to(XPOS));
+      assert_that(g->particles[j + offset].Pos[1], is_equal_to(YPOS));
+      assert_that(g->particles[j + offset].Pos[2], is_equal_to(ZPOS));
+      assert_that(g->particles[j + offset].Vel[0], is_equal_to(XVEL));
+      assert_that(g->particles[j + offset].Vel[1], is_equal_to(YVEL));
+      assert_that(g->particles[j + offset].Vel[2], is_equal_to(ZVEL));
       if(g->headers->mass[i] == 0.0)
-        assert_that(((struct particle*)(found_node->data))->Mass,
-                    is_equal_to(DUMMYMASS));
+        assert_that(g->particles[j + offset].Mass, is_equal_to(DUMMYMASS));
       else
-        assert_that(((struct particle*)(found_node->data))->Mass,
+        assert_that(g->particles[j + offset].Mass,
                     is_equal_to(g->headers->mass[i]));
     }
     offset += g->headers->npart[i];
   }
-
-  avl_dispose(g->particles);
-
-  free(g);
 }
