@@ -2,9 +2,12 @@
 #define SHARED_SIMULATION_DATA_TYPE_H
 
 
+#include <inttypes.h>
+
+
 typedef struct particle
 {
-  int id;
+  int64_t id;
   float Pos[3];
   float Vel[3];
   float Mass;

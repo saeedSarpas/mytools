@@ -13,10 +13,16 @@
  */
 
 
+#include <stdlib.h>
 #include "load_gadget_snap.h"
+#include "./../shared_simulation_data_type.h"
+#include "./../../memory/allocate.h"
+#include "./../../io/read_from.h"
+#include "./../../avltree/avl_tree.h"
 
 
-struct gadget* load_gadget_snap(FILE *snapshot){
+struct gadget* load_gadget_snap(FILE *snapshot)
+{
   int i, j;
   struct gadget *g = malloc(sizeof *g);
 
@@ -35,14 +41,14 @@ struct gadget* load_gadget_snap(FILE *snapshot){
       ntot_withmasses += g->headers->npart[i];
   }
 
-  g->particles = allocate(tot_num_particles, sizeof(struct particle));
+  struct particle *particles = allocate(tot_num_particles, sizeof(struct particle));
 
   /* Loading positions */
   SKIPINT;
   int offset = 0;
   for(i = 0; i < 6; i++){
     for(j = 0; j < g->headers->npart[i]; j++)
-      read_from(snapshot, 3, sizeof(float), &g->particles[j + offset].Pos[0]);
+      read_from(snapshot, 3, sizeof(float), &particles[j + offset].Pos[0]);
     offset += g->headers->npart[i];
   }
   SKIPINT;
@@ -52,7 +58,7 @@ struct gadget* load_gadget_snap(FILE *snapshot){
   offset = 0;
   for(i = 0; i < 6; i++){
     for(j = 0; j < g->headers->npart[i]; j++)
-      read_from(snapshot, 3, sizeof(float), &g->particles[j + offset].Vel[0]);
+      read_from(snapshot, 3, sizeof(float), &particles[j + offset].Vel[0]);
     offset += g->headers->npart[i];
   }
   SKIPINT;
@@ -60,7 +66,7 @@ struct gadget* load_gadget_snap(FILE *snapshot){
   /* Loading ids */
   SKIPINT;
   for(i = 0; i < tot_num_particles; i++)
-    read_from(snapshot, 1, sizeof(int), &g->particles[i].id);
+    read_from(snapshot, 1, sizeof(int), &particles[i].id);
   SKIPINT;
 
   /* Loading masses */
@@ -69,17 +75,26 @@ struct gadget* load_gadget_snap(FILE *snapshot){
   offset = 0;
   for(i = 0; i < 6; i++){
     for(j = 0; j < g->headers->npart[i]; j++){
-      g->particles[j + offset].Type = i;
+      particles[j + offset].Type = i;
 
       if(g->headers->mass[i] == 0)
-        read_from(snapshot, 1, sizeof(float), &g->particles[j + offset].Mass);
+        read_from(snapshot, 1, sizeof(float), &particles[j + offset].Mass);
       else
-        g->particles[j + offset].Mass = g->headers->mass[i];
+        particles[j + offset].Mass = g->headers->mass[i];
     }
     offset += g->headers->npart[i];
   }
 
   if(ntot_withmasses > 0) SKIPINT;
+
+  g->particles = NULL;
+  for(i = 0; i < tot_num_particles; i++){
+    struct particle *tmp = allocate(1, sizeof(struct particle));
+    *tmp = particles[i];
+    g->particles = avl_insert(g->particles, particles[i].id, tmp);
+  }
+
+  free(particles);
 
   return g;
 }
