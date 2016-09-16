@@ -15,36 +15,39 @@ TEST_OBJS := $(addsuffix .o,$(_TESTS))
 DEPDIRS := $(dir $(_DEPS))
 DEP_OBJS := $(addsuffix .o,$(_DEPS))
 
-define dep_compile
-@cd $(1) && $(MAKE) $(\n)
-endef
-
 .PHONY : all test compile clean
 all : test
 
-$(_FILES):
+$(FILE_OBJS) : $(FILES)
 	@$(CC) $(CFLAGS) -fPIC -c $(FILES)
 	@echo "[CC]\t$(CFLAGS) -fPIC -c $(FILES)"
 
-$(_TESTS): $(_FILES)
+$(TEST_OBJS) : $(FILE_OBJS)
 	@$(CC) $(CFLAGS) -fPIC -c $(TESTS)
-	@echo "[CC]\t$(CFLAGS) -fPIC -c $(FILES)"
+	@echo "[CC]\t$(CFLAGS) -fPIC -c $(TESTS)"
+
+define dep_compile
+@echo "[MAKE]\t--directory $(1)"; $(MAKE) --directory $(1) $(\n)
+endef
 
 dep_compile :
-	@echo "Compiling dependencies:"
 	$(foreach dir, $(DEPDIRS), $(call dep_compile, $(dir)))
 
-compile : $(_FILES) dep_compile
+compile : $(FILE_OBJS) $(TEST_OBJS) dep_compile
+
+$(MODULE_NAME)_tests.so : compile
 	@$(CC) $(CFLAGS) -shared -o $(MODULE_NAME)_tests.so $(FILE_OBJS) $(TEST_OBJS) $(DEP_OBJS) $(TESTLIBS)
 	@echo "[CC]\t-shared $(CFLAGS) -o $(MODULE_NAME)_tests.so"
 
-test : $(_TESTS) compile
-	@echo "----------------------------------------------------------------------"
+test : $(MODULE_NAME)_tests.so
+	@echo ""
 	@echo "[TESTRUNNER]\t$(MODULE_NAME)_tests.so"
+	@echo "-----------------------------------------------------------------------"
 	@$(TESTRUNNER) $(MODULE_NAME)_tests.so
+	@echo "-----------------------------------------------------------------------"
 
 clean :
-	rm -f *.so *.o $(FILE_OBJS) $(TEST_OBJS)
+	rm -f $(MODULE_NAME)_tests.so $(FILE_OBJS) $(TEST_OBJS) $(DEP_OBJS)
 
 define \n
 
