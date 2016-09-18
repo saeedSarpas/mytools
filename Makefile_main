@@ -22,7 +22,7 @@ $(FILE_OBJS) : $(FILES)
 	@$(CC) $(CFLAGS) -fPIC -c $(FILES)
 	@echo "[CC]\t$(CFLAGS) -fPIC -c $(FILES)"
 
-$(TEST_OBJS) : $(FILE_OBJS)
+$(TEST_OBJS) : $(TESTS) $(FILE_OBJS)
 	@$(CC) $(CFLAGS) -fPIC -c $(TESTS)
 	@echo "[CC]\t$(CFLAGS) -fPIC -c $(TESTS)"
 
