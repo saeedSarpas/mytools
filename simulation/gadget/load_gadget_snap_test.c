@@ -129,3 +129,43 @@ Ensure(load_gadget_snap, loads_snapshot_properly)
     offset += g->headers->npart[i];
   }
 }
+
+
+Ensure(load_gadget_snap, works_with_a_real_snapshot)
+{
+  FILE *fp = fopen("./z1_2LPT_8_1kpc.dat", "rb");
+  struct gadget *g = load_gadget_snap(fp);
+  fclose(fp);
+
+  assert_that(g->headers->npart[0], is_equal_to(0));
+  assert_that(g->headers->npart[1], is_equal_to(8 * 8 * 8));
+  assert_that(g->headers->npart[2], is_equal_to(0));
+  assert_that(g->headers->npart[3], is_equal_to(0));
+  assert_that(g->headers->npart[4], is_equal_to(0));
+  assert_that(g->headers->npart[5], is_equal_to(0));
+  assert_that_double(g->headers->redshift, is_equal_to_double(1));
+  assert_that_double(g->headers->BoxSize, is_equal_to_double(1.0));
+  assert_that(g->headers->num_files, is_equal_to(1));
+  assert_that_double(g->headers->Omega0, is_equal_to_double(0.3089));
+  assert_that_double(g->headers->OmegaLambda, is_equal_to_double(0.6911));
+  assert_that_double(g->headers->HubbleParam, is_equal_to_double(0.6774));
+
+  int i, j, offset = 0;
+  for(i = 0; i < 6; i++){
+    for(j = 0; j < g->headers->npart[i]; j += 11){
+      struct particle tmp_part = g->particles[j + offset];
+      assert_true(0 <= tmp_part.id && tmp_part.id < 8 * 8 * 8);
+      assert_true(-1 <= tmp_part.Pos[0] && tmp_part.Pos[0] <= 1);
+      assert_true(-1 <= tmp_part.Pos[1] && tmp_part.Pos[1] <= 1);
+      assert_true(-1 <= tmp_part.Pos[2] && tmp_part.Pos[2] <= 1);
+      assert_true(-1 <= tmp_part.Vel[0] && tmp_part.Vel[0] <= 1);
+      assert_true(-1 <= tmp_part.Vel[1] && tmp_part.Vel[1] <= 1);
+      assert_true(-1 <= tmp_part.Vel[2] && tmp_part.Vel[2] <= 1);
+      if(g->headers->mass[i] == 0.0)
+        assert_that(tmp_part.Mass, is_equal_to(DUMMYMASS));
+      else
+        assert_that(tmp_part.Mass, is_equal_to(g->headers->mass[i]));
+    }
+    offset += g->headers->npart[i];
+  }
+}
