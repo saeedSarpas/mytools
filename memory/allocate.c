@@ -11,10 +11,15 @@
  */
 
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <string.h>
 #include "allocate.h"
 
 
-void* allocate (unsigned int nmemb, unsigned int size) {
+void* allocate(unsigned int nmemb, unsigned int size)
+{
   void *pptr = calloc(nmemb, size);
   if (pptr == NULL)
     printf("[calloc error: %s]\n", strerror(errno));
