@@ -75,18 +75,3 @@ Ensure(sort_rockstar_halos, sorts_halos_properly_based_on_their_mass)
 
   free(r);
 }
-
-Ensure(sort_rockstar_halos, sorts_halos_properly_based_on_their_id)
-{
-  FILE *fp = fopen(ROCKSTAR_FILE_ADDR, "rb");
-  struct rockstar *r = load_rockstar_bin(fp);
-  fclose(fp);
-
-  sort_rockstar_halos(r->halos, r->headers->num_halos, compare_id);
-
-  int i;
-  for (i = 1; i < NUMHALOS; i++)
-    assert_true(r->halos[i].id >= r->halos[i-1].id);
-
-  free(r);
-}

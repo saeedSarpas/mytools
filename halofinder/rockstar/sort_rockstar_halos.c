@@ -34,15 +34,3 @@ int compare_mass(const void *h1, const void *h2){
   else
     return 0;
 }
-
-int compare_id(const void *h1, const void *h2){
-  const struct halo *elem1 = h1;
-  const struct halo *elem2 = h2;
-
-  if (elem1->id < elem2->id)
-    return -1;
-  else if (elem1->id > elem2->id)
-    return 1;
-  else
-    return 0;
-}
