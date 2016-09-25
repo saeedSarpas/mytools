@@ -36,7 +36,7 @@ struct rockstar* load_rockstar_bin(FILE *file)
   int i;
   for(i = 0; i < r->headers->num_halos; i++){
     read_from(file, 1, sizeof(struct rockstar_halo), rhalo);
-    rockstar_halo_to_generic_halo(rhalo, &r->halos[i]);
+    rockstar_halo_to_generic_halo(rhalo, &r->halos[rhalo->id]);
   }
 
   read_from(file, r->headers->num_particles, sizeof(int64_t), r->particle_ids);
