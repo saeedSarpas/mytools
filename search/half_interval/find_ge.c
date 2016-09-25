@@ -40,7 +40,8 @@ int find_ge(void *value, void *sorted_array, int array_length,
   index = (compare((void*)sorted_array, max - 1, value)) == LESS_THAN_T_VALUE ?
     max : max - 1;
 
-  if (compare((void*)sorted_array, index, value) != EQUAL_TO_T_VALUE)
+  if (compare((void*)sorted_array, index, value) == LESS_THAN_T_VALUE
+      || index >= array_length || index < 0)
     return NOT_FOUND;
   else
     return index;
