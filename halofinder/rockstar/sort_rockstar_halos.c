@@ -17,15 +17,15 @@
 #include "sort_rockstar_halos.h"
 
 
-void sort_rockstar_halos(struct halo *halos, int64_t n,
+void sort_rockstar_halos(halo *halos, int64_t n,
                          int (*compare_func)(const void*, const void*)){
-  qsort((void*) halos, n, sizeof(struct halo), compare_func);
+  qsort((void*) halos, n, sizeof(halo), compare_func);
 }
 
 
 int compare_mass(const void *h1, const void *h2){
-  const struct halo *elem1 = h1;
-  const struct halo *elem2 = h2;
+  const halo *elem1 = h1;
+  const halo *elem2 = h2;
 
   if (elem1->m < elem2->m)
     return -1;

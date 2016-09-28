@@ -22,6 +22,7 @@ Describe(load_rockstar_bin);
 #define HALOMASS 123456789000.0
 #define HALORADIUS 1234.0
 #define PARTMASS 4.56e9
+#define PARTID 123
 #define MASSPRECISION 1E5
 #define RADIUSPRECISION 1E0
 #define UNUSEDBYTES BINARY_HEADER_SIZE - (sizeof(char)*VERSION_MAX_SIZE) \
@@ -33,19 +34,19 @@ BeforeEach(load_rockstar_bin)
   FILE *file;
   file = fopen(ROCKSTAR_FILE_ADDR, "wb");
 
-  // Filling headers
-  struct rockstar_header rh;
+// Filling headers
+  rockstarheader rh;
   rh.num_halos = NUMHALOS;
   rh.num_particles = NUMHALOS * NUMPARTS;
-  fwrite(&rh, sizeof(struct rockstar_header), 1, file);
+  fwrite(&rh, sizeof(rockstarheader), 1, file);
 
-  // Filling halos info
+// Filling halos info
   int64_t i, j, p_start;
 
   for(i = 0; i < NUMHALOS; i++) {
     p_start =  i * NUMPARTS;
 
-    struct rockstar_halo h;
+    rockstarhalo h;
     h.id = i;
     for(j = 0; j < 3; j++)
       h.pos[j] = HALOPOS;
@@ -55,13 +56,14 @@ BeforeEach(load_rockstar_bin)
     h.r = HALORADIUS;
     h.num_p = NUMPARTS;
     h.p_start = p_start;
-    fwrite(&h, sizeof(struct rockstar_halo), 1, file);
+    fwrite(&h, sizeof(rockstarhalo), 1, file);
   }
 
-  // Filling particle ids
+// Filling particle ids
+  int64_t partid = PARTID;
   for(i = 0; i < NUMHALOS; i++)
     for(j = 0; j < NUMPARTS; j++)
-      fwrite(&i, 1, sizeof(int64_t), file);
+      fwrite(&partid, 1, sizeof(int64_t), file);
 
   fclose(file);
 }
@@ -76,66 +78,62 @@ AfterEach(load_rockstar_bin)
 Ensure(load_rockstar_bin, loads_halo_data_properly)
 {
   FILE *fp = fopen(ROCKSTAR_FILE_ADDR, "rb");
-  struct rockstar *r = load_rockstar_bin(fp);
+  halofinder *hf = load_rockstar_bin(fp);
   fclose(fp);
 
-  // Testing header
-  assert_that(r->headers->num_halos, is_equal_to(NUMHALOS));
-  assert_that(r->headers->num_particles, is_equal_to(NUMHALOS * NUMPARTS));
+// Testing header
+  assert_that(hf->header->num_halos, is_equal_to(NUMHALOS));
 
-  // Testing halos
+// Testing halos
   int i, j;
   for(i = 0; i < NUMHALOS; i++){
-    assert_that(r->halos[i].id, is_equal_to(i));
+    assert_that(hf->halos[i].id, is_equal_to(i));
     for(j = 0; j < 3; j++){
-      assert_that(r->halos[i].pos[j], is_equal_to(HALOPOS));
-      assert_that(r->halos[i].vel[j], is_equal_to(HALOVEL));
+      assert_that(hf->halos[i].pos[j], is_equal_to(HALOPOS));
+      assert_that(hf->halos[i].vel[j], is_equal_to(HALOVEL));
     }
-    assert_true(fabs(r->halos[i].m - HALOMASS) <= MASSPRECISION);
-    assert_true(fabs(r->halos[i].r - HALORADIUS) <= RADIUSPRECISION);
-    assert_that(r->halos[i].num_p, is_equal_to(NUMPARTS));
+    assert_true(fabs(hf->halos[i].m - HALOMASS) <= MASSPRECISION);
+    assert_true(fabs(hf->halos[i].r - HALORADIUS) <= RADIUSPRECISION);
+    assert_that(hf->halos[i].num_p, is_equal_to(NUMPARTS));
+
+// Testing particle ids
+    for(j = 0; j < NUMPARTS; j++){
+      assert_that(hf->halos[i].particle_ids[j], is_equal_to(PARTID));
+    }
   }
 
-  // Testing particle ids
-  for(i = 0; i < NUMHALOS; i++)
-    for(j = 0; j < NUMPARTS; j++)
-      assert_that(r->particle_ids[i * NUMPARTS + j], is_equal_to(i));
-
-  free(r);
+  hf->dispose(hf);
 }
 
 
 Ensure(load_rockstar_bin, works_with_real_rockstar_binary_file)
 {
   FILE *fp = fopen("./halos_z0_256_100Mpc.bin", "rb");
-  struct rockstar *r = load_rockstar_bin(fp);
+  halofinder *hf = load_rockstar_bin(fp);
   fclose(fp);
 
-  // Testing header
-  assert_that(r->headers->snap, is_equal_to(0));
-  assert_that(r->headers->chunk, is_equal_to(0));
-  assert_that_double(r->headers->scale, is_equal_to_double(1));
-  assert_that_double(r->headers->Om, is_equal_to_double(0.308900));
-  assert_that_double(r->headers->Ol, is_equal_to_double(0.691100));
-  assert_that_double(r->headers->h0, is_equal_to_double(0.677400));
-  assert_that(r->headers->box_size, is_equal_to(100));
-  assert_that(r->headers->particle_mass, is_equal_to(5109658624));
-  assert_that(r->headers->particle_type, is_equal_to(1));
+// Testing header
+  assert_that_double(hf->header->Om, is_equal_to_double(0.308900));
+  assert_that_double(hf->header->Ol, is_equal_to_double(0.691100));
+  assert_that_double(hf->header->h0, is_equal_to_double(0.677400));
+  assert_that(hf->header->box_size, is_equal_to(100));
+  assert_that(hf->header->particle_mass, is_equal_to(5109658624));
 
-  // Testing halos
+// Testing halos
   int i, j;
-  for(i = 0; i < r->headers->num_halos; i++){
-    assert_that(r->halos[i].id, is_equal_to(i));
+  for(i = 0; i < hf->header->num_halos; i++){
+    assert_that(hf->halos[i].id, is_equal_to(i));
     for(j = 0; j < 3; j++){
-      assert_true(0 < r->halos[i].pos[j]
-                  &&r->halos[i].pos[j] < r->headers->box_size);
+      assert_true(0 < hf->halos[i].pos[j]
+                  && hf->halos[i].pos[j] < hf->header->box_size);
+    }
+
+// Testing particle ids
+    for(j = 0; j < hf->halos[i].num_p; j += 1e3){
+      assert_true(0 <= hf->halos[i].particle_ids[j]
+                  && hf->halos[i].particle_ids[j] < pow(256, 3));
     }
   }
 
-  // Testing particle ids
-  printf("%lld\n", r->headers->num_particles);
-  for(i = 0; i < r->headers->num_particles; i += 1e4)
-    assert_true(0 <= r->particle_ids[i] && r->particle_ids[i] < pow(256, 3));
-
-  free(r);
+  hf->dispose(hf);
 }

@@ -7,7 +7,10 @@ _TESTS := load_rockstar_bin_test \
           sort_rockstar_halos_test
 
 _DEPS := ./../../memory/allocate \
+         ./../../memory/copy \
          ./../../io/open_file \
-         ./../../io/read_from
+         ./../../io/read_from \
+         ./../../avltree/avl_tree \
+         ./../halofinder
 
 include ./../../Makefile_main

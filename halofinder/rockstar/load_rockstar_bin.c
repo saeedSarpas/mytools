@@ -8,41 +8,73 @@
  * param: rockstar a struct containing pointers to rockstar headers, rockstar
  * halos and rockstar particle ids.
  *
+ * return: rockstar structure containing rockstar_headers, an array of halo
+ * structures and an array of int64_t particle ids
+ *
  * author: Saeed Sarpas
  */
 
 
 #include "load_rockstar_bin.h"
+#include "./../halofinder.h"
 #include "./../../memory/allocate.h"
+#include "./../../memory/copy.h"
 #include "./../../io/open_file.h"
 #include "./../../io/read_from.h"
 
 
-void rockstar_halo_to_generic_halo(struct rockstar_halo*, struct halo*);
+void rockstarheader_to_haloheader(rockstarheader*, haloheader*);
+void rockstar_halo_to_generic_halo(rockstarhalo*, halo*);
 
 
-struct rockstar* load_rockstar_bin(FILE *file)
+halofinder* load_rockstar_bin(FILE *file)
 {
-  struct rockstar *r = malloc(sizeof *r);
+  rewind(file);
 
-  r->headers = allocate(1, sizeof(struct rockstar_header));
-  read_from(file, 1, sizeof(struct rockstar_header), r->headers);
+  rockstarheader *rheader = allocate(1, sizeof(rockstarheader));
+  read_from(file, 1, sizeof(rockstarheader), rheader);
 
-  r->halos = allocate(r->headers->num_halos, sizeof(struct halo));
-  r->particle_ids = allocate(r->headers->num_particles, sizeof(int64_t));
-
-  struct rockstar_halo *rhalo = allocate(1, sizeof(struct halo));
+  halofinder *hf = new_halofinder(rheader->num_halos);
+  rockstarheader_to_haloheader(rheader, hf->header);
 
   int i;
-  for(i = 0; i < r->headers->num_halos; i++){
-    read_from(file, 1, sizeof(struct rockstar_halo), rhalo);
-    rockstar_halo_to_generic_halo(rhalo, &r->halos[rhalo->id]);
+  rockstarhalo *rhalo = allocate(1, sizeof(halo));
+  for(i = 0; i < hf->header->num_halos; i++){
+    read_from(file, 1, sizeof(rockstarhalo), rhalo);
+    rockstar_halo_to_generic_halo(rhalo, &hf->halos[rhalo->id]);
+    hf->halos[rhalo->id].particle_ids = allocate(rhalo->num_p, sizeof(int64_t));
   }
 
-  read_from(file, r->headers->num_particles, sizeof(int64_t), r->particle_ids);
+  int64_t *particle_ids = allocate(rheader->num_particles, sizeof(int64_t));
+  read_from(file, rheader->num_particles, sizeof(int64_t), particle_ids);
+
+  for(i = 0; i < hf->header->num_halos; i++){
+    hf->halos[i].particle_ids = allocate(hf->halos[i].num_p, sizeof(int64_t));
+    copy(&particle_ids[hf->halos[i].p_start], hf->halos[i].particle_ids,
+         hf->halos[i].num_p * sizeof(int64_t));
+  }
 
   free(rhalo);
-  return r;
+  free(rheader);
+  free(particle_ids);
+  return hf;
+}
+
+
+/*
+ * Converting rockstar header to the generic header
+ *
+ * param: rheader pointer to rockstar halo to be read
+ * param: header pointer to the halo structure to be filled
+ */
+void rockstarheader_to_haloheader(rockstarheader *rheader, haloheader *header)
+{
+  header->num_halos = rheader->num_halos;
+  header->Om = rheader->Om;
+  header->Ol = rheader->Ol;
+  header->h0 = rheader->h0;
+  header->box_size = rheader->box_size;
+  header->particle_mass = rheader->particle_mass;
 }
 
 
@@ -53,8 +85,7 @@ struct rockstar* load_rockstar_bin(FILE *file)
  * param: rhalo pointer to rockstar halo to be read
  * param: halo pointer to the halo structure to be filled
  */
-void rockstar_halo_to_generic_halo(struct rockstar_halo *rhalo,
-                                   struct halo *halo)
+void rockstar_halo_to_generic_halo(rockstarhalo *rhalo, halo *halo)
 {
   int i;
   halo->id = rhalo->id;
@@ -72,8 +103,8 @@ void rockstar_halo_to_generic_halo(struct rockstar_halo *rhalo,
   halo->vrms = rhalo->vrms;
   halo->kin_to_pot = rhalo->kin_to_pot;
   halo->halfmass_radius = rhalo->halfmass_radius;
-  halo->num_p = rhalo->num_p;
   halo->num_child_particles = rhalo->num_child_particles;
+  halo->num_p = rhalo->num_p;
   halo->p_start = rhalo->p_start;
   halo->desc = rhalo->desc;
   halo->n_core = rhalo->n_core;
