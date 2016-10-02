@@ -14,7 +14,7 @@
 #include "./../avltree/avl_tree.h"
 
 
-void dispose_halofinder(halofinder*);
+static void dispose_halofinder(halofinder*);
 
 
 /*
@@ -43,7 +43,7 @@ halofinder* new_halofinder(int num_halos)
  * TODO: creating a separate module for managing halo related actions (e.g.
  * creating, destroying, etc.)
  */
-void dispose_halofinder(halofinder *hf)
+static void dispose_halofinder(halofinder *hf)
 {
   int i;
   for(i = 0; i < hf->header->num_halos; i++){
