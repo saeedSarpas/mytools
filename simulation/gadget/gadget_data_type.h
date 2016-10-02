@@ -1,14 +1,15 @@
 #ifndef GADGET_DATA_TYPE_H
 #define GADGET_DATA_TYPE_H
 
+
 #include <inttypes.h>
-#include "./../shared_simulation_data_type.h"
+
 
 #define BINARY_HEADER_SIZE 256
 #define VERSION_MAX_SIZE 12
 
 
-typedef struct gadget_header
+typedef struct _gadgetheader
 {
   int npart[6];
   double mass[6];
@@ -19,18 +20,12 @@ typedef struct gadget_header
   int npartTotal[6];
   int flag_cooling;
   int num_files;
-  double BoxSize;
-  double Omega0;
-  double OmegaLambda;
-  double HubbleParam;
+  double box_size;
+  double Omega_0;
+  double Omega_Lambda;
+  double h0;
   char fill[256 - 6 * 4 - 6 * 8 - 2 * 8 - 2 * 4 - 6 * 4 - 2 * 4 - 4 * 8];
-} gadget_header;
-
-
-typedef struct gadget {
-  struct gadget_header *headers;
-  struct particle *particles;
-} gadget;
+} gadgetheader;
 
 
 #endif /* GADGET_DATA_TYPE_H */

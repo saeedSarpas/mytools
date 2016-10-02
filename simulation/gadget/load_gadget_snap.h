@@ -3,10 +3,10 @@
 
 
 #include <stdio.h>
-#include "gadget_data_type.h"
+#include "./../simulation.h"
 
 
-struct gadget* load_gadget_snap(FILE*);
+simulation* load_gadget_snap(FILE*);
 
 
 #endif /* LOAD_GADGET_SNAP_H */
