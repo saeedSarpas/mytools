@@ -25,6 +25,7 @@ Ensure(halofinder, creates_and_dispose_halofinder_struct_correctly)
   halofinder *hf = new_halofinder(NUMHALOS);
   assert_that(hf, is_non_null);
   assert_that(hf->header, is_non_null);
+  assert_that(hf->header->num_halos, is_equal_to(NUMHALOS));
   assert_that(hf->halos, is_non_null);
 
   hf->dispose(hf);

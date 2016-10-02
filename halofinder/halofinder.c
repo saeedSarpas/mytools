@@ -28,6 +28,7 @@ halofinder* new_halofinder(int num_halos)
 {
   halofinder *hf = allocate(1, sizeof(halofinder));
   hf->header = allocate(1, sizeof(haloheader));
+  hf->header->num_halos = num_halos;
   hf->halos = allocate(num_halos, sizeof(halo));
   hf->dispose = dispose_halofinder;
 
