@@ -10,7 +10,9 @@
 #include "simulation.h"
 
 
-#define NUMPARTS 200
+#define NUMDARKPART 20
+#define NUMGASPART 20
+#define NUMSTARPART 20
 
 
 Describe(simulation);
@@ -20,12 +22,16 @@ AfterEach(simulation){};
 
 Ensure(simulation, creates_and_dispose_simulation_struct_correctly)
 {
-  simulation *hf = new_simulation(NUMPARTS);
+  simulation *hf = new_simulation(NUMDARKPART, NUMGASPART, NUMSTARPART);
   assert_that(hf, is_non_null);
   assert_that(hf->header, is_non_null);
-  assert_that(hf->particles, is_non_null);
+  assert_that(hf->darkparts, is_non_null);
+  assert_that(hf->gasparts, is_non_null);
+  assert_that(hf->starparts, is_non_null);
 
   hf->dispose(hf);
   assert_that(hf->header, is_null);
-  assert_that(hf->particles, is_null);
+  assert_that(hf->darkparts, is_null);
+  assert_that(hf->gasparts, is_null);
+  assert_that(hf->starparts, is_null);
 }

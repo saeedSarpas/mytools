@@ -6,11 +6,11 @@
 
 
 typedef struct _simulationheader {
-  int ndarkpart, ngaspart, nstarspart;
-  double mdarkpart, mgaspart, mstarspart;
+  int ndarkpart, ngaspart, nstarpart;
+  double mdarkpart, mgaspart, mstarpart;
   double time;
   double redshift;
-  double BoxSize;
+  double boxsize;
   double Om, Ol, h0;
 } simulationheader;
 
@@ -19,20 +19,19 @@ typedef struct _simulationparticle {
   int64_t id;
   float Pos[3];
   float Vel[3];
-  float Mass;
-  int Type; // enum ('Gas', 'Halo', 'Disk', 'Bulge', 'Stars', 'Bndry')
-  /* float Rho, U, Temp, Ne; */
 } simulationparticle;
 
 
 typedef struct _simulation {
   simulationheader *header;
-  simulationparticle *particles;
+  simulationparticle *darkparts;
+  simulationparticle *gasparts;
+  simulationparticle *starparts;
   void (*dispose)(struct _simulation*);
 } simulation;
 
 
-simulation* new_simulation(int);
+simulation* new_simulation(int, int, int);
 
 
 #endif /* SIMULATION_H */

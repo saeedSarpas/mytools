@@ -23,11 +23,13 @@ static void dispose_simulation(simulation*);
  *
  * return: allocated simulation structure
  */
-simulation* new_simulation(int tot_num_particles)
+simulation* new_simulation(int num_darkpart, int num_gaspart, int num_starpart)
 {
   simulation *s = allocate(1, sizeof(simulation));
   s->header = allocate(1, sizeof(simulationheader));
-  s->particles = allocate(tot_num_particles, sizeof(simulationparticle));
+  s->darkparts = allocate(num_darkpart, sizeof(simulationparticle));
+  s->gasparts = allocate(num_gaspart, sizeof(simulationparticle));
+  s->starparts = allocate(num_starpart, sizeof(simulationparticle));
   s->dispose = dispose_simulation;
 
   return s;
@@ -44,6 +46,12 @@ static void dispose_simulation(simulation *s)
   free(s->header);
   s->header = NULL;
 
-  free(s->particles);
-  s->particles = NULL;
+  free(s->darkparts);
+  s->darkparts = NULL;
+
+  free(s->gasparts);
+  s->gasparts = NULL;
+
+  free(s->starparts);
+  s->starparts = NULL;
 }
