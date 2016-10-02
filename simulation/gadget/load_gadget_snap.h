@@ -3,10 +3,10 @@
 
 
 #include <stdio.h>
-#include "./../simulation.h"
+#include "./../snapshot.h"
 
 
-simulation* load_gadget_snap(FILE*);
+snapshot* load_gadget_snap(FILE*);
 
 
 #endif /* LOAD_GADGET_SNAP_H */

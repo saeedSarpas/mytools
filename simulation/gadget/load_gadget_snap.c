@@ -6,7 +6,7 @@
  *
  * param: snapshot Gadget snapshot file
  *
- * return: simulation structure containing header and an array of particles
+ * return: snapshot structure containing header and an array of particles
  *
  * NOTE: it only works with single snapshot file and only load ids, positions,
  * velocities, type and masses
@@ -22,13 +22,13 @@
 #include "./../../io/read_from.h"
 
 
-static void gadgetheader_to_generic_simulationheader(gadgetheader*,
-                                                     simulationheader*);
-static void set_header_mass(int, float, simulationheader*);
+static void gadgetheader_to_generic_snapshotheader(gadgetheader*,
+                                                   snapshotheader*);
+static void set_header_mass(int, float, snapshotheader*);
 
 
 
-simulation* load_gadget_snap(FILE *snapshot)
+snapshot* load_gadget_snap(FILE *snapshot)
 {
   int i, j;
 
@@ -40,9 +40,9 @@ simulation* load_gadget_snap(FILE *snapshot)
   read_from(snapshot, 1, sizeof(gadgetheader), gh);
   SKIPINT;
 
-  simulation* s = new_simulation(gh->npart[1], gh->npart[0], gh->npart[4]);
+  struct _snapshot *s = new_snapshot(gh->npart[1], gh->npart[0], gh->npart[4]);
 
-  gadgetheader_to_generic_simulationheader(gh, s->header);
+  gadgetheader_to_generic_snapshotheader(gh, s->header);
 
   int tot_num_particles = 0, ntot_withmasses = 0;
   for(i = 0; i < 6; i++){
@@ -53,6 +53,7 @@ simulation* load_gadget_snap(FILE *snapshot)
 
 
 // Loading positions
+  float dummy_float[3];
   SKIPINT;
   for(i = 0; i < 6; i++){
     switch(i) {
@@ -64,9 +65,21 @@ simulation* load_gadget_snap(FILE *snapshot)
       for(j = 0; j < gh->npart[i]; j++)
         read_from(snapshot, 3, sizeof(float), &s->darkparts[j].Pos[0]);
       break;
+    case 2:
+      for(j = 0; j < gh->npart[i]; j++)
+        read_from(snapshot, 3, sizeof(float), &dummy_float);
+      break;
+    case 3:
+      for(j = 0; j < gh->npart[i]; j++)
+        read_from(snapshot, 3, sizeof(float), &dummy_float);
+      break;
     case 4:
       for(j = 0; j < gh->npart[i]; j++)
         read_from(snapshot, 3, sizeof(float), &s->starparts[j].Pos[0]);
+      break;
+    case 5:
+      for(j = 0; j < gh->npart[i]; j++)
+        read_from(snapshot, 3, sizeof(float), &dummy_float);
       break;
     }
   }
@@ -84,9 +97,21 @@ simulation* load_gadget_snap(FILE *snapshot)
       for(j = 0; j < gh->npart[i]; j++)
         read_from(snapshot, 3, sizeof(float), &s->darkparts[j].Vel[0]);
       break;
+    case 2:
+      for(j = 0; j < gh->npart[i]; j++)
+        read_from(snapshot, 3, sizeof(float), &dummy_float);
+      break;
+    case 3:
+      for(j = 0; j < gh->npart[i]; j++)
+        read_from(snapshot, 3, sizeof(float), &dummy_float);
+      break;
     case 4:
       for(j = 0; j < gh->npart[i]; j++)
         read_from(snapshot, 3, sizeof(float), &s->starparts[j].Vel[0]);
+      break;
+    case 5:
+      for(j = 0; j < gh->npart[i]; j++)
+        read_from(snapshot, 3, sizeof(float), &dummy_float);
       break;
     }
   }
@@ -104,9 +129,21 @@ simulation* load_gadget_snap(FILE *snapshot)
       for(j = 0; j < gh->npart[i]; j++)
         read_from(snapshot, 1, sizeof(int), &s->darkparts[j].id);
       break;
+    case 2:
+      for(j = 0; j < gh->npart[i]; j++)
+        read_from(snapshot, 1, sizeof(int), &dummy_float);
+      break;
+    case 3:
+      for(j = 0; j < gh->npart[i]; j++)
+        read_from(snapshot, 1, sizeof(int), &dummy_float);
+      break;
     case 4:
       for(j = 0; j < gh->npart[i]; j++)
         read_from(snapshot, 1, sizeof(int), &s->starparts[j].id);
+      break;
+    case 5:
+      for(j = 0; j < gh->npart[i]; j++)
+        read_from(snapshot, 1, sizeof(int), &dummy_float);
       break;
     }
   SKIPINT;
@@ -132,13 +169,13 @@ simulation* load_gadget_snap(FILE *snapshot)
 
 
 /*
- * Converting gadget header to the generic simulation header
+ * Converting gadget header to the generic snapshot header
  *
  * param: gh pointer to gadget header to be read
  * param: sh pointer to the allocated simultion header to be filled
  */
-static void gadgetheader_to_generic_simulationheader(gadgetheader *gh,
-                                              simulationheader *sh)
+static void gadgetheader_to_generic_snapshotheader(gadgetheader *gh,
+                                                   snapshotheader *sh)
 {
   sh->ndarkpart = gh->npart[1];
   sh->ngaspart = gh->npart[0];
@@ -160,9 +197,9 @@ static void gadgetheader_to_generic_simulationheader(gadgetheader *gh,
  *
  * param: type type of the particle
  * param: mass mass of the particle
- * param: sh pointer to the header member of the simulation struct
+ * param: sh pointer to the header member of the snapshot struct
  */
-static void set_header_mass(int type, float mass, simulationheader* sh)
+static void set_header_mass(int type, float mass, snapshotheader* sh)
 {
   switch(type){
   case 0:

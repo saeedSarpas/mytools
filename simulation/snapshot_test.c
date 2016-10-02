@@ -1,13 +1,13 @@
 /*
- * simulation/siulation_test.c
- * test_for: simulation/siulation.c
+ * simulation/snapshot_test.c
+ * test_for: simulation/snapshot.c
  *
  * author: Saeed Sarpas
  */
 
 
 #include <cgreen/cgreen.h>
-#include "simulation.h"
+#include "snapshot.h"
 
 
 #define NUMDARKPART 20
@@ -15,14 +15,14 @@
 #define NUMSTARPART 20
 
 
-Describe(simulation);
-BeforeEach(simulation){};
-AfterEach(simulation){};
+Describe(snapshot);
+BeforeEach(snapshot){};
+AfterEach(snapshot){};
 
 
-Ensure(simulation, creates_and_dispose_simulation_struct_correctly)
+Ensure(snapshot, creates_and_dispose_snapshot_struct_correctly)
 {
-  simulation *hf = new_simulation(NUMDARKPART, NUMGASPART, NUMSTARPART);
+  snapshot *hf = new_snapshot(NUMDARKPART, NUMGASPART, NUMSTARPART);
   assert_that(hf, is_non_null);
   assert_that(hf->header, is_non_null);
   assert_that(hf->darkparts, is_non_null);

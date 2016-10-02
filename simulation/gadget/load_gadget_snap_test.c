@@ -107,7 +107,7 @@ AfterEach(load_gadget_snap)
 Ensure(load_gadget_snap, loads_snapshot_properly)
 {
   FILE *fp = fopen(GADGET_SNAP_ADDR, "rb");
-  simulation *s = load_gadget_snap(fp);
+  snapshot *s = load_gadget_snap(fp);
   fclose(fp);
 
   assert_that_double(s->header->mdarkpart, is_equal_to_double(HALOMASS));
@@ -140,7 +140,7 @@ Ensure(load_gadget_snap, loads_snapshot_properly)
 Ensure(load_gadget_snap, works_with_a_real_snapshot)
 {
   FILE *fp = fopen("./z1_2LPT_8_1kpc.dat", "rb");
-  simulation *s = load_gadget_snap(fp);
+  snapshot *s = load_gadget_snap(fp);
   fclose(fp);
 
   assert_that(s->header->ndarkpart, is_equal_to(8 * 8 * 8));
@@ -160,7 +160,7 @@ Ensure(load_gadget_snap, works_with_a_real_snapshot)
 
   int i;
     for(i = 0; i < s->header->ndarkpart; i += 11){
-      simulationparticle tmp_part = s->darkparts[i];
+      snapshotparticle tmp_part = s->darkparts[i];
       assert_true(0 <= tmp_part.id && tmp_part.id < 8 * 8 * 8);
       assert_true(-1 <= tmp_part.Pos[0] && tmp_part.Pos[0] <= 1);
       assert_true(-1 <= tmp_part.Pos[1] && tmp_part.Pos[1] <= 1);

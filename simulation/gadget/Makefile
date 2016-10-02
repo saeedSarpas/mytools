@@ -6,6 +6,6 @@ _TESTS := load_gadget_snap_test
 
 _DEPS := ./../../memory/allocate \
          ./../../io/read_from \
-         ./../../simulation/simulation
+         ./../../simulation/snapshot
 
 include ./../../Makefile_main

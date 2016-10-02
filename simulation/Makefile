@@ -1,8 +1,8 @@
 MODULE_NAME := simulation
 
-_FILES := simulation
+_FILES := snapshot
 
-_TESTS := simulation_test
+_TESTS := snapshot_test
 
 _DEPS := ./../memory/allocate
 
