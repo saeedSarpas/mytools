@@ -2,12 +2,16 @@
 #define SNAPSHOT_H
 
 
+#define PARTICLENOTSET -1
+
+
 #include <inttypes.h>
 
 
 typedef struct _snapshotheader {
-  int ndarkpart, ngaspart, nstarpart;
-  double mdarkpart, mgaspart, mstarpart;
+  int npart[6]; // enum('Gas', 'Halo', 'Disk', 'Bulge', 'Stars', 'Bndry')
+  int tot_nparticles;
+  double mass[6]; // enum('Gas', 'Halo', 'Disk', 'Bulge', 'Stars', 'Bndry')
   double time;
   double redshift;
   double boxsize;
@@ -17,21 +21,21 @@ typedef struct _snapshotheader {
 
 typedef struct _snapshotparticle {
   int64_t id;
-  float Pos[3];
-  float Vel[3];
+  float pos[3];
+  float vel[3];
+  double mass;
+  int type; // enum('Gas', 'Halo', 'Disk', 'Bulge', 'Stars', 'Bndry')
 } snapshotparticle;
 
 
 typedef struct _snapshot {
   snapshotheader *header;
-  snapshotparticle *darkparts;
-  snapshotparticle *gasparts;
-  snapshotparticle *starparts;
+  snapshotparticle *particles;
   void (*dispose)(struct _snapshot*);
 } snapshot;
 
 
-snapshot* new_snapshot(int, int, int);
+snapshot* new_snapshot(int);
 
 
 #endif /* SNAPSHOT_H */

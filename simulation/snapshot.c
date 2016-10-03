@@ -19,17 +19,19 @@ static void dispose_snapshot(snapshot*);
 /*
  * creating a new snapshot structure
  *
- * param: tot_num_particles total number of particles
+ * param: tot_nparticles total number of particles
  *
  * return: allocated snapshot structure
  */
-snapshot* new_snapshot(int num_darkpart, int num_gaspart, int num_starpart)
+snapshot* new_snapshot(int tot_nparticles)
 {
   snapshot *s = allocate(1, sizeof(snapshot));
   s->header = allocate(1, sizeof(snapshotheader));
-  s->darkparts = allocate(num_darkpart, sizeof(snapshotparticle));
-  s->gasparts = allocate(num_gaspart, sizeof(snapshotparticle));
-  s->starparts = allocate(num_starpart, sizeof(snapshotparticle));
+  s->header->tot_nparticles = tot_nparticles;
+  s->particles = allocate(tot_nparticles, sizeof(snapshotparticle));
+  int i;
+  for(i = 0; i < s->header->tot_nparticles; i++)
+    s->particles[i].id = PARTICLENOTSET;
   s->dispose = dispose_snapshot;
 
   return s;
@@ -46,12 +48,6 @@ static void dispose_snapshot(snapshot *s)
   free(s->header);
   s->header = NULL;
 
-  free(s->darkparts);
-  s->darkparts = NULL;
-
-  free(s->gasparts);
-  s->gasparts = NULL;
-
-  free(s->starparts);
-  s->starparts = NULL;
+  free(s->particles);
+  s->particles = NULL;
 }
