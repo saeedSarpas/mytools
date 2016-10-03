@@ -28,6 +28,10 @@ Ensure(halofinder, creates_and_dispose_halofinder_struct_correctly)
   assert_that(hf->header->num_halos, is_equal_to(NUMHALOS));
   assert_that(hf->halos, is_non_null);
 
+  assert_that(hf->halos[0].particle_ids, is_null);
+  allocate_particle_ids(&hf->halos[0], NUMPARTS);
+  assert_that(hf->halos[0].particle_ids, is_non_null);
+
   hf->dispose(hf);
   assert_that(hf->header, is_null);
   assert_that(hf->halos, is_null);

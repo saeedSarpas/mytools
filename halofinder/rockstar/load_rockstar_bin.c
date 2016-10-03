@@ -42,14 +42,14 @@ halofinder* load_rockstar_bin(FILE *file)
   for(i = 0; i < hf->header->num_halos; i++){
     read_from(file, 1, sizeof(rockstarhalo), rhalo);
     rockstar_halo_to_generic_halo(rhalo, &hf->halos[rhalo->id]);
-    hf->halos[rhalo->id].particle_ids = allocate(rhalo->num_p, sizeof(int64_t));
+    allocate_particle_ids(&hf->halos[rhalo->id], rhalo->num_p);
   }
 
   int64_t *particle_ids = allocate(rheader->num_particles, sizeof(int64_t));
   read_from(file, rheader->num_particles, sizeof(int64_t), particle_ids);
 
   for(i = 0; i < hf->header->num_halos; i++){
-    hf->halos[i].particle_ids = allocate(hf->halos[i].num_p, sizeof(int64_t));
+    allocate_particle_ids(&hf->halos[i], hf->halos[i].num_p);
     copy(&particle_ids[hf->halos[i].p_start], hf->halos[i].particle_ids,
          hf->halos[i].num_p * sizeof(int64_t));
   }

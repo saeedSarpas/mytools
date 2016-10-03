@@ -37,6 +37,18 @@ halofinder* new_halofinder(int num_halos)
 
 
 /*
+ * allocating memory for particle ids array
+ *
+ * param: h the halo that the array should be allocated for that
+ * param: num_p number of particles of the halo
+ */
+void allocate_particle_ids(halo *h, int num_p)
+{
+  h->particle_ids = allocate(num_p, sizeof(int64_t));
+}
+
+
+/*
  * disposing a given halofinder structure
  *
  * NOTE: memory leak since we don't free hf itself
@@ -54,6 +66,7 @@ static void dispose_halofinder(halofinder *hf)
     }
     if(hf->halos[i].init_volume != NULL){
       avl_dispose(hf->halos[i].init_volume);
+      free(hf->halos[i].init_volume);
       hf->halos[i].init_volume = NULL;
     }
   }

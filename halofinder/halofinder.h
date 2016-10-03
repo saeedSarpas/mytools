@@ -33,6 +33,7 @@ typedef struct _halofinder {
 
 
 halofinder* new_halofinder(int);
+void allocate_particle_ids(halo*, int);
 
 
 #endif /* HALOFINDER_H */
