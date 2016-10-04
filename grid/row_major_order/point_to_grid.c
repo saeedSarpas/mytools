@@ -16,13 +16,13 @@
 #include "three_to_one.h"
 
 
-int point_to_grid(double x, double y, double z, double *box, int *grid)
+int point_to_grid(float pos[3], double *box, int *grid)
 {
   int i, j, k;
 
-  i = x * grid[0] / box[0];
-  j = y * grid[1] / box[1];
-  k = z * grid[2] / box[2];
+  i = pos[0] * grid[0] / box[0];
+  j = pos[1] * grid[1] / box[1];
+  k = pos[2] * grid[2] / box[2];
 
   return three_to_one(i, j, k, grid);
 }
