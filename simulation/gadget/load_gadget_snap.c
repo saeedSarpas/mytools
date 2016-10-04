@@ -4,7 +4,7 @@
  *
  * Loading Gadget snapshot
  *
- * param: snapshot Gadget snapshot file
+ * param: snapshotfile Gadget snapshot file
  *
  * return: snapshot structure containing header and an array of particles
  *
@@ -22,147 +22,82 @@
 #include "./../../io/read_from.h"
 
 
-static void gadgetheader_to_generic_snapshotheader(gadgetheader*,
-                                                   snapshotheader*);
-static void set_header_mass(int, float, snapshotheader*);
+static void gadgetheader_to_snapshotheader(gadgetheader*, snapshotheader*);
 
 
-
-snapshot* load_gadget_snap(FILE *snapshot)
+snapshot* load_gadget_snap(FILE *snapshotfile)
 {
-  int i, j;
+  int i, j, dummy_int;
+  gadgetheader *gh = allocate(1, sizeof(gadgetheader));
 
-#define SKIPINT fread(&i, sizeof(i), 1, snapshot)
-
-  gadgetheader* gh = allocate(1, sizeof(gadgetheader));
+#define SKIPINT read_from(snapshotfile, 1, sizeof(dummy_int), &dummy_int)
 
   SKIPINT;
-  read_from(snapshot, 1, sizeof(gadgetheader), gh);
+  read_from(snapshotfile, 1, sizeof(gadgetheader), gh);
   SKIPINT;
 
-  struct _snapshot *s = new_snapshot(gh->npart[1], gh->npart[0], gh->npart[4]);
-
-  gadgetheader_to_generic_snapshotheader(gh, s->header);
-
-  int tot_num_particles = 0, ntot_withmasses = 0;
+  int ntot_particles = 0, ntot_withmasses = 0;
   for(i = 0; i < 6; i++){
-    tot_num_particles += gh->npart[i];
+    ntot_particles += gh->npart[i];
     if(gh->mass[i] == 0.0)
       ntot_withmasses += gh->npart[i];
   }
 
+  snapshot *s = new_snapshot(ntot_particles);
+
+  gadgetheader_to_snapshotheader(gh, s->header);
 
 // Loading positions
-  float dummy_float[3];
+  snapshotparticle *particles = allocate(ntot_particles,
+                                         sizeof(snapshotparticle));
+
   SKIPINT;
+  int offset = 0;
   for(i = 0; i < 6; i++){
-    switch(i) {
-    case 0:
-      for(j = 0; j < gh->npart[i]; j++)
-        read_from(snapshot, 3, sizeof(float), &s->gasparts[j].Pos[0]);
-      break;
-    case 1:
-      for(j = 0; j < gh->npart[i]; j++)
-        read_from(snapshot, 3, sizeof(float), &s->darkparts[j].Pos[0]);
-      break;
-    case 2:
-      for(j = 0; j < gh->npart[i]; j++)
-        read_from(snapshot, 3, sizeof(float), &dummy_float);
-      break;
-    case 3:
-      for(j = 0; j < gh->npart[i]; j++)
-        read_from(snapshot, 3, sizeof(float), &dummy_float);
-      break;
-    case 4:
-      for(j = 0; j < gh->npart[i]; j++)
-        read_from(snapshot, 3, sizeof(float), &s->starparts[j].Pos[0]);
-      break;
-    case 5:
-      for(j = 0; j < gh->npart[i]; j++)
-        read_from(snapshot, 3, sizeof(float), &dummy_float);
-      break;
-    }
+    for(j = 0; j < gh->npart[i]; j++)
+      read_from(snapshotfile, 3, sizeof(float), &particles[j + offset].pos[0]);
+    offset += gh->npart[i];
   }
   SKIPINT;
 
 // Loading velocities
   SKIPINT;
+  offset = 0;
   for(i = 0; i < 6; i++){
-    switch(i) {
-    case 0:
-      for(j = 0; j < gh->npart[i]; j++)
-        read_from(snapshot, 3, sizeof(float), &s->gasparts[j].Vel[0]);
-      break;
-    case 1:
-      for(j = 0; j < gh->npart[i]; j++)
-        read_from(snapshot, 3, sizeof(float), &s->darkparts[j].Vel[0]);
-      break;
-    case 2:
-      for(j = 0; j < gh->npart[i]; j++)
-        read_from(snapshot, 3, sizeof(float), &dummy_float);
-      break;
-    case 3:
-      for(j = 0; j < gh->npart[i]; j++)
-        read_from(snapshot, 3, sizeof(float), &dummy_float);
-      break;
-    case 4:
-      for(j = 0; j < gh->npart[i]; j++)
-        read_from(snapshot, 3, sizeof(float), &s->starparts[j].Vel[0]);
-      break;
-    case 5:
-      for(j = 0; j < gh->npart[i]; j++)
-        read_from(snapshot, 3, sizeof(float), &dummy_float);
-      break;
-    }
+    for(j = 0; j < gh->npart[i]; j++)
+      read_from(snapshotfile, 3, sizeof(float), &particles[j + offset].vel[0]);
+    offset += gh->npart[i];
   }
   SKIPINT;
 
 // Loading ids
   SKIPINT;
-  for(i = 0; i < 6; i++)
-    switch(i) {
-    case 0:
-      for(j = 0; j < gh->npart[i]; j++)
-        read_from(snapshot, 1, sizeof(int), &s->gasparts[j].id);
-      break;
-    case 1:
-      for(j = 0; j < gh->npart[i]; j++)
-        read_from(snapshot, 1, sizeof(int), &s->darkparts[j].id);
-      break;
-    case 2:
-      for(j = 0; j < gh->npart[i]; j++)
-        read_from(snapshot, 1, sizeof(int), &dummy_float);
-      break;
-    case 3:
-      for(j = 0; j < gh->npart[i]; j++)
-        read_from(snapshot, 1, sizeof(int), &dummy_float);
-      break;
-    case 4:
-      for(j = 0; j < gh->npart[i]; j++)
-        read_from(snapshot, 1, sizeof(int), &s->starparts[j].id);
-      break;
-    case 5:
-      for(j = 0; j < gh->npart[i]; j++)
-        read_from(snapshot, 1, sizeof(int), &dummy_float);
-      break;
-    }
+  for(i = 0; i < ntot_particles; i++)
+    read_from(snapshotfile, 1, sizeof(int), &particles[i].id);
   SKIPINT;
 
-/* Loading masses */
+// Loading masses
   if(ntot_withmasses > 0) SKIPINT;
-
-  float tmp_mass;
+  offset = 0;
   for(i = 0; i < 6; i++){
-    if(gh->mass[i] == 0){
-      for(j = 0; j < gh->npart[i]; j++)
-        read_from(snapshot, 1, sizeof(float), &tmp_mass);
-      set_header_mass(i, tmp_mass, s->header);
-    }
-    else
-      set_header_mass(i, gh->mass[i], s->header);
-  }
+    for(j = 0; j < gh->npart[i]; j++){
+      particles[j + offset].type = i;
 
+      if(gh->mass[i] == 0)
+        read_from(snapshotfile, 1, sizeof(float), &particles[j + offset].mass);
+      else
+        particles[j + offset].mass = gh->mass[i];
+    }
+    offset += gh->npart[i];
+  }
   if(ntot_withmasses > 0) SKIPINT;
+
+// Sorting particles
+  for(i = 0; i < ntot_particles; i++)
+    s->particles[particles[i].id] = particles[i];
+
+  free(particles);
+  free(gh);
 
   return s;
 }
@@ -174,42 +109,17 @@ snapshot* load_gadget_snap(FILE *snapshot)
  * param: gh pointer to gadget header to be read
  * param: sh pointer to the allocated simultion header to be filled
  */
-static void gadgetheader_to_generic_snapshotheader(gadgetheader *gh,
-                                                   snapshotheader *sh)
+static void gadgetheader_to_snapshotheader(gadgetheader *gh, snapshotheader *sh)
 {
-  sh->ndarkpart = gh->npart[1];
-  sh->ngaspart = gh->npart[0];
-  sh->nstarpart = gh->npart[4];
-  sh->mdarkpart = gh->mass[1];
-  sh->mgaspart = gh->mass[0];
-  sh->mstarpart = gh->mass[4];
+  int i;
+  for(i = 0; i < 6; i++){
+    sh->npart[i] = gh->npart[i];
+    sh->mass[i] = gh->mass[i];
+  }
   sh->time = gh->time;
   sh->redshift = gh->redshift;
   sh->boxsize = gh->box_size;
   sh->Om = gh->Omega_0;
   sh->Ol = gh->Omega_Lambda;
   sh->h0 = gh->h0;
-}
-
-
-/*
- * Assing mass to different type of particles
- *
- * param: type type of the particle
- * param: mass mass of the particle
- * param: sh pointer to the header member of the snapshot struct
- */
-static void set_header_mass(int type, float mass, snapshotheader* sh)
-{
-  switch(type){
-  case 0:
-    sh->mgaspart = mass;
-    break;
-  case 1:
-    sh->mdarkpart = mass;
-    break;
-  case 4:
-    sh->mstarpart = mass;
-    break;
-  }
 }

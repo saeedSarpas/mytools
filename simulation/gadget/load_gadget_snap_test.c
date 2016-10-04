@@ -31,11 +31,11 @@ Describe(load_gadget_snap);
 BeforeEach(load_gadget_snap)
 {
   int i, j;
-  FILE *snapshot;
-  snapshot = fopen(GADGET_SNAP_ADDR, "wb");
+  FILE *snapshotfile;
+  snapshotfile = fopen(GADGET_SNAP_ADDR, "wb");
 
   int _dummy_int = 1;
-#define SKIPINT fwrite(&_dummy_int, sizeof(_dummy_int), 1, snapshot)
+#define SKIPINT fwrite(&_dummy_int, sizeof(_dummy_int), 1, snapshotfile)
 
 // Filling headers
   gadgetheader gh;
@@ -54,7 +54,7 @@ BeforeEach(load_gadget_snap)
       ntot_withmasses += gh.npart[i];
 
   SKIPINT;
-  fwrite(&gh, sizeof(gadgetheader), 1, snapshot);
+  fwrite(&gh, sizeof(gadgetheader), 1, snapshotfile);
   SKIPINT;
 
 // Filling positions
@@ -62,7 +62,7 @@ BeforeEach(load_gadget_snap)
   SKIPINT;
   for(i = 0; i < 6; i++)
     for(j = 0; j < gh.npart[i]; j++)
-      fwrite(&pos, sizeof(float), 3, snapshot);
+      fwrite(&pos, sizeof(float), 3, snapshotfile);
   SKIPINT;
 
 // Filling velocities
@@ -70,17 +70,18 @@ BeforeEach(load_gadget_snap)
   SKIPINT;
   for(i = 0; i < 6; i++)
     for(j = 0; j < gh.npart[i]; j++)
-      fwrite(&vel, sizeof(float), 3, snapshot);
+      fwrite(&vel, sizeof(float), 3, snapshotfile);
   SKIPINT;
 
 // Filling ids
-  int temp_id;
+  int temp_id, offset = 0;
   SKIPINT;
   for(i = 0; i < 6; i++){
     for(j = 0; j < gh.npart[i]; j++){
-      temp_id = (gh.npart[i] - 1) - j; // Reverse the order of ids
-      fwrite(&temp_id, sizeof(int), 1, snapshot);
+      temp_id = (gh.npart[i] - 1) - j + offset; // Reverse the order of ids
+      fwrite(&temp_id, sizeof(int), 1, snapshotfile);
     }
+    offset += gh.npart[i];
   }
   SKIPINT;
 
@@ -90,11 +91,11 @@ BeforeEach(load_gadget_snap)
   for(i = 0; i < 6; i++)
     for(j = 0; j < gh.npart[i]; j++)
       if(gh.mass[i] == 0)
-        fwrite(&dummy_mass, sizeof(float), 1, snapshot);
+        fwrite(&dummy_mass, sizeof(float), 1, snapshotfile);
 
   if(ntot_withmasses > 0) SKIPINT;
 
-  fclose(snapshot);
+  fclose(snapshotfile);
 }
 
 
@@ -110,29 +111,36 @@ Ensure(load_gadget_snap, loads_snapshot_properly)
   snapshot *s = load_gadget_snap(fp);
   fclose(fp);
 
-  assert_that_double(s->header->mdarkpart, is_equal_to_double(HALOMASS));
-  assert_that(s->header->mgaspart, is_equal_to(0));
-  assert_that_double(s->header->mstarpart, is_equal_to_double(STARMASS));
+  assert_that(s->header->npart[0], is_equal_to(0));
+  assert_that(s->header->npart[1], is_equal_to(NUMHALOPARTS));
+  assert_that(s->header->npart[2], is_equal_to(0));
+  assert_that(s->header->npart[3], is_equal_to(0));
+  assert_that(s->header->npart[4], is_equal_to(NUMSTARS));
+  assert_that(s->header->npart[5], is_equal_to(0));
 
-  int i;
-  for(i = 0; i < s->header->ndarkpart; i += 3){
-    assert_that(s->darkparts[i].id, is_equal_to(s->header->ndarkpart -1 - i));
-    assert_that(s->darkparts[i].Pos[0], is_equal_to(XPOS));
-    assert_that(s->darkparts[i].Pos[1], is_equal_to(YPOS));
-    assert_that(s->darkparts[i].Pos[2], is_equal_to(ZPOS));
-    assert_that(s->darkparts[i].Vel[0], is_equal_to(XVEL));
-    assert_that(s->darkparts[i].Vel[1], is_equal_to(YVEL));
-    assert_that(s->darkparts[i].Vel[2], is_equal_to(ZVEL));
-  }
+  assert_that_double(s->header->tot_nparticles,
+                     is_equal_to_double(NUMHALOPARTS + NUMSTARS));
 
-  for(i = 0; i < s->header->nstarpart; i += 3){
-    assert_that(s->starparts[i].id, is_equal_to(s->header->nstarpart -1 - i));
-    assert_that(s->starparts[i].Pos[0], is_equal_to(XPOS));
-    assert_that(s->starparts[i].Pos[1], is_equal_to(YPOS));
-    assert_that(s->starparts[i].Pos[2], is_equal_to(ZPOS));
-    assert_that(s->starparts[i].Vel[0], is_equal_to(XVEL));
-    assert_that(s->starparts[i].Vel[1], is_equal_to(YVEL));
-    assert_that(s->starparts[i].Vel[2], is_equal_to(ZVEL));
+  assert_that_double(s->header->mass[0], is_equal_to_double(0));
+  assert_that_double(s->header->mass[1], is_equal_to_double(HALOMASS));
+  assert_that_double(s->header->mass[2], is_equal_to_double(0));
+  assert_that_double(s->header->mass[3], is_equal_to_double(0));
+  assert_that_double(s->header->mass[4], is_equal_to_double(STARMASS));
+  assert_that_double(s->header->mass[5], is_equal_to_double(0));
+
+  int i, j, offset = 0;
+  for(i = 0; i < 6; i++){
+    for(j = 0; j < s->header->npart[i]; j += 3){
+      assert_that(s->particles[j + offset].id, is_equal_to(j + offset));
+      assert_that(s->particles[j + offset].type, is_equal_to(i));
+      assert_that(s->particles[j + offset].pos[0], is_equal_to(XPOS));
+      assert_that(s->particles[j + offset].pos[1], is_equal_to(YPOS));
+      assert_that(s->particles[j + offset].pos[2], is_equal_to(ZPOS));
+      assert_that(s->particles[j + offset].vel[0], is_equal_to(XVEL));
+      assert_that(s->particles[j + offset].vel[1], is_equal_to(YVEL));
+      assert_that(s->particles[j + offset].vel[2], is_equal_to(ZVEL));
+    }
+    offset += s->header->npart[i];
   }
 }
 
@@ -143,12 +151,19 @@ Ensure(load_gadget_snap, works_with_a_real_snapshot)
   snapshot *s = load_gadget_snap(fp);
   fclose(fp);
 
-  assert_that(s->header->ndarkpart, is_equal_to(8 * 8 * 8));
-  assert_that(s->header->ngaspart, is_equal_to(0));
-  assert_that(s->header->nstarpart, is_equal_to(0));
+  assert_that(s->header->npart[0], is_equal_to(0));
+  assert_that(s->header->npart[1], is_equal_to(8 * 8 * 8));
+  assert_that(s->header->npart[2], is_equal_to(0));
+  assert_that(s->header->npart[3], is_equal_to(0));
+  assert_that(s->header->npart[4], is_equal_to(0));
+  assert_that(s->header->npart[5], is_equal_to(0));
 
-  assert_that(s->header->mgaspart, is_equal_to(0));
-  assert_that(s->header->mstarpart, is_equal_to(0));
+  assert_that(s->header->mass[0], is_equal_to(0));
+  assert_that(s->header->mass[1], is_equal_to(0));
+  assert_that(s->header->mass[2], is_equal_to(0));
+  assert_that(s->header->mass[3], is_equal_to(0));
+  assert_that(s->header->mass[4], is_equal_to(0));
+  assert_that(s->header->mass[5], is_equal_to(0));
 
   assert_that_double(s->header->redshift, is_equal_to_double(1));
 
@@ -159,14 +174,15 @@ Ensure(load_gadget_snap, works_with_a_real_snapshot)
   assert_that_double(s->header->h0, is_equal_to_double(0.6774));
 
   int i;
-    for(i = 0; i < s->header->ndarkpart; i += 11){
-      snapshotparticle tmp_part = s->darkparts[i];
-      assert_true(0 <= tmp_part.id && tmp_part.id < 8 * 8 * 8);
-      assert_true(-1 <= tmp_part.Pos[0] && tmp_part.Pos[0] <= 1);
-      assert_true(-1 <= tmp_part.Pos[1] && tmp_part.Pos[1] <= 1);
-      assert_true(-1 <= tmp_part.Pos[2] && tmp_part.Pos[2] <= 1);
-      assert_true(-1 <= tmp_part.Vel[0] && tmp_part.Vel[0] <= 1);
-      assert_true(-1 <= tmp_part.Vel[1] && tmp_part.Vel[1] <= 1);
-      assert_true(-1 <= tmp_part.Vel[2] && tmp_part.Vel[2] <= 1);
-    }
+  for(i = 0; i < s->header->npart[1]; i += 23){
+    snapshotparticle tmp_part = s->particles[i];
+    assert_true(0 <= tmp_part.id && tmp_part.id < 8 * 8 * 8);
+    assert_that(tmp_part.type, is_equal_to(1));
+    assert_true(-1 <= tmp_part.pos[0] && tmp_part.pos[0] <= 1);
+    assert_true(-1 <= tmp_part.pos[1] && tmp_part.pos[1] <= 1);
+    assert_true(-1 <= tmp_part.pos[2] && tmp_part.pos[2] <= 1);
+    assert_true(-1 <= tmp_part.vel[0] && tmp_part.vel[0] <= 1);
+    assert_true(-1 <= tmp_part.vel[1] && tmp_part.vel[1] <= 1);
+    assert_true(-1 <= tmp_part.vel[2] && tmp_part.vel[2] <= 1);
+  }
 }
