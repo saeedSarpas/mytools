@@ -30,6 +30,13 @@ halofinder* new_halofinder(int num_halos)
   hf->header = allocate(1, sizeof(haloheader));
   hf->header->num_halos = num_halos;
   hf->halos = allocate(num_halos, sizeof(halo));
+
+  int i;
+  for(i = 0; i < hf->header->num_halos; i++){
+    hf->halos[i].init_volume = NULL;
+    hf->halos[i].particle_ids = NULL;
+  }
+
   hf->dispose = dispose_halofinder;
 
   return hf;
@@ -66,7 +73,6 @@ static void dispose_halofinder(halofinder *hf)
     }
     if(hf->halos[i].init_volume != NULL){
       avl_dispose(hf->halos[i].init_volume);
-      free(hf->halos[i].init_volume);
       hf->halos[i].init_volume = NULL;
     }
   }
