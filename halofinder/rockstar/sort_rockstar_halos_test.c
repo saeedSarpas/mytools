@@ -27,13 +27,13 @@ BeforeEach(sort_rockstar_halos)
 
   int64_t _int64_t = INT64;
 
-// Filling headers
+  // Filling headers
   rockstarheader rh;
   rh.num_halos = NUMHALOS;
   rh.num_particles = NUMHALOS * NUMPARTS;
   fwrite(&rh, sizeof(rockstarheader), 1, file);
 
-// Filling halos info
+  // Filling halos info
   int i;
   for (i = NUMHALOS; i > 0; i--) {
     int index = NUMHALOS - i;
@@ -47,8 +47,8 @@ BeforeEach(sort_rockstar_halos)
     fwrite(&h, sizeof(rockstarhalo), 1, file);
   }
 
-// Filling particle ids
-  for (i = 0; i < NUMHALOS; i++)
+  // Filling particle ids
+  for(i = 0; i < NUMHALOS; i++)
     fwrite(&_int64_t, sizeof(int64_t), NUMPARTS, file);
 
   fclose(file);
@@ -73,7 +73,7 @@ Ensure(sort_rockstar_halos, sorts_halos_properly_based_on_their_mass)
   for (i = 1; i < NUMHALOS; i++)
     assert_true(hf->halos[i].m >= hf->halos[i-1].m);
 
-  hf->dispose(hf);
+  dispose_halofinder(hf);
 }
 
 
@@ -89,5 +89,5 @@ Ensure(sort_rockstar_halos, works_with_real_snapshots)
   for (i = 1; i < hf->header->num_halos; i++)
     assert_true(hf->halos[i].m >= hf->halos[i-1].m);
 
-  hf->dispose(hf);
+  dispose_halofinder(hf);
 }

@@ -53,8 +53,8 @@ BeforeEach(halomatcher)
 
 AfterEach(halomatcher)
 {
-  pri_halos->dispose(pri_halos);
-  sec_halos->dispose(sec_halos);
+  dispose_halofinder(pri_halos);
+  dispose_halofinder(sec_halos);
 }
 
 

@@ -29,7 +29,7 @@ Ensure(snapshot, creates_and_dispose_snapshot_struct_correctly)
   for(i = 0; i < hf->header->tot_nparticles; i++)
     assert_that(hf->particles[i].id, is_equal_to(PARTICLENOTSET));
 
-  hf->dispose(hf);
+  dispose_snapshot(hf);
   assert_that(hf->header, is_null);
   assert_that(hf->particles, is_null);
 }

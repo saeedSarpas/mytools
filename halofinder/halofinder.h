@@ -28,12 +28,12 @@ typedef struct _halo {
 typedef struct _halofinder {
   haloheader *header;
   halo *halos;
-  void (*dispose)(struct _halofinder*);
 } halofinder;
 
 
 halofinder* new_halofinder(int);
 void allocate_particle_ids(halo*, int);
+void dispose_halofinder(halofinder*);
 
 
 #endif /* HALOFINDER_H */

@@ -13,9 +13,6 @@
 #include "./../memory/allocate.h"
 
 
-static void dispose_snapshot(snapshot*);
-
-
 /*
  * creating a new snapshot structure
  *
@@ -29,10 +26,10 @@ snapshot* new_snapshot(int tot_nparticles)
   s->header = allocate(1, sizeof(snapshotheader));
   s->header->tot_nparticles = tot_nparticles;
   s->particles = allocate(tot_nparticles, sizeof(snapshotparticle));
+
   int i;
   for(i = 0; i < s->header->tot_nparticles; i++)
     s->particles[i].id = PARTICLENOTSET;
-  s->dispose = dispose_snapshot;
 
   return s;
 }
@@ -43,7 +40,7 @@ snapshot* new_snapshot(int tot_nparticles)
  *
  * NOTE: memory leak since we don't free s itself
  */
-static void dispose_snapshot(snapshot *s)
+void dispose_snapshot(snapshot *s)
 {
   free(s->header);
   s->header = NULL;

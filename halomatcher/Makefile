@@ -13,4 +13,4 @@ _DEPS := ./../memory/allocate \
          ./../vector/vector \
          ./../halofinder/halofinder
 
-include ./../makefile_main
+include ./../Makefile_main

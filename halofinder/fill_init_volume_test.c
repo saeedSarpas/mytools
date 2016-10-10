@@ -72,8 +72,8 @@ BeforeEach(fill_init_volume)
 
 AfterEach(fill_init_volume)
 {
-  s->dispose(s);
-  hf->dispose(hf);
+  dispose_halofinder(hf);
+  dispose_snapshot(s);
 }
 
 

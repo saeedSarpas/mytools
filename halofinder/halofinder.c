@@ -14,9 +14,6 @@
 #include "./../avltree/avl_tree.h"
 
 
-static void dispose_halofinder(halofinder*);
-
-
 /*
  * creating a new halofinder structure
  *
@@ -37,8 +34,6 @@ halofinder* new_halofinder(int num_halos)
     hf->halos[i].particle_ids = NULL;
   }
 
-  hf->dispose = dispose_halofinder;
-
   return hf;
 }
 
@@ -51,6 +46,7 @@ halofinder* new_halofinder(int num_halos)
  */
 void allocate_particle_ids(halo *h, int num_p)
 {
+  if(h->particle_ids != NULL) return;
   h->particle_ids = allocate(num_p, sizeof(int64_t));
 }
 
@@ -59,11 +55,8 @@ void allocate_particle_ids(halo *h, int num_p)
  * disposing a given halofinder structure
  *
  * NOTE: memory leak since we don't free hf itself
- *
- * TODO: creating a separate module for managing halo related actions (e.g.
- * creating, destroying, etc.)
  */
-static void dispose_halofinder(halofinder *hf)
+void dispose_halofinder(halofinder *hf)
 {
   int i;
   for(i = 0; i < hf->header->num_halos; i++){
@@ -71,15 +64,11 @@ static void dispose_halofinder(halofinder *hf)
       free(hf->halos[i].particle_ids);
       hf->halos[i].particle_ids = NULL;
     }
-    if(hf->halos[i].init_volume != NULL){
+
+    if(hf->halos[i].init_volume != NULL)
       avl_dispose(hf->halos[i].init_volume);
-      hf->halos[i].init_volume = NULL;
-    }
   }
 
-  free(hf->header);
-  hf->header = NULL;
-
-  free(hf->halos);
-  hf->halos = NULL;
+  free(hf);
+  hf = NULL;
 }

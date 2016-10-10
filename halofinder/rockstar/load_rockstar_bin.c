@@ -31,18 +31,17 @@ halofinder* load_rockstar_bin(FILE *file)
 {
   rewind(file);
 
-  rockstarheader *rheader = allocate(1, sizeof(rockstarheader));
-  read_from(file, 1, sizeof(rockstarheader), rheader);
+  rockstarheader *rheader = allocate(1, sizeof(*rheader));
+  read_from(file, 1, sizeof(*rheader), rheader);
 
   halofinder *hf = new_halofinder(rheader->num_halos);
   rockstarheader_to_haloheader(rheader, hf->header);
 
   int i;
-  rockstarhalo *rhalo = allocate(1, sizeof(halo));
+  rockstarhalo *rhalo = allocate(1, sizeof(*rhalo));
   for(i = 0; i < hf->header->num_halos; i++){
-    read_from(file, 1, sizeof(rockstarhalo), rhalo);
+    read_from(file, 1, sizeof(*rhalo), rhalo);
     rockstar_halo_to_generic_halo(rhalo, &hf->halos[rhalo->id]);
-    allocate_particle_ids(&hf->halos[rhalo->id], rhalo->num_p);
   }
 
   int64_t *particle_ids = allocate(rheader->num_particles, sizeof(int64_t));
@@ -54,9 +53,9 @@ halofinder* load_rockstar_bin(FILE *file)
          hf->halos[i].num_p * sizeof(int64_t));
   }
 
-  free(rhalo);
-  free(rheader);
+  // NOTE memory leak since we didn't free rhalo and rheader pointers
   free(particle_ids);
+
   return hf;
 }
 

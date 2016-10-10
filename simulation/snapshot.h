@@ -36,6 +36,7 @@ typedef struct _snapshot {
 
 
 snapshot* new_snapshot(int);
+void dispose_snapshot(snapshot*);
 
 
 #endif /* SNAPSHOT_H */

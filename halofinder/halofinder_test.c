@@ -32,7 +32,5 @@ Ensure(halofinder, creates_and_dispose_halofinder_struct_correctly)
   allocate_particle_ids(&hf->halos[0], NUMPARTS);
   assert_that(hf->halos[0].particle_ids, is_non_null);
 
-  hf->dispose(hf);
-  assert_that(hf->header, is_null);
-  assert_that(hf->halos, is_null);
+  dispose_halofinder(hf);
 }
