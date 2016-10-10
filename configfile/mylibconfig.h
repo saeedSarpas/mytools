@@ -5,7 +5,7 @@
 #include <libconfig.h>
 
 
-config_t new_cfg();
+config_t* new_cfg();
 void cfg_loadfile(config_t*, const char*);
 config_setting_t* cfg_findsetting(config_t*, char*);
 config_setting_t* cfg_getelem(config_setting_t*, int);
