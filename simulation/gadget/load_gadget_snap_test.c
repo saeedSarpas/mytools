@@ -107,9 +107,7 @@ AfterEach(load_gadget_snap)
 
 Ensure(load_gadget_snap, loads_snapshot_properly)
 {
-  FILE *fp = fopen(GADGET_SNAP_ADDR, "rb");
-  snapshot *s = load_gadget_snap(fp);
-  fclose(fp);
+  snapshot *s = load_gadget_snap(GADGET_SNAP_ADDR);
 
   assert_that(s->header->npart[0], is_equal_to(0));
   assert_that(s->header->npart[1], is_equal_to(NUMHALOPARTS));
@@ -147,9 +145,7 @@ Ensure(load_gadget_snap, loads_snapshot_properly)
 
 Ensure(load_gadget_snap, works_with_a_real_snapshot)
 {
-  FILE *fp = fopen("./z1_2LPT_8_1kpc.dat", "rb");
-  snapshot *s = load_gadget_snap(fp);
-  fclose(fp);
+  snapshot *s = load_gadget_snap("./z1_2LPT_8_1kpc.dat");
 
   assert_that(s->header->npart[0], is_equal_to(0));
   assert_that(s->header->npart[1], is_equal_to(8 * 8 * 8));

@@ -63,9 +63,7 @@ AfterEach(sort_rockstar_halos)
 
 Ensure(sort_rockstar_halos, sorts_halos_properly_based_on_their_mass)
 {
-  FILE *fp = fopen(ROCKSTAR_FILE_ADDR, "rb");
-  halofinder *hf = load_rockstar_bin(fp);
-  fclose(fp);
+  halofinder *hf = load_rockstar_bin(ROCKSTAR_FILE_ADDR);
 
   sort_rockstar_halos(hf->halos, hf->header->num_halos, compare_mass);
 
@@ -79,9 +77,7 @@ Ensure(sort_rockstar_halos, sorts_halos_properly_based_on_their_mass)
 
 Ensure(sort_rockstar_halos, works_with_real_snapshots)
 {
-  FILE *fp = fopen("halos_z0_256_100Mpc.bin", "rb");
-  halofinder *hf = load_rockstar_bin(fp);
-  fclose(fp);
+  halofinder *hf = load_rockstar_bin("halos_z0_256_100Mpc.bin");
 
   sort_rockstar_halos(hf->halos, hf->header->num_halos, compare_mass);
 

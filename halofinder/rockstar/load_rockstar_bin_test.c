@@ -77,9 +77,7 @@ AfterEach(load_rockstar_bin)
 
 Ensure(load_rockstar_bin, loads_halo_data_properly)
 {
-  FILE *fp = fopen(ROCKSTAR_FILE_ADDR, "rb");
-  halofinder *hf = load_rockstar_bin(fp);
-  fclose(fp);
+  halofinder *hf = load_rockstar_bin(ROCKSTAR_FILE_ADDR);
 
   // Testing header
   assert_that(hf->header->num_halos, is_equal_to(NUMHALOS));
@@ -107,9 +105,7 @@ Ensure(load_rockstar_bin, loads_halo_data_properly)
 
 Ensure(load_rockstar_bin, works_with_real_rockstar_binary_file)
 {
-  FILE *fp = fopen("./halos_z0_256_100Mpc.bin", "rb");
-  halofinder *hf = load_rockstar_bin(fp);
-  fclose(fp);
+  halofinder *hf = load_rockstar_bin("./halos_z0_256_100Mpc.bin");
 
   // Testing header
   assert_that_double(hf->header->Om, is_equal_to_double(0.308900));

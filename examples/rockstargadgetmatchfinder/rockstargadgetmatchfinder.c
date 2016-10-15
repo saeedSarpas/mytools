@@ -37,6 +37,7 @@ typedef struct _params
 
 
 static params* loadconfig(const char*);
+static void print_results(haloheader*, haloheader*, params*, matchinghalo*);
 
 
 int main(int argc, char *argv[])
@@ -49,23 +50,16 @@ int main(int argc, char *argv[])
 
   params *p = loadconfig(argv[1]);
 
-  FILE *prihalosfile = open_file(p->priHalos, "rb");
-  halofinder *prihalos = load_rockstar_bin(prihalosfile);
-  fclose(prihalosfile);
+  halofinder *prihalos = load_rockstar_bin(p->priHalos);
+  sort_rockstar_halos(prihalos->halos, prihalos->header->num_halos,
+                      compare_mass);
 
-  FILE *sechalosfile = open_file(p->secHalos, "rb");
-  halofinder *sechalos = load_rockstar_bin(sechalosfile);
-  fclose(sechalosfile);
+  halofinder *sechalos = load_rockstar_bin(p->secHalos);
+  sort_rockstar_halos(sechalos->halos, sechalos->header->num_halos,
+                      compare_mass);
 
-  FILE *prisnapfile = open_file(p->priSnap, "rb");
-  snapshot *prisnap = load_gadget_snap(prisnapfile);
-  fclose(prisnapfile);
-
-  FILE *secsnapfile = open_file(p->secSnap, "rb");
-  snapshot *secsnap = load_gadget_snap(secsnapfile);
-  fclose(secsnapfile);
-  printf("%d\n", secsnap->header->npart[1]);
-
+  snapshot *prisnap = load_gadget_snap(p->priSnap);
+  snapshot *secsnap = load_gadget_snap(p->secSnap);
 
   double boxlength[3] = {prihalos->header->box_size,
                          prihalos->header->box_size,
@@ -83,22 +77,7 @@ int main(int argc, char *argv[])
   matchinghalo *mh = halomatcher(prihalos, sechalos, hm_p);
 
 
-  int i, foundmatches = 0;
-  for(i = 0; i < prihalos->header->num_halos; i++)
-    if(mh->matchingids[i] == MATCHINGHALONOTSET) foundmatches++;
-
-  FILE *outputfile = open_file(p->outputpath, "w");
-  fprintf(outputfile, "# Primary input: %s\n", p->priHalos);
-  fprintf(outputfile, "# # of halos in primary input: %" PRId64 "\n",
-          prihalos->header->num_halos);
-  fprintf(outputfile, "# Secondary input: %s\n", p->secHalos);
-  fprintf(outputfile, "# # of halos in secondary input: %" PRId64 "\n",
-          sechalos->header->num_halos);
-  fprintf(outputfile, "# # of found matches: %d\n", foundmatches);
-
-  for(i = 0; i < prihalos->header->num_halos; i++)
-    if(mh->matchingids[i] != MATCHINGHALONOTSET)
-      fprintf(outputfile, "%d %d %f\n", i, mh->matchingids[i], mh->goodnesses[i]);
+  print_results(prihalos->header, sechalos->header, p, mh);
 
   dispose_halofinder(prihalos);
   dispose_snapshot(prisnap);
@@ -147,4 +126,32 @@ static params* loadconfig(const char *path)
   p->outputpath = strdup(outputpath);
 
   return p;
+}
+
+
+static void print_results(haloheader *pri_header, haloheader *sec_header,
+                          params *p, matchinghalo *mh)
+{
+  int i, foundmatches = 0;
+  for(i = 0; i < pri_header->num_halos; i++)
+    if(mh->matchingids[i] == MATCHINGHALONOTSET) foundmatches++;
+
+  FILE *outputfile = open_file(p->outputpath, "w");
+
+  fprintf(outputfile, "# Primary input: %s\n", p->priHalos);
+  fprintf(outputfile, "# # of halos in primary input: %" PRId64 "\n",
+          pri_header->num_halos);
+  fprintf(outputfile, "# Secondary input: %s\n", p->secHalos);
+  fprintf(outputfile, "# # of halos in secondary input: %" PRId64 "\n",
+          sec_header->num_halos);
+  fprintf(outputfile, "# # of found matches: %d\n", foundmatches);
+  fprintf(outputfile, "# Mininum goodness: %f\n", p->minGoodness);
+  fprintf(outputfile, "# Mass offset: %f\n", p->massOffset);
+  fprintf(outputfile, "# Initial volume grid: %d\n", p->initVolResolution);
+
+  for(i = 0; i < pri_header->num_halos; i++)
+    if(mh->matchingids[i] != MATCHINGHALONOTSET)
+      fprintf(outputfile, "%d %d %f\n", i, mh->matchingids[i], mh->goodnesses[i]);
+
+  fclose(outputfile);
 }

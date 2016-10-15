@@ -8,11 +8,13 @@
  */
 
 
+#include <stdio.h>
 #include "halomatcher.h"
 #include "./../memory/allocate.h"
 #include "./../search/half_interval/find_ge.h"
 #include "./../avltree/avl_tree.h"
 #include "./../vector/vector.h"
+#include "./../loading/simple_loading.h"
 
 
 static vector* single_halomatcher(halo*, halofinder*, halomatcher_params);
@@ -52,14 +54,24 @@ matchinghalo* halomatcher(halofinder *pri_halos_msorted,
   vector **sec_matches = allocate(sec_halos_msorted->header->num_halos,
                                   sizeof(vector*));
 
-  int i;
-  for(i = 0; i < pri_halos_msorted->header->num_halos; i++)
+  int i, percent = -1;
+  // Searching for matches based on the first list of halos
+  printf("\tChecking the 1st list of halos:\n");
+  for(i = 0; i < pri_halos_msorted->header->num_halos; i++){
+    percent = simple_loading(percent, i, pri_halos_msorted->header->num_halos);
     pri_matches[i] = single_halomatcher(&pri_halos_msorted->halos[i],
                                         sec_halos_msorted, params);
+  }
 
-  for(i = 0; i < sec_halos_msorted->header->num_halos; i++)
+  // Searching for matches based on the second list of halos
+  printf("\tChecking the 2nd list of halos:\n");
+  percent = -1;
+  for(i = 0; i < sec_halos_msorted->header->num_halos; i++){
+    percent = simple_loading(percent, i, pri_halos_msorted->header->num_halos);
     sec_matches[i] = single_halomatcher(&sec_halos_msorted->halos[i],
                                         pri_halos_msorted, params);
+  }
+  printf(" [done]\n");
 
 
   matchinghalo *mh = new_matchinghalo(pri_halos_msorted->header->num_halos);
@@ -94,31 +106,31 @@ matchinghalo* halomatcher(halofinder *pri_halos_msorted,
 static vector* single_halomatcher(halo *h, halofinder *hf,
                                   halomatcher_params params)
 {
-// Calculating target mass range in the secondary halos
-  float min_mass = h->m * (1 - params.massoffset);
-  float max_mass = h->m * (1 + params.massoffset);
+  // Calculating target mass range in the secondary halos
+  float min_mass = h->m / params.massoffset;
+  float max_mass = h->m * params.massoffset;
 
-// Finding the index of the halo with minimum mass in the secaondary halos
+  // Finding the index of the halo with minimum mass in the secaondary halos
   int min_index = find_ge(&min_mass, hf->halos, hf->header->num_halos,
                           compare_mass);
 
   if(min_index == NOT_FOUND) return vector_new(0, sizeof(foundmatch));
 
-// Allocating memory for v_indices (an array containing init_volume
-// indices of the primary halo)
+  // Allocating memory for v_indices (an array containing init_volume
+  // indices of the primary halo)
   reset_counter();
   inorder_traversal(h->init_volume, increment);
   int len_v_indices = counter;
   v_indices = allocate(len_v_indices, sizeof(int64_t));
 
-// Filling v_indices array
+  // Filling v_indices array
   reset_counter();
   inorder_traversal(h->init_volume, fill_v_indices);
 
-// Creating a vector for saving matching halos
+  // Creating a vector for saving matching halos
   vector *matches = vector_new(8, sizeof(foundmatch));
 
-// Finding matching halos in the secaondary halos
+  // Finding matching halos in the secaondary halos
   int i, j, nmatching_grids = 0;
   float matchgoodness;
   avl_node *found_node;
@@ -128,7 +140,7 @@ static vector* single_halomatcher(halo *h, halofinder *hf,
 
     nmatching_grids = 0;
 
-// Iteration through v_indices array for finding matching volume grids
+    // Iteration through v_indices array for finding matching volume grids
     for(j = 0; j < len_v_indices; j++){
       found_node = avl_find(hf->halos[i].init_volume, v_indices[j]);
       if(found_node != NULL) nmatching_grids++;

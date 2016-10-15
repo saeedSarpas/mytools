@@ -15,9 +15,11 @@
  */
 
 
+#include <stdio.h>
 #include <stdlib.h>
 #include "load_gadget_snap.h"
 #include "gadget_data_type.h"
+#include "./../../io/open_file.h"
 #include "./../../memory/allocate.h"
 #include "./../../io/read_from.h"
 
@@ -25,8 +27,10 @@
 static void gadgetheader_to_snapshotheader(gadgetheader*, snapshotheader*);
 
 
-snapshot* load_gadget_snap(FILE *snapshotfile)
+snapshot* load_gadget_snap(char *snapshotfileaddr)
 {
+  FILE *snapshotfile = open_file(snapshotfileaddr, "rb");
+
   int i, j, dummy_int;
   gadgetheader *gh = allocate(1, sizeof(gadgetheader));
 
@@ -98,6 +102,8 @@ snapshot* load_gadget_snap(FILE *snapshotfile)
 
   free(particles);
   free(gh);
+
+  fclose(snapshotfile);
 
   return s;
 }

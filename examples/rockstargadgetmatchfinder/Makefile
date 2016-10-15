@@ -24,7 +24,8 @@ DEPS := ./../../configfile/mylibconfig.c \
         ./../../grid/row_major_order/point_to_grid.c \
         ./../../grid/row_major_order/three_to_one.c \
         ./../../search/half_interval/find_ge.c \
-        ./../../vector/vector.c
+        ./../../vector/vector.c \
+        ./../../loading/simple_loading.c
 
 .PHONY : all
 

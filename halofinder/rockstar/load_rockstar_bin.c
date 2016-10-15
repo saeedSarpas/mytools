@@ -27,9 +27,9 @@ void rockstarheader_to_haloheader(rockstarheader*, haloheader*);
 void rockstar_halo_to_generic_halo(rockstarhalo*, halo*);
 
 
-halofinder* load_rockstar_bin(FILE *file)
+halofinder* load_rockstar_bin(char *fileaddress)
 {
-  rewind(file);
+  FILE *file = open_file(fileaddress, "rb");
 
   rockstarheader *rheader = allocate(1, sizeof(*rheader));
   read_from(file, 1, sizeof(*rheader), rheader);
@@ -55,6 +55,8 @@ halofinder* load_rockstar_bin(FILE *file)
 
   // NOTE memory leak since we didn't free rhalo and rheader pointers
   free(particle_ids);
+
+  fclose(file);
 
   return hf;
 }

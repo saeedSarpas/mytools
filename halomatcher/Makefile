@@ -11,6 +11,7 @@ _DEPS := ./../memory/allocate \
          ./../search/half_interval/find_ge \
          ./../avltree/avl_tree \
          ./../vector/vector \
-         ./../halofinder/halofinder
+         ./../halofinder/halofinder \
+         ./../loaiding/simple_loading
 
 include ./../Makefile_main
