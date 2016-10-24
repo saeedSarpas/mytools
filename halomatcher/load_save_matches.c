@@ -9,8 +9,9 @@
 
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "load_save_matches.h"
-#include "halomatcher.h"
+#include "singlehalo_matcher.h"
 #include "./../io/open_file.h"
 #include "./../io/read_from.h"
 #include "./../io/write_to.h"

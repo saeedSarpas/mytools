@@ -3,14 +3,8 @@
 
 
 #include "./matchinghalo.h"
+#include "./singlehalo_matcher.h"
 #include "./../halofinder/halofinder.h"
-
-
-typedef struct _halomatcher_params
-{
-  float massoffset;
-  float mingoodness;
-} halomatcher_params;
 
 
 matchinghalo* halomatcher(halofinder*, halofinder*, halomatcher_params);

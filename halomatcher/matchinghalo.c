@@ -17,9 +17,6 @@
 #include "./../memory/allocate.h"
 
 
-static void dispose_matchinghalo(matchinghalo*);
-
-
 /*
  * creating a new matchinghalo structure
  *
@@ -40,21 +37,21 @@ matchinghalo* new_matchinghalo(int len)
     mh->goodnesses[i] = 0.0;
   }
 
-  mh->dispose = dispose_matchinghalo;
   return mh;
 }
 
 
 /*
  * disposing a given array of matchinghalo structures
- *
- * NOTE: memory leak since we don't free mh itself
  */
-static void dispose_matchinghalo(matchinghalo *mh)
+void dispose_matchinghalo(matchinghalo *mh)
 {
   free(mh->matchingids);
   mh->matchingids = NULL;
 
   free(mh->goodnesses);
   mh->goodnesses = NULL;
+
+  free(mh);
+  mh = NULL;
 }

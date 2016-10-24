@@ -33,7 +33,5 @@ Ensure(matchinghalo, creates_and_dispose_matchinghalo_struct_properly)
     assert_that_double(mh->goodnesses[i], is_equal_to_double(0.0));
   }
 
-  mh->dispose(mh);
-  assert_that(mh->matchingids, is_null);
-  assert_that(mh->goodnesses, is_null);
+  dispose_matchinghalo(mh);
 }
