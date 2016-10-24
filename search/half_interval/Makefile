@@ -6,4 +6,4 @@ _TESTS := find_ge_test
 
 _DEPS :=
 
-include ./../../Makefile_main
+include ./../../Makefile

@@ -8,4 +8,4 @@ _TESTS := allocate_test \
 
 _DEPS :=
 
-include ./../Makefile_main
+include ./../Makefile

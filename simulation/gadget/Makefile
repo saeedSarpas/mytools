@@ -9,4 +9,4 @@ _DEPS := ./../../memory/allocate \
          ./../../io/open_file \
          ./../../simulation/snapshot
 
-include ./../../Makefile_main
+include ./../../Makefile

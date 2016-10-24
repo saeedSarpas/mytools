@@ -1,5 +1,5 @@
 CC := gcc
-CFLAGS := -Wall -std=gnu11
+CFLAGS := -Wall -std=gnu11 -lm
 
 MAKE := make compile
 
@@ -19,12 +19,12 @@ DEP_OBJS := $(addsuffix .o,$(_DEPS))
 all : test
 
 $(FILE_OBJS) : $(FILES)
-	@$(CC) $(CFLAGS) -fPIC -c $(FILES)
-	@echo "[CC]\t$(CFLAGS) -fPIC -c $(FILES)"
+	@$(CC) -fPIC -c $(FILES) $(CFLAGS)
+	@echo "[CC]\t-fPIC -c $(FILES) $(CFLAGS)"
 
 $(TEST_OBJS) : $(TESTS) $(FILE_OBJS)
-	@$(CC) $(CFLAGS) -fPIC -c $(TESTS)
-	@echo "[CC]\t$(CFLAGS) -fPIC -c $(TESTS)"
+	@$(CC) -fPIC -c $(TESTS) $(CFLAGS)
+	@echo "[CC]\t-fPIC -c $(TESTS) $(CFLAGS)"
 
 define dep_compile
 @echo "[MAKE]\t--directory $(1)"; $(MAKE) --directory $(1) $(\n)
@@ -36,7 +36,7 @@ dep_compile :
 compile : $(FILE_OBJS) $(TEST_OBJS) dep_compile
 
 $(MODULE_NAME)_tests.so : compile
-	@$(CC) $(CFLAGS) -shared -o $(MODULE_NAME)_tests.so $(FILE_OBJS) $(TEST_OBJS) $(DEP_OBJS) $(TESTLIBS)
+	@$(CC) -shared -o $(MODULE_NAME)_tests.so $(FILE_OBJS) $(TEST_OBJS) $(DEP_OBJS) $(TESTLIBS) $(CFLAGS)
 	@echo "[CC]\t-shared $(CFLAGS) -o $(MODULE_NAME)_tests.so"
 
 test : $(MODULE_NAME)_tests.so

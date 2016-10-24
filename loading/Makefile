@@ -6,4 +6,4 @@ _TESTS := simple_loading_test
 
 _DEPS :=
 
-include ./../Makefile_main
+include ./../Makefile

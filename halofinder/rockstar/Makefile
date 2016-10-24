@@ -13,4 +13,4 @@ _DEPS := ./../../memory/allocate \
          ./../../avltree/avl_tree \
          ./../halofinder
 
-include ./../../Makefile_main
+include ./../../Makefile

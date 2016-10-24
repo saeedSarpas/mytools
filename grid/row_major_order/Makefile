@@ -10,4 +10,4 @@ _TESTS := three_to_one_test \
 
 _DEPS := ./../../memory/allocate
 
-include ./../../Makefile_main
+include ./../../Makefile

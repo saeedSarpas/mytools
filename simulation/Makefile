@@ -6,4 +6,4 @@ _TESTS := snapshot_test
 
 _DEPS := ./../memory/allocate
 
-include ./../Makefile_main
+include ./../Makefile

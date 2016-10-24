@@ -7,4 +7,4 @@ _TESTS := vector_test
 _DEPS := ./../memory/allocate \
          ./../memory/copy
 
-include ./../Makefile_main
+include ./../Makefile

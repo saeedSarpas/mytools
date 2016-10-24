@@ -6,4 +6,4 @@ _TESTS := open_file_test read_from_test
 
 _DEPS :=
 
-include ./../Makefile_main
+include ./../Makefile

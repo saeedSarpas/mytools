@@ -12,4 +12,4 @@ _DEPS := ./../memory/allocate \
          ./../grid/row_major_order/three_to_one \
          ./../simulation/snapshot
 
-include ./../Makefile_main
+include ./../Makefile
