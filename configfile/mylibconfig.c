@@ -80,12 +80,25 @@ const char* cfg_getstring(config_setting_t *setting, const char *field)
 
 
 /*
- * Getting a string from a specific field inside a setting
+ * Getting an integer value from a specific field inside a setting
  */
 int cfg_getint(config_setting_t *setting, const char *field)
 {
 	int value;
 	if(config_setting_lookup_int(setting, field, &value)) return value;
+
+  printf("[Unable to find the field: %s]\n", field);
+  exit(EXIT_FAILURE);
+}
+
+
+/*
+ * Getting a boolean value from a specific field inside a setting
+ */
+int cfg_getbool(config_setting_t *setting, const char *field)
+{
+	int value;
+	if(config_setting_lookup_bool(setting, field, &value)) return value;
 
   printf("[Unable to find the field: %s]\n", field);
   exit(EXIT_FAILURE);

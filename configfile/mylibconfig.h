@@ -11,6 +11,7 @@ config_setting_t* cfg_findsetting(config_t*, char*);
 config_setting_t* cfg_getelem(config_setting_t*, int);
 const char* cfg_getstring(config_setting_t*, const char*);
 int cfg_getint(config_setting_t*, const char*);
+int cfg_getbool(config_setting_t*, const char*);
 double cfg_getdouble(config_setting_t*, const char*);
 int cfg_settinglength(config_setting_t*);
 config_setting_t* cfg_addsetting(config_setting_t*, const char*, int);
