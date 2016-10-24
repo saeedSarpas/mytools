@@ -17,6 +17,7 @@
 
 
 #include <stdio.h>
+#include <math.h>
 #include "simple_loading.h"
 
 
@@ -27,10 +28,12 @@ static char BAR[] = "===========================================================
 
 int simple_loading(int percent, int i, int len)
 {
-  if(percent != i / (len / 100)){
-    percent = i / (len / 100);
+  int new_percent = floor((float)i / len * 100);
 
-    int i, pointer = BARLENGTH - (percent * 100 / BARLENGTH);
+  if(percent != new_percent){
+    percent = new_percent;
+
+    int i, pointer = BARLENGTH - (percent * BARLENGTH / 100);
     char revised_bar[BARLENGTH];
 
     for(i = pointer; i < BARLENGTH; i++)
@@ -39,7 +42,10 @@ int simple_loading(int percent, int i, int len)
     for(i = BARLENGTH - pointer; i < BARLENGTH; i++)
       revised_bar[i] = ' ';
 
-    printf("\t[%3d%%%s]\r", percent, revised_bar);
+    if(percent == 100)
+      printf("\t[100%% %s]\n", BAR);
+    else
+      printf("\t[%3d%% %s]\r", percent, revised_bar);
     fflush(stdout);
   }
 

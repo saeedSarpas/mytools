@@ -20,6 +20,7 @@ Ensure(simple_loading, returns_right_amount_for_a_given_parameters)
   int i, percent;
   for(i = 0; i <= 100; i++){
     percent = simple_loading(i, i, 100);
-    assert_that(percent, is_equal_to(i));
+    /* 1% error is due to the float/int conversion */
+    assert_true(abs(percent - i) <= 1);
   }
 }
