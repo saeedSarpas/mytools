@@ -42,11 +42,3 @@ Ensure(read_from, reads_correctly)
   assert_that(returned_value, is_equal_to(PI));
   fclose(fp);
 }
-
-
-TestSuite *read_from_tests()
-{
-  TestSuite *suite = create_test_suite();
-  add_test_with_context(suite, read_from, reads_correctly);
-  return suite;
-}

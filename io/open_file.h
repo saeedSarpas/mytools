@@ -3,9 +3,6 @@
 
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <string.h>
 
 
 FILE* open_file (char*, char*);

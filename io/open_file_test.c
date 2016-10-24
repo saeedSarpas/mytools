@@ -40,20 +40,3 @@ Ensure(open_file, returns_the_opened_file)
   assert_that(fp, is_non_null);
   fclose(fp);
 }
-
-
-Ensure(open_file, does_not_open_non_exist_file)
-{
-  FILE *fp = open_file("wrong_address", "rb");
-  assert_that(fp, is_null);
-  fclose(fp);
-}
-
-
-TestSuite *open_file_tests()
-{
-  TestSuite *suite = create_test_suite();
-  add_test_with_context(suite, open_file, returns_the_opened_file);
-  add_test_with_context(suite, open_file, does_not_open_non_exist_file);
-  return suite;
-}

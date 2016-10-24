@@ -13,6 +13,9 @@
 
 
 #include "open_file.h"
+#include <stdlib.h>
+#include <errno.h>
+#include <string.h>
 
 
 FILE* open_file(char *path, char *mode)
