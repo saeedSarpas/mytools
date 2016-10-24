@@ -85,7 +85,6 @@ vector* singlehalo_matcher(halo *h, halofinder *hf, halomatcher_params params)
 
     matchgoodness = (float) nmatching_grids / len_v_indices * 100;
 
-    /* if(matchgoodness > params.minGoodness){ */
     if(matchgoodness > 0.0){
       matchholder.matchid = i;
       matchholder.goodness = matchgoodness;

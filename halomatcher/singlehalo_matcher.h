@@ -10,7 +10,6 @@
 typedef struct _halomatcher_params
 {
   float massOffset;
-  float minGoodness;
   float maxDisplacement;
   int loadMatches;
   char *loadMatchesPath;
