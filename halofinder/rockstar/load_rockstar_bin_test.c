@@ -111,7 +111,9 @@ Ensure(load_rockstar_bin, works_with_real_rockstar_binary_file)
   assert_that_double(hf->header->Om, is_equal_to_double(0.308900));
   assert_that_double(hf->header->Ol, is_equal_to_double(0.691100));
   assert_that_double(hf->header->h0, is_equal_to_double(0.677400));
-  assert_that(hf->header->box_size, is_equal_to(100));
+  assert_that(hf->header->box_size[0], is_equal_to(100));
+  assert_that(hf->header->box_size[1], is_equal_to(100));
+  assert_that(hf->header->box_size[2], is_equal_to(100));
   assert_that(hf->header->particle_mass, is_equal_to(5109658624));
 
   // Testing halos
@@ -120,7 +122,7 @@ Ensure(load_rockstar_bin, works_with_real_rockstar_binary_file)
     assert_that(hf->halos[i].id, is_equal_to(i));
     for(j = 0; j < 3; j++){
       assert_true(0 < hf->halos[i].pos[j]
-                  && hf->halos[i].pos[j] < hf->header->box_size);
+                  && hf->halos[i].pos[j] < hf->header->box_size[j]);
     }
 
     // Testing particle ids

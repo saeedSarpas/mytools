@@ -74,7 +74,9 @@ void rockstarheader_to_haloheader(rockstarheader *rheader, haloheader *header)
   header->Om = rheader->Om;
   header->Ol = rheader->Ol;
   header->h0 = rheader->h0;
-  header->box_size = rheader->box_size;
+  header->box_size[0] = rheader->box_size;
+  header->box_size[1] = rheader->box_size;
+  header->box_size[2] = rheader->box_size;
   header->particle_mass = rheader->particle_mass;
 }
 
