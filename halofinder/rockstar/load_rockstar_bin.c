@@ -15,6 +15,7 @@
  */
 
 
+#include <stdlib.h>
 #include "load_rockstar_bin.h"
 #include "./../halofinder.h"
 #include "./../../memory/allocate.h"
