@@ -1,9 +1,11 @@
 MODULE_NAME := halomatcher
 
 _FILES := matchinghalo \
+          load_save_matches \
           halomatcher
 
 _TESTS := matchinghalo_test \
+          load_save_matches_test \
           halomatcher_test
 
 _DEPS := ./../memory/allocate \
@@ -12,6 +14,9 @@ _DEPS := ./../memory/allocate \
          ./../avltree/avl_tree \
          ./../vector/vector \
          ./../halofinder/halofinder \
-         ./../loaiding/simple_loading
+         ./../loading/simple_loading \
+         ./../io/open_file \
+         ./../io/write_to \
+         ./../io/read_from
 
-include ./../Makefile_main
+include ./../Makefile
