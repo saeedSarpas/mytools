@@ -5,9 +5,14 @@
 #include <inttypes.h>
 
 
+#ifndef HALONOTSET
+#define HALONOTSET -1
+#endif /* HALONOTSET */
+
+
 typedef struct _haloheader {
   int64_t num_halos;
-  float Om, Ol, h0, box_size, particle_mass;
+  float Om, Ol, h0, box_size[3], particle_mass;
 } haloheader;
 
 

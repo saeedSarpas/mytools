@@ -30,6 +30,7 @@ halofinder* new_halofinder(int num_halos)
 
   int i;
   for(i = 0; i < hf->header->num_halos; i++){
+    hf->halos[i].id = HALONOTSET;
     hf->halos[i].init_volume = NULL;
     hf->halos[i].particle_ids = NULL;
   }
