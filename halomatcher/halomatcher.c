@@ -50,7 +50,7 @@ matchinghalo* halomatcher(halofinder *pri, halofinder *sec,
 
     /* Searching for matches based on the second list of halos */
     for(i = 0; i < sec->header->num_halos; i++){
-      progress = simple_loading(progress, i + pri->header->num_halos, ntot_halos);
+      progress = simple_loading(progress, i+pri->header->num_halos, ntot_halos);
       if(sec->halos[i].id != HALONOTSET)
         secmatches[i] = singlehalo_matcher(&sec->halos[i], pri, params);
     }

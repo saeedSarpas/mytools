@@ -29,6 +29,7 @@ halofinder *sec;
 BeforeEach(halomatcher)
 {
   int i, j;
+  int initial_data = 1;
 
   pri = new_halofinder(NUMPRIHALOS);
   for(i = 0; i < pri->header->num_halos; i++){
@@ -38,7 +39,7 @@ BeforeEach(halomatcher)
       pri->halos[i].pos[j] = 1.234;
     for(j = 0; j < NUMPRIHALOPARTS; j++)
       pri->halos[i].init_volume = avl_insert(
-        pri->halos[i].init_volume, i+j, NULL);
+        pri->halos[i].init_volume, i+j, &initial_data, 1, sizeof(int));
   }
 
   sec = new_halofinder(NUMSECHALOS);
@@ -49,7 +50,7 @@ BeforeEach(halomatcher)
       sec->halos[i].pos[j] = 1.234;
     for(j = 0; j < NUMSECHALOPARTS; j++)
       sec->halos[i].init_volume = avl_insert(
-        sec->halos[i].init_volume, i+j, NULL);
+        sec->halos[i].init_volume, i+j, &initial_data, 1, sizeof(int));
   }
 }
 

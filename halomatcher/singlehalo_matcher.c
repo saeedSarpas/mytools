@@ -20,8 +20,9 @@ static int compare_mass(const void*, int, const void*);
 static int compare_matches(const void*, const void*);
 static void reset_global_counter();
 static void increment();
-static void fill_v_indices(avl_node*);
-static int64_t *v_indices;
+static void fill_grid_indices(avl_node*);
+static int64_t *grid_indices;
+static int *grid_nparts;
 
 
 static int counter;
@@ -45,28 +46,35 @@ vector* singlehalo_matcher(halo *h, halofinder *hf, halomatcher_params params)
 
   if(min_index == NOT_FOUND) return vector_new(0, sizeof(match));
 
-  // Allocating memory for v_indices (an array containing init_volume
+  // Allocating memory for grid_indices (an array containing init_volume
   // indices of the primary halo)
   reset_global_counter();
   inorder_traversal(h->init_volume, increment);
-  int len_v_indices = counter;
-  v_indices = allocate(len_v_indices, sizeof(int64_t));
+  int len_grid_indices = counter;
+  grid_indices = allocate(len_grid_indices, sizeof(int64_t));
+  grid_nparts = allocate(len_grid_indices, sizeof(int));
 
-  // Filling v_indices array
+  // Filling grid_indices and grid_nparts arrays
   reset_global_counter();
-  inorder_traversal(h->init_volume, fill_v_indices);
+  inorder_traversal(h->init_volume, fill_grid_indices);
+
+  // Counting the total number of particles in grid_nparts
+  int i, ntot_gridparts = 0;
+  for(i = 0; i < len_grid_indices; i++)
+    ntot_gridparts += grid_nparts[i];
 
   // Creating a vector for saving matching halos
   vector *matches = vector_new(8, sizeof(match));
 
   // Finding matching halos in the secaondary halos
-  int i, j, nmatching_grids = 0;
+  int j, nmatching_grids = 0;
   float matchgoodness, dx2[3];
   avl_node *found_node;
   match matchholder;
   for(i = min_index; i < hf->header->num_halos && hf->halos[i].id != HALONOTSET
         && hf->halos[i].m < max_mass; i++){
 
+    // Check if the halo exceed the maximum amount of displacement
     for(j = 0; j < 3; j++){
       dx2[j] = pow((h->pos[j] - hf->halos[i].pos[j]), 2);
       if(dx2[j] > hf->header->box_size[j] / 2)
@@ -77,13 +85,13 @@ vector* singlehalo_matcher(halo *h, halofinder *hf, halomatcher_params params)
 
     nmatching_grids = 0;
 
-    // Iteration through v_indices array for finding matching volume grids
-    for(j = 0; j < len_v_indices; j++){
-      found_node = avl_find(hf->halos[i].init_volume, v_indices[j]);
-      if(found_node != NULL) nmatching_grids++;
+    // Iteration through grid_indices array for finding matching volume grids
+    for(j = 0; j < len_grid_indices; j++){
+      found_node = avl_find(hf->halos[i].init_volume, grid_indices[j]);
+      if(found_node != NULL) nmatching_grids += grid_nparts[j];
     }
 
-    matchgoodness = (float) nmatching_grids / len_v_indices * 100;
+    matchgoodness = (float) nmatching_grids / ntot_gridparts * 100;
 
     if(matchgoodness > 0.0){
       matchholder.matchid = i;
@@ -95,7 +103,7 @@ vector* singlehalo_matcher(halo *h, halofinder *hf, halomatcher_params params)
   qsort(matches->elems, matches->log_length, sizeof(match),
         compare_matches);
 
-  free(v_indices);
+  free(grid_indices);
   return matches;
 }
 
@@ -141,11 +149,12 @@ static void reset_global_counter()
 
 
 /*
- * Putting init_volume indices into v_indices array
+ * Putting init_volume indices into grid_indices array
  */
-static void fill_v_indices(avl_node *node)
+static void fill_grid_indices(avl_node *node)
 {
-  v_indices[counter] = node->key;
+  grid_indices[counter] = node->key;
+  grid_nparts[counter] = *(int*)node->data;
   counter++;
 }
 
