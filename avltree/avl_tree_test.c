@@ -48,7 +48,7 @@ Ensure(avl_tree, find_works_properly)
   found_node = avl_find(root, NUM_OF_NODES);
   assert_that(found_node, is_null);
 
-  avl_dispose(root);
+  root = avl_dispose(root);
 }
 
 
@@ -57,7 +57,7 @@ Ensure(avl_tree, insert_keeps_the_tree_bst)
   struct avl_node *root = tree_constructor();
   inorder_traversal(root, check_childs);
 
-  avl_dispose(root);
+  root = avl_dispose(root);
 }
 
 
@@ -82,10 +82,27 @@ Ensure(avl_tree, insert_set_the_data_properly)
 {
   struct avl_node *root = NULL;
 
-  int data = INT_DATA;
-  int i;
-  for(i = 0; i < 10; i++)
-    root = avl_insert(root, i, &data);
+  int i, data;
+  for(i = 0; i < 10; i++){
+    data = i;
+    root = avl_insert(root, i, &data, 1, sizeof(int));
+  }
+
+  inorder_traversal(root, check_int_data);
+
+  avl_dispose(root);
+}
+
+
+Ensure(avl_tree, delete_keeps_the_data_right)
+{
+  struct avl_node *root = NULL;
+
+  int i, data;
+  for(i = 0; i < 10; i++){
+    data = i;
+    root = avl_insert(root, i, &data, 1, sizeof(int));
+  }
 
   inorder_traversal(root, check_int_data);
 
@@ -152,11 +169,9 @@ Ensure(avl_tree, dispose_works_properly)
 {
   struct avl_node *root = tree_constructor();
 
-  avl_dispose(root);
+  root = avl_dispose(root);
 
-  counter = 0;
-  inorder_traversal(root, increment);
-  assert_that(counter, is_equal_to(1));
+  assert_that(root, is_null);
 }
 
 
@@ -182,7 +197,7 @@ static void check_childs(struct avl_node *node){
 
 static void check_int_data(struct avl_node *node)
 {
-  assert_that(*(int*)node->data, is_equal_to(INT_DATA));
+  assert_that(*(int*)node->data, is_equal_to(node->key));
 }
 
 

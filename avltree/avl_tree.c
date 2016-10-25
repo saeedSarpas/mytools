@@ -15,8 +15,10 @@
  */
 
 
+#include <stdarg.h>
 #include "avl_tree.h"
 #include "./../memory/allocate.h"
+#include "./../memory/copy.h"
 
 
 static int max(int, int);
@@ -53,7 +55,7 @@ struct avl_node* avl_find(struct avl_node *root, int64_t key)
  * param: key an unique integer key
  * param: data data to be assigned to the node
  */
-static struct avl_node* new_node(int64_t key, void *data)
+static struct avl_node* new_node(int64_t key, void *data, int nmemb, int size)
 {
   struct avl_node* node = allocate(1, sizeof(struct avl_node));
 
@@ -61,7 +63,11 @@ static struct avl_node* new_node(int64_t key, void *data)
   node->left = NULL;
   node->right = NULL;
   node->height = 1;
-  node->data = data;
+
+  if(data != NULL){
+    node->data = allocate(nmemb,size);
+    copy(data, node->data, nmemb * size);
+  }
 
   return node;
 }
@@ -72,17 +78,30 @@ static struct avl_node* new_node(int64_t key, void *data)
  *
  * param: node the root node of the tree
  * param: key the unique key for the new node to be inserted
+ * param: data the data to attach to the node. Note that if data is not null,
+ * one should also pass two integer after it, nmemb with is the number of the
+ * member of the allocated space for node->data and size which the size of each
+ * member of the allocated space
  *
  * TODO: currently insert only accepts integer keys
  */
-struct avl_node* avl_insert(struct avl_node *node, int64_t key, void *data)
+struct avl_node* avl_insert(struct avl_node *node, int64_t key, void *data, ...)
 {
-  if(node == NULL) return new_node(key, data);
+  int nmemb = 0, size = 0;
+  if(data != NULL){
+    va_list a_list;
+    va_start(a_list, data);
+    nmemb = va_arg (a_list, int);
+    size = va_arg (a_list, int);
+    va_end(a_list);
+  }
+
+  if(node == NULL) return new_node(key, data, nmemb, size);
 
   if(key < node->key)
-    node->left = avl_insert(node->left, key, data);
+    node->left = avl_insert(node->left, key, data, nmemb, size);
   else if(key > node->key)
-    node->right = avl_insert(node->right, key, data);
+    node->right = avl_insert(node->right, key, data, nmemb, size);
   else
     return node;
 
@@ -212,13 +231,15 @@ void preorder_traversal(struct avl_node *node, void (*func)(struct avl_node*))
  *
  * param: node the root node
  */
-void avl_dispose(struct avl_node *root)
+struct avl_node* avl_dispose(struct avl_node *root)
 {
   struct avl_node *min;
   while(root != NULL){
     min = min_node(root);
     root = avl_delete(root, min->key);
   }
+
+  return root;
 }
 
 
@@ -325,6 +346,9 @@ static struct avl_node *min_node(struct avl_node *node)
  */
 static struct avl_node* delete_node(struct avl_node *node)
 {
+  if(node->data != NULL)
+    free(node->data);
+
   // node with only one child or no child
   if((node->left == NULL) || (node->right == NULL)){
     struct avl_node *temp = node->left ? node->left : node->right;
