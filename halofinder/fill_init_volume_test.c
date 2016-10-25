@@ -26,16 +26,18 @@ Describe(fill_init_volume);
 #define GRIDZ 100
 
 
-snapshot *s;
-halofinder *hf;
 double box_lengths[3] = {BOXLEN, BOXLEN, BOXLEN};
 int dims[3] = {GRIDX, GRIDY, GRIDZ};
 
 
-BeforeEach(fill_init_volume)
+BeforeEach(fill_init_volume) {}
+AfterEach(fill_init_volume) {}
+
+
+Ensure(fill_init_volume, works_properly)
 {
-// Generating snapshot
-  s = new_snapshot(NUMPARTS);
+  // Generating snapshot
+  snapshot *s = new_snapshot(NUMPARTS);
 
   int i;
   for(i = 0; i < 6; i++){
@@ -59,28 +61,17 @@ BeforeEach(fill_init_volume)
     s->particles[i].pos[1] = 0.0;
   }
 
-// Generating halofinder
-  hf = new_halofinder(NUMHALOS);
+  // Generating halofinder
+  halofinder *hf = new_halofinder(NUMHALOS);
 
   for(i = 0; i < hf->header->num_halos; i++){
     hf->halos[i].id = i;
     hf->halos[i].num_p = NUMPARTS;
     allocate_particle_ids(&hf->halos[i], hf->halos[i].num_p);
   }
-}
 
-
-AfterEach(fill_init_volume)
-{
-  dispose_halofinder(hf);
-  dispose_snapshot(s);
-}
-
-
-Ensure(fill_init_volume, works_properly)
-{
-// Filling halo particles
-  int i, index;
+  // Filling halo particles
+  int index;
   for(i = 0; i < hf->halos[0].num_p; i++)
     hf->halos[0].particle_ids[i] = i;
 
@@ -96,4 +87,54 @@ Ensure(fill_init_volume, works_properly)
       printf("in ke null shod\n\n");
     assert_that(found_node, is_non_null);
   }
+
+  dispose_halofinder(hf);
+  dispose_snapshot(s);
+}
+
+
+Ensure(fill_init_volume, counts_number_particle_in_each_grid_properly)
+{
+  // Generating snapshot
+  snapshot *s = new_snapshot(NUMPARTS);
+
+  int i;
+  for(i = 0; i < 6; i++){
+    s->header->npart[i] = 0;
+    s->header->mass[i] = 0.0;
+  }
+  s->header->npart[1] = NUMPARTS;
+
+  s->header->time = 1.0;
+  s->header->redshift = 0.0;
+
+  s->header->boxsize = 100;
+
+  for(i = 0; i < s->header->tot_nparticles; i++)
+    s->particles[i].id = i;
+
+  for(i = 0; i < s->header->tot_nparticles; i++){
+    s->particles[i].pos[0] = 0.0;
+    s->particles[i].pos[1] = 0.0;
+    s->particles[i].pos[1] = 0.0;
+  }
+
+  // Generating halofinder with only one halo
+  halofinder *hf = new_halofinder(1);
+
+  hf->halos[0].id = 0;
+  hf->halos[0].num_p = NUMPARTS;
+  allocate_particle_ids(&hf->halos[0], hf->halos[0].num_p);
+
+  // Filling halo particles
+  for(i = 0; i < hf->halos[0].num_p; i++)
+    hf->halos[0].particle_ids[i] = s->particles[i].id;
+
+  fill_init_volume(hf, s, box_lengths, dims);
+
+  avl_node *found_node = avl_find(hf->halos[0].init_volume, 0);
+
+  assert_that(found_node, is_non_null);
+  assert_that(found_node->key, is_equal_to(0));
+  assert_that(*(int*)found_node->data, is_equal_to(NUMPARTS));
 }

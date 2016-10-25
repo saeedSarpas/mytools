@@ -7,6 +7,7 @@ _TESTS := halofinder_test \
           fill_init_volume_test
 
 _DEPS := ./../memory/allocate \
+         ./../memory/copy \
          ./../avltree/avl_tree \
          ./../grid/row_major_order/point_to_grid \
          ./../grid/row_major_order/three_to_one \
