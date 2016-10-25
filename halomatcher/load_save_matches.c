@@ -45,7 +45,7 @@ void load_matches(char *path, vector **primatches, vector **secmatches)
   read_from(file, header.nsechalos, sizeof(int), secstarts);
 
   int i, progress = -1;
-  int ntot_halos = header.nprihalos + header.nprihalos;
+  int ntot_halos = header.nprihalos + header.nsechalos - 1;
 
   for(i = 0; i < header.nprihalos; i++){
     primatches[i] = vector_new(nprimatches[i] + 1, sizeof(match));

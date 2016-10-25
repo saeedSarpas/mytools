@@ -41,7 +41,7 @@ matchinghalo* halomatcher(halofinder *pri, halofinder *sec,
   else {
     /* Searching for matches based on the first list of halos */
     int progress = -1;
-    int ntot_halos = pri->header->num_halos + sec->header->num_halos;
+    int ntot_halos = pri->header->num_halos + sec->header->num_halos - 1;
     for(i = 0; i < pri->header->num_halos; i++){
       progress = simple_loading(progress, i, ntot_halos);
       if(pri->halos[i].id != HALONOTSET)
@@ -67,7 +67,6 @@ matchinghalo* halomatcher(halofinder *pri, halofinder *sec,
   match *primatch, *secmatch;
 
   int primatch_id;
-  for(i = 0; i < sec->header->num_halos; i++)
 
   for(primatch_id = 0; primatch_id < pri->header->num_halos; primatch_id++){
     if(primatches[primatch_id]->log_length == 0) continue;
@@ -77,7 +76,7 @@ matchinghalo* halomatcher(halofinder *pri, halofinder *sec,
     secmatch = (match*)vector_get_elem(secmatches[primatch->matchid], 0);
 
     if(secmatch->matchid == primatch_id){
-      mh->matchingids[primatch_id] = secmatch->matchid;
+      mh->matchingids[primatch_id] = primatch->matchid;
       mh->goodnesses[primatch_id] = (primatch->goodness + secmatch->goodness) / 2;
     }
   }

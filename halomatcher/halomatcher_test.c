@@ -64,7 +64,6 @@ AfterEach(halomatcher)
 Ensure(halomatcher, finds_matching_halos_properly)
 {
   halomatcher_params p = {.massOffset = 5,
-                          .minGoodness = 65.0,
                           .maxDisplacement = 5.0,
                           .loadMatches = 0,
                           .loadMatchesPath = "",
