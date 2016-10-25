@@ -58,6 +58,8 @@ int main(int argc, char *argv[])
 
   params *p = loadconfig(argv[1]);
 
+  snapshot *prisnap, *secsnap;
+
   clock_t _l_s_p_ = start("Loading and sorting primary halos");
   halofinder *pri = load_rockstar_bin(p->priFileAddr);
   sort_rockstar_halos(pri->halos, pri->header->num_halos,
@@ -70,26 +72,28 @@ int main(int argc, char *argv[])
                       compare_mass);
   done(_l_s_s_);
 
-  clock_t _l_p_g_ = start("Loading primary gadget snapshot");
-  snapshot *prisnap = load_gadget_snap(p->priSnap);
-  done(_l_p_g_);
+  if(!p->loadMatches){
+    clock_t _l_p_g_ = start("Loading primary gadget snapshot");
+    prisnap = load_gadget_snap(p->priSnap);
+    done(_l_p_g_);
 
-  clock_t _l_s_g_ = start("Loading secondary gadget snapshot");
-  snapshot *secsnap = load_gadget_snap(p->secSnap);
-  done(_l_s_g_);
+    clock_t _l_s_g_ = start("Loading secondary gadget snapshot");
+    secsnap = load_gadget_snap(p->secSnap);
+    done(_l_s_g_);
 
-  double boxlength[3] = {pri->header->box_size[0],
-                         pri->header->box_size[1],
-                         pri->header->box_size[2]};
+    double boxlength[3] = {pri->header->box_size[0],
+                           pri->header->box_size[1],
+                           pri->header->box_size[2]};
 
-  int griddims[3] = {p->initVolResolution,
-                     p->initVolResolution,
-                     p->initVolResolution};
+    int griddims[3] = {p->initVolResolution,
+                       p->initVolResolution,
+                       p->initVolResolution};
 
-  clock_t _f_p_s_ = start("Filling init_volume of primary and secondary halos");
-  fill_init_volume(pri, prisnap, boxlength, griddims);
-  fill_init_volume(sec, secsnap, boxlength, griddims);
-  done(_f_p_s_);
+    clock_t _f_p_s_ = start("Filling init_volume of primary and secondary halos");
+    fill_init_volume(pri, prisnap, boxlength, griddims);
+    fill_init_volume(sec, secsnap, boxlength, griddims);
+    done(_f_p_s_);
+  }
 
   halomatcher_params hm_p = {.massOffset = p->massOffset,
                              .maxDisplacement = p->maxDisplacement,
@@ -106,10 +110,15 @@ int main(int argc, char *argv[])
   print_results(pri, sec, p, mh);
   done(_w_r_);
 
+  clock_t _c_u_ = start("Clining up");
   dispose_halofinder(pri);
-  dispose_snapshot(prisnap);
   dispose_halofinder(sec);
-  dispose_snapshot(secsnap);
+
+  if(!p->loadMatches){
+    dispose_snapshot(prisnap);
+    dispose_snapshot(secsnap);
+  }
+  done(_c_u_);
 
   return 0;
 }
@@ -175,13 +184,18 @@ static params* loadconfig(const char *path)
   const char *outputPath = cfg_getstring(output, "output_path");
   p->outputPath = strdup(outputPath);
 
-  if(p->loadMatches)
-    check_dir(dirname(p->loadMatchesPath), "Wrong load_matches_path in configs");
+  if(p->loadMatches){
+    char *loadMatchesPathR = strdup(loadMatchesPath);
+    check_dir(dirname(loadMatchesPathR), "Wrong load_matches_path in configs");
+  }
 
-  if(p->saveMatches)
-    check_dir(dirname(p->saveMatchesPath), "Wrong save_matches_path in configs");
+  if(p->saveMatches){
+    char *saveMatchesPathR = strdup(saveMatchesPath);
+    check_dir(dirname(saveMatchesPathR), "Wrong save_matches_path in configs");
+  }
 
-  check_dir(dirname(p->outputPath), "Wrong output_path in configs");
+  char *outputPathR = strdup(outputPath);
+  check_dir(dirname(outputPathR), "Wrong output_path in configs");
 
   return p;
 }
@@ -209,7 +223,7 @@ static void print_results(halofinder *pri, halofinder *sec,
 
   for(i = 0; i < pri->header->num_halos; i++)
     if(mh->matchingids[i] != MATCHINGHALONOTSET)
-      fprintf(outputfile, "%d %f %d %f %f\n",
+      fprintf(outputfile, "%7d %17.15e %7d %17.15e %6.2f\n",
               i, pri->halos[i].m,
               mh->matchingids[i], sec->halos[mh->matchingids[i]].m,
               mh->goodnesses[i]);
