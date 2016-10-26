@@ -19,7 +19,7 @@
 config_t* new_cfg()
 {
   config_t *cfg = allocate(1, sizeof(config_t));
-	config_init(cfg);
+  config_init(cfg);
   return cfg;
 }
 
@@ -29,12 +29,12 @@ config_t* new_cfg()
  */
 void cfg_loadfile(config_t *cfg, const char *file_path)
 {
-	if(!config_read_file(cfg, file_path)){
-		printf("[%s:%d - %s]\n", config_error_file(cfg),
+  if(!config_read_file(cfg, file_path)){
+    printf("[%s:%d - %s]\n", config_error_file(cfg),
            config_error_line(cfg), config_error_text(cfg));
-		config_destroy(cfg);
-		exit(EXIT_FAILURE);
-	}
+    config_destroy(cfg);
+    exit(EXIT_FAILURE);
+  }
 }
 
 
@@ -43,9 +43,9 @@ void cfg_loadfile(config_t *cfg, const char *file_path)
  */
 config_setting_t* cfg_findsetting(config_t *cfg, char *path)
 {
-	config_setting_t *setting = config_lookup(cfg, path);
+  config_setting_t *setting = config_lookup(cfg, path);
 
-	if(setting != NULL) return setting;
+  if(setting != NULL) return setting;
 
   printf("[Did not find '%s' in config file]\n", path);
   config_destroy(cfg);
@@ -58,8 +58,8 @@ config_setting_t* cfg_findsetting(config_t *cfg, char *path)
  */
 config_setting_t* cfg_getelem(config_setting_t *setting, int index)
 {
-	config_setting_t *elem = config_setting_get_elem(setting, index);
-	if(elem != NULL) return elem;
+  config_setting_t *elem = config_setting_get_elem(setting, index);
+  if(elem != NULL) return elem;
 
   printf("[Cannot find the element]\n");
   exit(EXIT_FAILURE);
@@ -71,8 +71,8 @@ config_setting_t* cfg_getelem(config_setting_t *setting, int index)
  */
 const char* cfg_getstring(config_setting_t *setting, const char *field)
 {
-	const char *value;
-	if(config_setting_lookup_string(setting, field, &value)) return value;
+  const char *value;
+  if(config_setting_lookup_string(setting, field, &value)) return value;
 
   printf("[Unable to find the field: %s]\n", field);
   exit(EXIT_FAILURE);
@@ -84,8 +84,8 @@ const char* cfg_getstring(config_setting_t *setting, const char *field)
  */
 int cfg_getint(config_setting_t *setting, const char *field)
 {
-	int value;
-	if(config_setting_lookup_int(setting, field, &value)) return value;
+  int value;
+  if(config_setting_lookup_int(setting, field, &value)) return value;
 
   printf("[Unable to find the field: %s]\n", field);
   exit(EXIT_FAILURE);
@@ -97,8 +97,8 @@ int cfg_getint(config_setting_t *setting, const char *field)
  */
 int cfg_getbool(config_setting_t *setting, const char *field)
 {
-	int value;
-	if(config_setting_lookup_bool(setting, field, &value)) return value;
+  int value;
+  if(config_setting_lookup_bool(setting, field, &value)) return value;
 
   printf("[Unable to find the field: %s]\n", field);
   exit(EXIT_FAILURE);
@@ -110,8 +110,8 @@ int cfg_getbool(config_setting_t *setting, const char *field)
  */
 double cfg_getdouble(config_setting_t *setting, const char *field)
 {
-	double value;
-	if(config_setting_lookup_float(setting, field, &value)) return value;
+  double value;
+  if(config_setting_lookup_float(setting, field, &value)) return value;
 
   printf("[Unable to find the field: %s]\n", field);
   exit(EXIT_FAILURE);
@@ -122,8 +122,8 @@ double cfg_getdouble(config_setting_t *setting, const char *field)
  * Getting the length of the setting
  */
 int cfg_settinglength(config_setting_t *setting){
-	int len = config_setting_length(setting);
-	if(len) return len;
+  int len = config_setting_length(setting);
+  if(len) return len;
 
   printf("[The length of the setting is zero or unavailable]\n");
   exit(EXIT_FAILURE);
@@ -136,8 +136,8 @@ int cfg_settinglength(config_setting_t *setting){
 config_setting_t* cfg_addsetting(config_setting_t *parent, const char *name,
                                  int type)
 {
-	config_setting_t *new_setting = config_setting_add(parent, name, type);
-	if(new_setting) return new_setting;
+  config_setting_t *new_setting = config_setting_add(parent, name, type);
+  if(new_setting) return new_setting;
 
   printf("[Unable to add new setting]\n");
   exit(EXIT_FAILURE);
@@ -149,7 +149,7 @@ config_setting_t* cfg_addsetting(config_setting_t *parent, const char *name,
  */
 void cfg_setint(config_setting_t *setting, int value)
 {
-	if(config_setting_set_int(setting, value)) return;
+  if(config_setting_set_int(setting, value)) return;
 
   printf("[Unable to set integer value]\n");
   exit(EXIT_FAILURE);
@@ -161,7 +161,7 @@ void cfg_setint(config_setting_t *setting, int value)
  */
 void cfg_setdouble(config_setting_t *setting, double value)
 {
-	if(config_setting_set_float(setting, value)) return;
+  if(config_setting_set_float(setting, value)) return;
 
   printf("[Unable to set double value]\n");
   exit(EXIT_FAILURE);
@@ -173,7 +173,7 @@ void cfg_setdouble(config_setting_t *setting, double value)
  */
 void cfg_setstring(config_setting_t *setting, const char *value)
 {
-	if(config_setting_set_string(setting, value) == CONFIG_TRUE) return;
+  if(config_setting_set_string(setting, value) == CONFIG_TRUE) return;
 
   printf("[Unable to set the string value]\n");
   exit(EXIT_FAILURE);
@@ -185,5 +185,5 @@ void cfg_setstring(config_setting_t *setting, const char *value)
  */
 void cfg_destroy(config_t *cfg)
 {
-	config_destroy(cfg);
+  config_destroy(cfg);
 }
