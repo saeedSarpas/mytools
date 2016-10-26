@@ -29,7 +29,8 @@ DEPS := ./../../configfile/mylibconfig.c \
         ./../../grid/row_major_order/three_to_one.c \
         ./../../search/half_interval/find_ge.c \
         ./../../loading/simple_loading.c \
-        ./../../vector/vector.c
+        ./../../vector/vector.c \
+        ./../../math/interval/expspaced.c
 
 .PHONY : all
 

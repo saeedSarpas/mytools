@@ -25,6 +25,8 @@
 #include "./../../simulation/gadget/load_gadget_snap.h"
 #include "./../../halomatcher/matchinghalo.h"
 #include "./../../halomatcher/halomatcher.h"
+#include "./../../loading/simple_loading.h"
+#include "./../../math/interval/expspaced.h"
 
 
 typedef struct _params
@@ -40,12 +42,17 @@ typedef struct _params
   int initVolResolution;
   int saveMatches;
   char *saveMatchesPath;
+  int saveSingleMatches;
+  char *saveSingleMatchesDir;
+  int numSingleMatches;
   char *outputPath;
 } params;
 
 
 static params* loadconfig(const char*);
 static void print_results(halofinder*, halofinder*, params*, matchinghalo*);
+static void print_halo_particles(matchinghalo*, halofinder*, halofinder*,
+                                 snapshot*, snapshot*, params*);
 
 
 int main(int argc, char *argv[])
@@ -110,6 +117,24 @@ int main(int argc, char *argv[])
   print_results(pri, sec, p, mh);
   done(_w_r_);
 
+  if(p->saveSingleMatches){
+    clock_t _s_h_p_ = start("Saving halo particles\n");
+
+    if(p->loadMatches){
+      clock_t _l_p_g_ = start("\tLoading primary gadget snapshot");
+      prisnap = load_gadget_snap(p->priSnap);
+      done(_l_p_g_);
+
+      clock_t _l_s_g_ = start("\tLoading secondary gadget snapshot");
+      secsnap = load_gadget_snap(p->secSnap);
+      done(_l_s_g_);
+    }
+
+    print_halo_particles(mh, pri, sec, prisnap, secsnap, p);
+
+    done(_s_h_p_);
+  }
+
   clock_t _c_u_ = start("Clining up");
   dispose_halofinder(pri);
   dispose_halofinder(sec);
@@ -171,6 +196,11 @@ static params* loadconfig(const char *path)
   const char *loadMatchesPath = cfg_getstring(options, "load_matches_path");
   p->loadMatchesPath = strdup(loadMatchesPath);
 
+  if(p->loadMatches){
+    char *loadMatchesPathR = strdup(loadMatchesPath);
+    check_dir(dirname(loadMatchesPathR), "Wrong load_matches_path in configs");
+  }
+
   p->massOffset = cfg_getdouble(options, "mass_offset");
   p->initVolResolution = cfg_getint(options, "init_volume_resolution");
   p->maxDisplacement = cfg_getdouble(options, "max_halo_displacement");
@@ -179,20 +209,24 @@ static params* loadconfig(const char *path)
   const char *saveMatchesPath = cfg_getstring(options, "save_matches_path");
   p->saveMatchesPath = strdup(saveMatchesPath);
 
-  config_setting_t *output = cfg_findsetting(cfg, "output");
-
-  const char *outputPath = cfg_getstring(output, "output_path");
-  p->outputPath = strdup(outputPath);
-
-  if(p->loadMatches){
-    char *loadMatchesPathR = strdup(loadMatchesPath);
-    check_dir(dirname(loadMatchesPathR), "Wrong load_matches_path in configs");
-  }
-
   if(p->saveMatches){
     char *saveMatchesPathR = strdup(saveMatchesPath);
     check_dir(dirname(saveMatchesPathR), "Wrong save_matches_path in configs");
   }
+
+  p->saveSingleMatches = cfg_getbool(options, "save_single_matches");
+  p->numSingleMatches = cfg_getint(options, "num_single_matches");
+  const char *saveSingleMatchesDir = cfg_getstring(options,
+                                                   "save_single_matches_dir");
+  p->saveSingleMatchesDir = strdup(saveSingleMatchesDir);
+
+  if(p->saveSingleMatches)
+    check_dir(saveSingleMatchesDir, "Wrong save_halo_particles_dir in configs");
+
+  config_setting_t *output = cfg_findsetting(cfg, "output");
+
+  const char *outputPath = cfg_getstring(output, "output_path");
+  p->outputPath = strdup(outputPath);
 
   char *outputPathR = strdup(outputPath);
   check_dir(dirname(outputPathR), "Wrong output_path in configs");
@@ -229,4 +263,56 @@ static void print_results(halofinder *pri, halofinder *sec,
               mh->goodnesses[i]);
 
   fclose(outputfile);
+}
+
+
+static void print_halo_particles(matchinghalo *mh,
+                                 halofinder *pri, halofinder *sec,
+                                 snapshot *prisnap, snapshot *secsnap, params *p)
+{
+  int i, j, pri_id, sec_id, part_id;
+  char fmt[] = "%17.15e\t%17.15e\t%17.15e\n";
+
+  double *edges = expspaced(0, pri->header->num_halos, p->numSingleMatches);
+
+  for(i = 1; i <= p->numSingleMatches; i++){
+
+    pri_id = (int)edges[i];
+
+    if(mh->matchingids[pri_id] == MATCHINGHALONOTSET) continue;
+
+    char name[512];
+    sprintf(name, "%s%d.dat", p->saveSingleMatchesDir, pri_id);
+
+    FILE *fp = open_file(name, "w");
+
+    fprintf(fp, "pri_halo_id: %d\n", pri_id);
+    fprintf(fp, "pri_halo_mass: %15.13e\n", pri->halos[pri_id].m);
+    fprintf(fp, "pri_halo_num_p: %d\n", (int)pri->halos[pri_id].num_p);
+
+    sec_id = mh->matchingids[pri_id];
+    fprintf(fp, "sec_halo_id: %d\n", sec_id);
+    fprintf(fp, "sec_halo_mass: %15.13e\n", sec->halos[sec_id].m);
+    fprintf(fp, "sec_halo_id: %d\n", (int)sec->halos[sec_id].num_p);
+
+    fprintf(fp, "goodness: %f\n", mh->goodnesses[pri_id]);
+
+    for(j = 0; j < pri->halos[pri_id].num_p; j++){
+      part_id = pri->halos[pri_id].particle_ids[j];
+
+      fprintf(fp, fmt, prisnap->particles[part_id].pos[0],
+              prisnap->particles[part_id].pos[1],
+              prisnap->particles[part_id].pos[2]);
+    }
+
+    for(j = 0; j < sec->halos[sec_id].num_p; j++){
+      part_id = sec->halos[sec_id].particle_ids[j];
+
+      fprintf(fp, fmt, secsnap->particles[part_id].pos[0],
+              secsnap->particles[part_id].pos[1],
+              secsnap->particles[part_id].pos[2]);
+    }
+
+    fclose(fp);
+  }
 }
