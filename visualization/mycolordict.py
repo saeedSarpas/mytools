@@ -90,5 +90,14 @@ CDICT = {
             '#7584AD', '#314570', '#AED1D6', '#E09873', '#A37F6F'],
         'primary_colors': [
             '#1e0a0b', '#4a2245', '#8a2245', '#cb3c3e', '#f9703c', '#ff861d']
+    },
+    'RAINBOW': {
+        'helper_colors': [
+            '#9dbe59', '#e5cf6c', '#e68570', '#5884b3'],
+        'primary_colors': [
+            '#ff4843', '#328bdc', '#ffbf43', '#5fae5b', '#fbac47'],
+        'background': '#f0f0f0',
+        'gridcolor': '#ffffff',
+        'axiscolor': '#555555'
     }
 }
