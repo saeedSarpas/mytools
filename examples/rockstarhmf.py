@@ -71,8 +71,8 @@ class RockstarHMF(object):
         kws['ylabel'] = '$dn / d\\ln(M) dV\\ [h^3Mpc^{-3}]$'
 
         myplot = MyPlot()
-        primarycolor = primarycolors('SANDSTONE')
-        helpercolor = helpercolors('SANDSTONE')
+        primarycolor = primarycolors('RAINBOW')
+        helpercolor = helpercolors('RAINBOW')
 
         for _, value in self.params.iteritems():
             kws['color'] = primarycolor.next()

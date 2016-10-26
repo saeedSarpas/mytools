@@ -128,8 +128,8 @@ class RockstarGadgetHMP(object):
         myplot = MyPlot()
 
         nfwplots = []
-        primarycolor = primarycolors('SANDSTONE')
-        helpercolor = helpercolors('SANDSTONE')
+        primarycolor = primarycolors('RAINBOW')
+        helpercolor = helpercolors('RAINBOW')
 
         for _, value in self.params.iteritems():
             kws['color'] = primarycolor.next()
@@ -148,7 +148,7 @@ class RockstarGadgetHMP(object):
                     mass, value['rockstar'].binnedhalos['mean_rvir'], z)
 
                 kws['color'] = helpercolor.next()
-                label = "NFW for %1.g" % mass
+                label = "NFW for %1.g SolMass" % mass
                 myplot.plot(nfwplot, label=label, **dict(kws))
 
         myplot.legend()
