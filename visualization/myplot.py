@@ -13,7 +13,15 @@ class MyPlot(object):
     """MyPlot class"""
 
     def __init__(self):
-        """Constructor of MyPlot"""
+        """Constructor of MyPlot
+
+        Parameters
+        ----------
+        rows : int, optional
+            Number of rows
+        cols : int, optional
+            Number of cols
+        """
         self.plt = plt
         self.plt.figure(1)
 
@@ -60,18 +68,19 @@ class MyPlot(object):
         self.plt.subplot(pos)
 
         if len(dict(kwargs).keys()) > 0:
-            print('Plotting using following parameters:')
+            print('\"errorbar\" is plotting using following parameters:')
             for key, value in dict(kwargs).iteritems():
                 print('\t {:15s}'.format(str(key)) + str(value))
-            print('')
+                print('')
 
         params = _getparams(**kwargs)
 
         self._setscales(**kwargs)
         self._setlabels(**kwargs)
         self._setarea(**kwargs)
-        self._removetoprightspines()
+        self._stylespines(**kwargs)
         self._setaxiscolor(**kwargs)
+        self._setgrid(**kwargs)
 
         self.plt.errorbar(
             plotparams['x'], plotparams['y'],
@@ -135,16 +144,17 @@ class MyPlot(object):
         params = _getparams(**kwargs)
 
         if len(dict(kwargs).keys()) > 0:
-            print('Plotting using following parameters:')
+            print('\"plot\" is plotting using following parameters:')
             for key, value in dict(kwargs).iteritems():
                 print('\t {:15s}'.format(str(key)) + str(value))
-            print('')
+                print('')
 
         self._setscales(**kwargs)
         self._setlabels(**kwargs)
         self._setarea(**kwargs)
-        self._removetoprightspines()
+        self._stylespines(**kwargs)
         self._setaxiscolor(**kwargs)
+        self._setgrid(**kwargs)
 
         self.plt.plot(
             plotparams['x'], plotparams['y'],
@@ -183,26 +193,31 @@ class MyPlot(object):
         if vmax is None: vmax = np.amax(plotdata)
 
         if len(dict(kwargs).keys()) > 0:
-            print('Plotting using following parameters:')
+            print('\"density\" is plotting using following parameters:')
             for key, value in dict(kwargs).iteritems():
                 print('\t {:15s}'.format(str(key)) + str(value))
-            print('\t {:15s}'.format('vmin: ' + str(vmin)))
-            print('\t {:15s}'.format('vmax: ' + str(vmax)))
-            print('')
+                print('\t {:15s}'.format('vmin: ' + str(vmin)))
+                print('\t {:15s}'.format('vmax: ' + str(vmax)))
+                print('')
 
         self._setscales(**kwargs)
         self._setlabels(**kwargs)
         self._setarea(**kwargs)
-        self._removetoprightspines()
+        self._stylespines(**kwargs)
         self._setaxiscolor(**kwargs)
+        self._setgrid(**kwargs)
 
         cmap = mcolors.LinearSegmentedColormap(
             'CustomMap', cdict.get(params['scheme'])['cdict'])
 
         self.plt.imshow(plotdata, cmap=cmap, vmin=vmin, vmax=vmax)
 
+    def new3daxes(self, pos='111'):
+        """Creatign new 3d axes for plotting"""
 
-    def scatter3d(self, xs, ys, zs, pos="111", zdir='z', **kwargs):
+        return self.plt.figure().add_subplot(pos, projection='3d')
+
+    def scatter3d(self, xs, ys, zs, axes, **kwargs):
         """Scatter3d plot
 
         Parameters:
@@ -211,7 +226,6 @@ class MyPlot(object):
             Positions of the points
         pos : str, optional
             Position of the subplot inside the figure
-        zdir : str, optional
         scheme : str, optional
             Color scheme name
         label : str, optional
@@ -222,27 +236,44 @@ class MyPlot(object):
             Axis boundries
         xlabel, ylabel, zlabel : str, optional
             Axis labels
+
+        Examples
+        --------
+        >>> plot = MyPlot()
+        >>> axes = plot.new3daxes(pos="211")
+        >>> plot.scatter3d(xs, ys, zs, axes)
+        >>> plot.save('/path')
         """
 
-        axes = self.plt.subplot(pos, projection='3d')
+        params = _getparams(**kwargs)
 
         if len(dict(kwargs).keys()) > 0:
-            print('Plotting using following parameters:')
+            print('\"scatter3d\" is plotting using following parameters:')
             for key, value in dict(kwargs).iteritems():
                 print('\t {:15s}'.format(str(key)) + str(value))
 
+        axes.scatter(xs, ys, zs, c=params['color'], marker='o', s=10,
+                     edgecolors='none', facecolors=params['color'])
+
+        k = kwargs.get
+        if 'xlabel' in kwargs: axes.set_xlabel(k('xlabel'))
+        if 'ylabel' in kwargs: axes.set_ylabel(k('ylabel'))
+        if 'zlabel' in kwargs: axes.set_zlabel(k('zlabel'))
+
+        if 'xmin' in kwargs and 'xmax' in kwargs:
+            axes.set_xlim(k('xmin'), k('xmax'))
+
+        if 'ymin' in kwargs and 'ymax' in kwargs:
+            axes.set_ylim(k('ymin'), k('ymax'))
+
+        if 'zmin' in kwargs and 'zmax' in kwargs:
+            axes.set_zlim(k('zmin'), k('zmax'))
+
         self._setscales(**kwargs)
-        self._setlabels(**kwargs)
-        self._setarea(**kwargs)
-
-        axes.scatter(xs, ys, zs, zdir=zdir)
-
-        if 'xlabel' in kwargs: axes.set_xlabel(kwargs.get('xlabel'))
-        if 'ylabel' in kwargs: axes.set_ylabel(kwargs.get('ylabel'))
-        if 'zlabel' in kwargs: axes.set_zlabel(kwargs.get('zlabel'))
+        self._setaxiscolor3d(**kwargs)
 
 
-    def scatter(self, xs, ys, pos="111", hist=True, nbins=20, **kwargs):
+    def scatter(self, xs, ys, pos="111", **kwargs):
         """Scatter plot with histogram
 
         Parameters:
@@ -251,10 +282,6 @@ class MyPlot(object):
             Positions of the points
         pos : str, optional
             Position of the subplot inside the figure
-        hist : bool, optional
-            Switch histogram on or off
-        nbins : int, optional
-            Number of bins in each histogram
         scheme : str, optional
             Color scheme name
         label : str, optional
@@ -273,6 +300,11 @@ class MyPlot(object):
 
         params = _getparams(**kwargs)
 
+        if len(dict(kwargs).keys()) > 0:
+            print('\"scatter\" is plotting using following parameters:')
+            for key, value in dict(kwargs).iteritems():
+                print('\t {:15s}'.format(str(key)) + str(value))
+
         k = kwargs.get
 
         xmin = k('xmin') if 'xmin' in kwargs else np.min(xs)
@@ -289,11 +321,15 @@ class MyPlot(object):
         self.plt.gca().set_xlim(xlim)
         self.plt.gca().set_ylim(ylim)
 
+        self.plt.scatter(xs, ys, c=params['color'], marker='o', s=10,
+                         edgecolors='none')
+
         self._setscales(**kwargs)
         self._setlabels(**kwargs)
         self._setaxiscolor(**kwargs)
-
-        self.plt.scatter(xs, ys, c=params['color'], marker='.')
+        self._setgrid(**kwargs)
+        self._stylespines(**kwargs)
+        self._setarea(**kwargs)
 
 
     def legend(self, pos="111",
@@ -332,7 +368,6 @@ class MyPlot(object):
 
         if 'xlabel' in kwargs: self.plt.gca().set_xlabel(kwargs.get('xlabel'))
         if 'ylabel' in kwargs: self.plt.gca().set_ylabel(kwargs.get('ylabel'))
-        if 'zlabel' in kwargs: self.plt.gca().set_zlabel(kwargs.get('zlabel'))
 
 
     def _setarea(self, **kwargs):
@@ -343,29 +378,37 @@ class MyPlot(object):
         if 'ymin' in kwargs: self.plt.gca().set_ylim(bottom=kwargs.get('ymin'))
         if 'ymax' in kwargs: self.plt.gca().set_ylim(top=kwargs.get('ymax'))
 
-
-    def _removetoprightspines(self):
+    def _stylespines(self, **kwargs):
         """Removing plot top and right spines"""
+
+        cscheme = self._getcscheme(**kwargs)
 
         self.plt.gca().spines["top"].set_visible(False)
         self.plt.gca().spines["right"].set_visible(False)
+        self.plt.gca().spines['bottom'].set_color(cscheme['axiscolor'])
+        self.plt.gca().spines['left'].set_color(cscheme['axiscolor'])
 
 
     def _setaxiscolor(self, **kwargs):
         """Setting plot axis color if available"""
 
-        cscheme = cdict.get(kwargs.get('scheme')) if 'scheme' in kwargs \
-                  else cdict.get('AUTUMN_COLORSCHEME')
+        cscheme = self._getcscheme(**kwargs)
 
-        self.plt.gca().get_xaxis().tick_bottom()
-        self.plt.gca().spines['bottom'].set_color(cscheme['axiscolor'])
-        self.plt.gca().yaxis.label.set_color(cscheme['axiscolor'])
-        self.plt.gca().tick_params(axis='y', colors=cscheme['axiscolor'])
-
-        self.plt.gca().get_yaxis().tick_left()
-        self.plt.gca().spines['left'].set_color(cscheme['axiscolor'])
         self.plt.gca().xaxis.label.set_color(cscheme['axiscolor'])
         self.plt.gca().tick_params(axis='x', colors=cscheme['axiscolor'])
+        for tick in self.plt.gca().yaxis.get_major_ticks():
+            tick.label.set_fontsize(8)
+
+        self.plt.gca().yaxis.label.set_color(cscheme['axiscolor'])
+        self.plt.gca().tick_params(axis='y', colors=cscheme['axiscolor'])
+        for tick in self.plt.gca().xaxis.get_major_ticks():
+            tick.label.set_fontsize(8)
+
+
+    def _setgrid(self, **kwargs):
+        """Setting plot grid and background"""
+
+        cscheme = self._getcscheme(**kwargs)
 
         self.plt.gca().set_axis_bgcolor(cscheme['background'])
         self.plt.gca().grid(
@@ -373,6 +416,26 @@ class MyPlot(object):
 
         # set grid lines behind the plot
         self.plt.gca().set_axisbelow(True)
+
+    def _setaxiscolor3d(self, **kwargs):
+        """Setting plot axis color if available"""
+
+        cscheme = self._getcscheme(**kwargs)
+
+        self._setaxiscolor(**kwargs)
+
+        self.plt.gca().zaxis.label.set_color(cscheme['axiscolor'])
+        self.plt.gca().tick_params(axis='z', colors=cscheme['axiscolor'])
+        for tick in self.plt.gca().zaxis.get_major_ticks():
+            tick.label.set_fontsize(8)
+
+    def _getcscheme(self, **kwargs):
+        """Returning the colorscheme"""
+
+        if 'scheme' in kwargs:
+            return cdict.get(kwargs.get('scheme'))
+        else:
+            return cdict.get('AUTUMN_COLORSCHEME')
 
 
 def _getparams(**kwargs):
