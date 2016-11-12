@@ -82,9 +82,11 @@ class PlotMatchingHalo(object):
         num_p = self.header['pri_halo_num_p']
 
         kws = {}
+        kws['silent'] = True
         kws['xlabel'] = 'x'
         kws['ylabel'] = 'y'
         kws['zlabel'] = 'z'
+        kws['alpha'] = 0.75
         kws['color'] = color1
 
         lim = self._getarea()
@@ -115,9 +117,10 @@ class PlotMatchingHalo(object):
         num_p = self.header['pri_halo_num_p']
 
         kws = {}
-
+        kws['silent'] = True
         kws['xlabel'] = xlabel
         kws['ylabel'] = ylabel
+        kws['alpha'] = 0.75
         kws['color'] = color1
 
         lim = self._getarea()
@@ -142,7 +145,6 @@ class PlotMatchingHalo(object):
         zlim = (np.min(self.pos['z']) - 1, np.max(self.pos['z']) + 1)
 
         return {'x': xlim, 'y': ylim, 'z': zlim}
-
 
 
 def _2number(string):

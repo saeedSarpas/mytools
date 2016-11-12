@@ -67,13 +67,10 @@ class MyPlot(object):
 
         self.plt.subplot(pos)
 
-        if len(dict(kwargs).keys()) > 0:
-            print('\"errorbar\" is plotting using following parameters:')
-            for key, value in dict(kwargs).iteritems():
-                print('\t {:15s}'.format(str(key)) + str(value))
-                print('')
-
         params = _getparams(**kwargs)
+
+        if not params['silent']:
+            _printargs("\"errorbar\"", **kwargs)
 
         self._setscales(**kwargs)
         self._setlabels(**kwargs)
@@ -143,11 +140,8 @@ class MyPlot(object):
 
         params = _getparams(**kwargs)
 
-        if len(dict(kwargs).keys()) > 0:
-            print('\"plot\" is plotting using following parameters:')
-            for key, value in dict(kwargs).iteritems():
-                print('\t {:15s}'.format(str(key)) + str(value))
-                print('')
+        if not params['silent']:
+            _printargs("\"plot\"", **kwargs)
 
         self._setscales(**kwargs)
         self._setlabels(**kwargs)
@@ -189,16 +183,12 @@ class MyPlot(object):
 
         params = _getparams(**kwargs)
 
+        if not params['silent']:
+            _printargs("\"density\"", **kwargs)
+            # TODO: add vmin and vmax to the list of kwargs too
+
         if vmin is None: vmin = np.amin(plotdata)
         if vmax is None: vmax = np.amax(plotdata)
-
-        if len(dict(kwargs).keys()) > 0:
-            print('\"density\" is plotting using following parameters:')
-            for key, value in dict(kwargs).iteritems():
-                print('\t {:15s}'.format(str(key)) + str(value))
-                print('\t {:15s}'.format('vmin: ' + str(vmin)))
-                print('\t {:15s}'.format('vmax: ' + str(vmax)))
-                print('')
 
         self._setscales(**kwargs)
         self._setlabels(**kwargs)
@@ -236,6 +226,8 @@ class MyPlot(object):
             Axis boundries
         xlabel, ylabel, zlabel : str, optional
             Axis labels
+        alpha : float
+            The transparency of the markers. 1 opaque, 0 transparent
 
         Examples
         --------
@@ -247,15 +239,15 @@ class MyPlot(object):
 
         params = _getparams(**kwargs)
 
-        if len(dict(kwargs).keys()) > 0:
-            print('\"scatter3d\" is plotting using following parameters:')
-            for key, value in dict(kwargs).iteritems():
-                print('\t {:15s}'.format(str(key)) + str(value))
-
-        axes.scatter(xs, ys, zs, c=params['color'], marker='o', s=10,
-                     edgecolors='none', facecolors=params['color'])
+        if not params['silent']:
+            _printargs("\"scatter3d\"", **kwargs)
 
         k = kwargs.get
+        alpha = k('alpha') if 'alpha' in kwargs else None
+
+        axes.scatter(xs, ys, zs, c=params['color'], marker='o', s=10,
+                     edgecolors='none', lw=0, alpha=alpha)
+
         if 'xlabel' in kwargs: axes.set_xlabel(k('xlabel'))
         if 'ylabel' in kwargs: axes.set_ylabel(k('ylabel'))
         if 'zlabel' in kwargs: axes.set_zlabel(k('zlabel'))
@@ -294,18 +286,19 @@ class MyPlot(object):
             Axis boundries
         xlabel, ylabel, zlabel : str, optional
             Axis labels
+        alpha : float
+            The transparency of the markers. 1 opaque, 0 transparent
         """
 
         self.plt.subplot(pos)
 
         params = _getparams(**kwargs)
 
-        if len(dict(kwargs).keys()) > 0:
-            print('\"scatter\" is plotting using following parameters:')
-            for key, value in dict(kwargs).iteritems():
-                print('\t {:15s}'.format(str(key)) + str(value))
+        if not params['silent']:
+            _printargs("\"scatter\"", **kwargs)
 
         k = kwargs.get
+        alpha = k('alpha') if 'alpha' in kwargs else None
 
         xmin = k('xmin') if 'xmin' in kwargs else np.min(xs)
         xmax = k('xmax') if 'xmax' in kwargs else np.max(xs)
@@ -322,7 +315,7 @@ class MyPlot(object):
         self.plt.gca().set_ylim(ylim)
 
         self.plt.scatter(xs, ys, c=params['color'], marker='o', s=10,
-                         edgecolors='none')
+                         edgecolors='none', lw=0, alpha=alpha)
 
         self._setscales(**kwargs)
         self._setlabels(**kwargs)
@@ -437,6 +430,15 @@ class MyPlot(object):
         else:
             return cdict.get('AUTUMN_COLORSCHEME')
 
+def _printargs(title, **kwargs):
+    """Printing used keyword arguments for a specific plot"""
+
+    if len(dict(kwargs).keys()) > 0:
+        print(str(title) + ' is plotting using following parameters:')
+        for key, value in dict(kwargs).iteritems():
+            print('\t {:15s}'.format(str(key)) + str(value))
+            print('')
+
 
 def _getparams(**kwargs):
     """Extract keyword parameters"""
@@ -450,7 +452,8 @@ def _getparams(**kwargs):
         ('color', cdict.get(scheme)['linecolor']),
         ('ecolor', cdict.get(scheme)['ecolor']),
         ('linestyle', 'solid'),
-        ('scheme', 'AUTUMN_COLORSCHEME')]
+        ('scheme', 'AUTUMN_COLORSCHEME'),
+        ('silent', False)]
 
     params = {}
     for elem in defaults:
