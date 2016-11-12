@@ -6,7 +6,7 @@
 #include "./../simulation/snapshot.h"
 
 
-void fill_init_volume(halofinder*, snapshot*, double*, int*);
+void fill_init_volume(halofinder*, snapshot*, int*);
 
 
 #endif /* FILL_INIT_VOLUME_H */

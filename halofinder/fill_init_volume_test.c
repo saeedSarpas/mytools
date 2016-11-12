@@ -26,7 +26,6 @@ Describe(fill_init_volume);
 #define GRIDZ 100
 
 
-double box_lengths[3] = {BOXLEN, BOXLEN, BOXLEN};
 int dims[3] = {GRIDX, GRIDY, GRIDZ};
 
 
@@ -50,19 +49,22 @@ Ensure(fill_init_volume, works_properly)
   s->header->time = 1.0;
   s->header->redshift = 0.0;
 
-  s->header->boxsize = 100;
+  s->header->boxsize = BOXLEN;
 
   for(i = 0; i < s->header->tot_nparticles; i++)
     s->particles[i].id = i;
 
   for(i = 0; i < s->header->tot_nparticles; i++){
-    s->particles[i].pos[0] = i * box_lengths[0] / dims[0];
+    s->particles[i].pos[0] = i * s->header->boxsize / dims[0];
     s->particles[i].pos[1] = 0.0;
     s->particles[i].pos[1] = 0.0;
   }
 
   // Generating halofinder
   halofinder *hf = new_halofinder(NUMHALOS);
+
+  for(i = 0; i < 3; i++)
+    hf->header->box_size[i] = BOXLEN;
 
   for(i = 0; i < hf->header->num_halos; i++){
     hf->halos[i].id = i;
@@ -75,9 +77,11 @@ Ensure(fill_init_volume, works_properly)
   for(i = 0; i < hf->halos[0].num_p; i++)
     hf->halos[0].particle_ids[i] = i;
 
-  fill_init_volume(hf, s, box_lengths, dims);
+  fill_init_volume(hf, s, dims);
 
   float *pos;
+  double box_lengths[3] = {s->header->boxsize, s->header->boxsize,
+                           s->header->boxsize};
   for(i = 0; i < hf->halos[0].num_p; i++){
     pos = s->particles[hf->halos[0].particle_ids[i]].pos;
     index = point_to_grid(pos, box_lengths, dims);
@@ -108,7 +112,7 @@ Ensure(fill_init_volume, counts_number_particle_in_each_grid_properly)
   s->header->time = 1.0;
   s->header->redshift = 0.0;
 
-  s->header->boxsize = 100;
+  s->header->boxsize = BOXLEN;
 
   for(i = 0; i < s->header->tot_nparticles; i++)
     s->particles[i].id = i;
@@ -122,6 +126,9 @@ Ensure(fill_init_volume, counts_number_particle_in_each_grid_properly)
   // Generating halofinder with only one halo
   halofinder *hf = new_halofinder(1);
 
+  for(i = 0; i < 3; i++)
+    hf->header->box_size[i] = BOXLEN;
+
   hf->halos[0].id = 0;
   hf->halos[0].num_p = NUMPARTS;
   allocate_particle_ids(&hf->halos[0], hf->halos[0].num_p);
@@ -130,7 +137,7 @@ Ensure(fill_init_volume, counts_number_particle_in_each_grid_properly)
   for(i = 0; i < hf->halos[0].num_p; i++)
     hf->halos[0].particle_ids[i] = s->particles[i].id;
 
-  fill_init_volume(hf, s, box_lengths, dims);
+  fill_init_volume(hf, s, dims);
 
   avl_node *found_node = avl_find(hf->halos[0].init_volume, 0);
 

@@ -11,12 +11,18 @@
 #include "fill_init_volume.h"
 #include "./../avltree/avl_tree.h"
 #include "./../grid/row_major_order/point_to_grid.h"
+#include "./../memory/allocate.h"
 
 
-void fill_init_volume(halofinder *hf, snapshot *s, double *box, int *dims)
+void fill_init_volume(halofinder *hf, snapshot *s, int *dims)
 {
   float *pos;
   int i, j, index;
+
+  double *box = allocate(3, sizeof(double));
+  for(i = 0; i < 3; i++)
+    box[i] = (double) s->header->boxsize;
+
   int initial_data = 1;
   avl_node *found_node;
   for(i = 0; i < hf->header->num_halos; i++)

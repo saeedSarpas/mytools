@@ -88,17 +88,13 @@ int main(int argc, char *argv[])
     secsnap = load_gadget_snap(p->secSnap);
     done(_l_s_g_);
 
-    double boxlength[3] = {pri->header->box_size[0],
-                           pri->header->box_size[1],
-                           pri->header->box_size[2]};
-
     int griddims[3] = {p->initVolResolution,
                        p->initVolResolution,
                        p->initVolResolution};
 
     clock_t _f_p_s_ = start("Filling init_volume of primary and secondary halos");
-    fill_init_volume(pri, prisnap, boxlength, griddims);
-    fill_init_volume(sec, secsnap, boxlength, griddims);
+    fill_init_volume(pri, prisnap, griddims);
+    fill_init_volume(sec, secsnap, griddims);
     done(_f_p_s_);
   }
 
