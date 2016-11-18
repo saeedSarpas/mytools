@@ -67,12 +67,15 @@ vector* singlehalo_matcher(halo *h, halofinder *hf, halomatcher_params params)
   vector *matches = vector_new(8, sizeof(match));
 
   // Finding matching halos in the secaondary halos
-  int j, nmatching_grids = 0;
+  int j, nmatching_gridparts = 0;
   float matchgoodness, dx2[3];
   avl_node *found_node;
   match matchholder;
-  for(i = min_index; i < hf->header->num_halos && hf->halos[i].id != HALONOTSET
-        && hf->halos[i].m < max_mass; i++){
+  for(i = min_index; i < hf->header->num_halos; i++){
+
+    // Checking conditions
+    if(hf->halos[i].id == HALONOTSET) continue;
+    if(hf->halos[i].m > max_mass) break;
 
     // Check if the halo exceed the maximum amount of displacement
     for(j = 0; j < 3; j++){
@@ -83,15 +86,15 @@ vector* singlehalo_matcher(halo *h, halofinder *hf, halomatcher_params params)
 
     if(sqrt(dx2[0] + dx2[1] + dx2[2]) > params.maxDisplacement) continue;
 
-    nmatching_grids = 0;
+    nmatching_gridparts = 0;
 
     // Iteration through grid_indices array for finding matching volume grids
     for(j = 0; j < len_grid_indices; j++){
       found_node = avl_find(hf->halos[i].init_volume, grid_indices[j]);
-      if(found_node != NULL) nmatching_grids += grid_nparts[j];
+      if(found_node != NULL) nmatching_gridparts += grid_nparts[j];
     }
 
-    matchgoodness = (float) nmatching_grids / ntot_gridparts * 100;
+    matchgoodness = (float) nmatching_gridparts / ntot_gridparts * 100;
 
     if(matchgoodness > 0.0){
       matchholder.matchid = i;
