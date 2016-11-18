@@ -12,6 +12,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <unistd.h>
 #include <libgen.h>
 #include "./../../time/mytime.h"
 #include "./../../configfile/mylibconfig.h"
@@ -31,8 +32,8 @@
 
 typedef struct _params
 {
-  char *priFileAddr;
-  char *secFileAddr;
+  char *priHalos;
+  char *secHalos;
   char *priSnap;
   char *secSnap;
   int loadMatches;
@@ -45,6 +46,8 @@ typedef struct _params
   int saveSingleMatches;
   char *saveSingleMatchesDir;
   int numSingleMatches;
+  char *priLatestSnap;
+  char *secLatestSnap;
   char *outputPath;
 } params;
 
@@ -68,13 +71,13 @@ int main(int argc, char *argv[])
   snapshot *prisnap, *secsnap;
 
   clock_t _l_s_p_ = start("Loading and sorting primary halos");
-  halofinder *pri = load_rockstar_bin(p->priFileAddr);
+  halofinder *pri = load_rockstar_bin(p->priHalos);
   sort_rockstar_halos(pri->halos, pri->header->num_halos,
                       compare_mass);
   done(_l_s_p_);
 
   clock_t _l_s_s_ = start("Loading and sorting secondary halos");
-  halofinder *sec = load_rockstar_bin(p->secFileAddr);
+  halofinder *sec = load_rockstar_bin(p->secHalos);
   sort_rockstar_halos(sec->halos, sec->header->num_halos,
                       compare_mass);
   done(_l_s_s_);
@@ -146,14 +149,29 @@ int main(int argc, char *argv[])
 
 
 /*
- * Checking if the directory exist
+ * Checking if a directory exist
  */
 static void check_dir(const char *path, const char *err)
 {
-  DIR* dir = opendir(path);
+  char *copied_path = strdup(path);
+  DIR* dir = opendir(copied_path);
   if(dir)
     closedir(dir);
   else {
+    printf("[%s]\n", err);
+    exit(EXIT_FAILURE);
+  }
+}
+
+
+/*
+ * Checking if a file exist
+ */
+static void check_file(const char *path, const char *err)
+{
+  char *copied_path = strdup(path);
+  DIR* dir = opendir(copied_path);
+  if(!access(copied_file, F_OK)){
     printf("[%s]\n", err);
     exit(EXIT_FAILURE);
   }
@@ -175,10 +193,10 @@ static params* loadconfig(const char *path)
   config_setting_t *inputs = cfg_findsetting(cfg, "inputs");
 
   const char *input = cfg_getstring(inputs, "pri_halos");
-  p->priFileAddr = strdup(input);
+  p->priHalos = strdup(input);
 
   input = cfg_getstring(inputs, "sec_halos");
-  p->secFileAddr = strdup(input);
+  p->secHalos = strdup(input);
 
   input = cfg_getstring(inputs, "pri_snap");
   p->priSnap = strdup(input);
@@ -192,40 +210,57 @@ static params* loadconfig(const char *path)
   const char *loadMatchesPath = cfg_getstring(options, "load_matches_path");
   p->loadMatchesPath = strdup(loadMatchesPath);
 
-  if(p->loadMatches){
-    char *loadMatchesPathR = strdup(loadMatchesPath);
-    check_dir(dirname(loadMatchesPathR), "Wrong load_matches_path in configs");
-  }
-
   p->massOffset = cfg_getdouble(options, "mass_offset");
   p->initVolResolution = cfg_getint(options, "init_volume_resolution");
   p->maxDisplacement = cfg_getdouble(options, "max_halo_displacement");
 
-  p->saveMatches = cfg_getbool(options, "save_matches");
-  const char *saveMatchesPath = cfg_getstring(options, "save_matches_path");
+  config_setting_t *output = cfg_findsetting(cfg, "output");
+
+  p->saveMatches = cfg_getbool(output, "save_matches");
+  const char *saveMatchesPath = cfg_getstring(output, "save_matches_path");
   p->saveMatchesPath = strdup(saveMatchesPath);
 
-  if(p->saveMatches){
-    char *saveMatchesPathR = strdup(saveMatchesPath);
-    check_dir(dirname(saveMatchesPathR), "Wrong save_matches_path in configs");
-  }
-
-  p->saveSingleMatches = cfg_getbool(options, "save_single_matches");
-  p->numSingleMatches = cfg_getint(options, "num_single_matches");
-  const char *saveSingleMatchesDir = cfg_getstring(options,
+  p->saveSingleMatches = cfg_getbool(output, "save_single_matches");
+  p->numSingleMatches = cfg_getint(output, "num_single_matches");
+  const char *saveSingleMatchesDir = cfg_getstring(output,
                                                    "save_single_matches_dir");
   p->saveSingleMatchesDir = strdup(saveSingleMatchesDir);
 
-  if(p->saveSingleMatches)
-    check_dir(saveSingleMatchesDir, "Wrong save_halo_particles_dir in configs");
+  const char *latest_snap = cfg_getstring(output, "pri_lastest_snap");
+  p->priLatestSnap = strdup(latest_snap);
 
-  config_setting_t *output = cfg_findsetting(cfg, "output");
+  latest_snap = cfg_getstring(output, "sec_lastest_snap");
+  p->secLatestSnap = strdup(latest_snap);
 
   const char *outputPath = cfg_getstring(output, "output_path");
   p->outputPath = strdup(outputPath);
 
-  char *outputPathR = strdup(outputPath);
-  check_dir(dirname(outputPathR), "Wrong output_path in configs");
+  // Checking if the necessary files/directories exist
+  check_file(p->priHalos, "Wrong pri_halos in configs");
+  check_file(p->secHalos, "Wrong sec_halos in configs");
+
+  if(p->loadMatches)
+    check_file(p->loadMatchesPath, "Wrong load_matches_path in configs");
+  else{
+    check_file(p->priSnap, "Wrong pri_snap in configs");
+    check_file(p->secSnap, "Wrong sec_snap in configs");
+  }
+
+  if(p->saveMatches){
+    char *saveMatchesDir = strdup(p->saveMatchesPath);
+    check_dir(dirname(saveMatchesDir), "Wrong save_matches_path in configs");
+  }
+
+  if(p->saveSingleMatches){
+    check_dir(p->saveSingleMatchesDir, "Wrong save_single_matches_dir in configs");
+    check_file(p->priSnap, "Wrong pri_snap in configs");
+    check_file(p->secSnap, "Wrong sec_snap in configs");
+    check_file(p->priLatestSnap, "Wrong pri_latest_snap in configs");
+    check_file(p->secLatestSnap, "Wrong sec_latest_snap in configs");
+  }
+
+  char *outputPathDir = strdup(outputPath);
+  check_dir(dirname(outputPathDir), "Wrong output_path in configs");
 
   return p;
 }
@@ -240,8 +275,8 @@ static void print_results(halofinder *pri, halofinder *sec,
 
   FILE *outputfile = open_file(p->outputPath, "w");
 
-  fprintf(outputfile, "# Primary input: %s\n", p->priFileAddr);
-  fprintf(outputfile, "# Secondary input: %s\n", p->secFileAddr);
+  fprintf(outputfile, "# Primary input: %s\n", p->priHalos);
+  fprintf(outputfile, "# Secondary input: %s\n", p->secHalos);
   fprintf(outputfile, "# Mass offset: %f\n", p->massOffset);
   fprintf(outputfile, "# Maximum halo displacement: %f\n", p->maxDisplacement);
   fprintf(outputfile, "# Initial volume grid: %d\n", p->initVolResolution);
