@@ -146,14 +146,20 @@ int main(int argc, char *argv[])
     done(_s_h_p_);
   }
 
-  clock_t _c_u_ = start("Clining up");
+  clock_t _c_u_ = start("Cleaning up");
   dispose_halofinder(pri);
   dispose_halofinder(sec);
 
-  if(!p->loadMatches){
+  if(!p->loadMatches || p->saveSingleMatches){
     dispose_snapshot(prisnap);
     dispose_snapshot(secsnap);
   }
+
+  if(p->saveSingleMatches){
+    dispose_snapshot(prilatestsnap);
+    dispose_snapshot(seclatestsnap);
+  }
+
   done(_c_u_);
 
   return 0;
