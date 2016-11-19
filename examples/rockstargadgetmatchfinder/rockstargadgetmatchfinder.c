@@ -55,7 +55,8 @@ typedef struct _params
 static params* loadconfig(const char*);
 static void print_results(halofinder*, halofinder*, params*, matchinghalo*);
 static void print_halo_particles(matchinghalo*, halofinder*, halofinder*,
-                                 snapshot*, snapshot*, params*);
+                                 snapshot*, snapshot*, snapshot*, snapshot*,
+                                 params*);
 
 
 int main(int argc, char *argv[])
@@ -116,6 +117,8 @@ int main(int argc, char *argv[])
   print_results(pri, sec, p, mh);
   done(_w_r_);
 
+  snapshot *prilatestsnap, *seclatestsnap;
+
   if(p->saveSingleMatches){
     clock_t _s_h_p_ = start("Saving halo particles\n");
 
@@ -127,9 +130,18 @@ int main(int argc, char *argv[])
       clock_t _l_s_g_ = start("\tLoading secondary gadget snapshot");
       secsnap = load_gadget_snap(p->secSnap);
       done(_l_s_g_);
+
+      clock_t _l_p_l_g_ = start("\tLoading primary latest gadget snapshot");
+      prilatestsnap = load_gadget_snap(p->priLatestSnap);
+      done(_l_p_l_g_);
+
+      clock_t _l_s_l_g_ = start("\tLoading secondary latest gadget snapshot");
+      seclatestsnap = load_gadget_snap(p->secLatestSnap);
+      done(_l_s_l_g_);
     }
 
-    print_halo_particles(mh, pri, sec, prisnap, secsnap, p);
+    print_halo_particles(mh, pri, sec, prisnap, secsnap, prilatestsnap,
+                         seclatestsnap, p);
 
     done(_s_h_p_);
   }
@@ -170,8 +182,7 @@ static void check_dir(const char *path, const char *err)
 static void check_file(const char *path, const char *err)
 {
   char *copied_path = strdup(path);
-  DIR* dir = opendir(copied_path);
-  if(!access(copied_file, F_OK)){
+  if(access(copied_path, F_OK) == -1){
     printf("[%s]\n", err);
     exit(EXIT_FAILURE);
   }
@@ -226,10 +237,10 @@ static params* loadconfig(const char *path)
                                                    "save_single_matches_dir");
   p->saveSingleMatchesDir = strdup(saveSingleMatchesDir);
 
-  const char *latest_snap = cfg_getstring(output, "pri_lastest_snap");
+  const char *latest_snap = cfg_getstring(output, "pri_latest_snap");
   p->priLatestSnap = strdup(latest_snap);
 
-  latest_snap = cfg_getstring(output, "sec_lastest_snap");
+  latest_snap = cfg_getstring(output, "sec_latest_snap");
   p->secLatestSnap = strdup(latest_snap);
 
   const char *outputPath = cfg_getstring(output, "output_path");
@@ -299,7 +310,9 @@ static void print_results(halofinder *pri, halofinder *sec,
 
 static void print_halo_particles(matchinghalo *mh,
                                  halofinder *pri, halofinder *sec,
-                                 snapshot *prisnap, snapshot *secsnap, params *p)
+                                 snapshot *prisnap, snapshot *secsnap,
+                                 snapshot *prilatestsnap, snapshot *seclatestsnap,
+                                 params *p)
 {
   int i, j, pri_id, sec_id, part_id;
   char fmt[] = "%17.15e\t%17.15e\t%17.15e\n";
@@ -324,10 +337,11 @@ static void print_halo_particles(matchinghalo *mh,
     sec_id = mh->matchingids[pri_id];
     fprintf(fp, "sec_halo_id: %d\n", sec_id);
     fprintf(fp, "sec_halo_mass: %15.13e\n", sec->halos[sec_id].m);
-    fprintf(fp, "sec_halo_id: %d\n", (int)sec->halos[sec_id].num_p);
+    fprintf(fp, "sec_halo_num_p: %d\n", (int)sec->halos[sec_id].num_p);
 
     fprintf(fp, "goodness: %f\n", mh->goodnesses[pri_id]);
 
+    // Writing primary halos initial particles
     for(j = 0; j < pri->halos[pri_id].num_p; j++){
       part_id = pri->halos[pri_id].particle_ids[j];
 
@@ -336,12 +350,31 @@ static void print_halo_particles(matchinghalo *mh,
               prisnap->particles[part_id].pos[2]);
     }
 
+    // Writing secondary halos initial particles
     for(j = 0; j < sec->halos[sec_id].num_p; j++){
       part_id = sec->halos[sec_id].particle_ids[j];
 
       fprintf(fp, fmt, secsnap->particles[part_id].pos[0],
               secsnap->particles[part_id].pos[1],
               secsnap->particles[part_id].pos[2]);
+    }
+
+    // Writing primary halos latest snapshot particles
+    for(j = 0; j < pri->halos[pri_id].num_p; j++){
+      part_id = pri->halos[pri_id].particle_ids[j];
+
+      fprintf(fp, fmt, prisnap->particles[part_id].pos[0],
+              prilatestsnap->particles[part_id].pos[1],
+              prilatestsnap->particles[part_id].pos[2]);
+    }
+
+    // Writing secondary halos latest snapshot particles
+    for(j = 0; j < sec->halos[sec_id].num_p; j++){
+      part_id = sec->halos[sec_id].particle_ids[j];
+
+      fprintf(fp, fmt, secsnap->particles[part_id].pos[0],
+              seclatestsnap->particles[part_id].pos[1],
+              seclatestsnap->particles[part_id].pos[2]);
     }
 
     fclose(fp);
