@@ -7,7 +7,7 @@ from __future__ import print_function
 import numpy as np
 
 from ...visualization.myplot import MyPlot
-from ...visualization.mycolordict import primarycolors
+from ...visualization.mycolordict import primarycolors, primaryshadows
 
 
 class PlotMatchingHalo(object):
@@ -23,7 +23,8 @@ class PlotMatchingHalo(object):
 
         Examples
         --------
-        >>> from mytools.examples.rockstargadgetmatchfinder.plotmatchinghalo import PlotMatchingHalo as PMH
+        >>> from mytools.examples.rockstargadgetmatchfinder.plotmatchinghalo \
+        import PlotMatchingHalo as PMH
         >>> pmh = PMH('/path/to/match/file')
         >>> pmh.save('/path/to/output/plot/with/extension')
         """
@@ -38,6 +39,8 @@ class PlotMatchingHalo(object):
         dtype = [('x', np.float32), ('y', np.float32), ('z', np.float32)]
         num_p_pri = self.header['pri_halo_num_p']
         num_p_sec = self.header['sec_halo_num_p']
+
+        self.num_p = {'pri': num_p_pri, 'sec': num_p_sec}
 
         self.priinitsnap = np.genfromtxt(path, skip_header=7,
                                          max_rows=num_p_pri, dtype=dtype)
@@ -72,29 +75,29 @@ class PlotMatchingHalo(object):
 
         # self.myplot.plt.subplots(nrows=2, ncols=4)
 
-        primarycolor = primarycolors('RAINBOW')
-        color1 = primarycolor.next()
-        color2 = primarycolor.next()
+        self._init3dscatter('RAINBOW', pos="241")
 
-        self._init3dscatter(color1, color2, pos="241")
-
-        self._init2dscatter(color1, color2, pos="242", xlabel='x', ylabel='y',
+        self._init2dscatter('RAINBOW', pos="242", xlabel='x', ylabel='y',
                             xtag='x', ytag='y')
-        self._init2dscatter(color1, color2, pos="245", xlabel='y', ylabel='z',
+        self._init2dscatter('RAINBOW', pos="245", xlabel='y', ylabel='z',
                             xtag='y', ytag='z')
-        self._init2dscatter(color1, color2, pos="246", xlabel='x', ylabel='z',
+        self._init2dscatter('RAINBOW', pos="246", xlabel='x', ylabel='z',
                             xtag='x', ytag='z')
 
-        self._latest3dscatter(color1, color2, pos="122")
+        self._latest3dscatter('RAINBOW', pos="122")
 
         self.myplot.plt.tight_layout(pad=2.5)
 
         self.myplot.save(path)
 
-    def _init3dscatter(self, color1, color2, pos='111'):
+    def _init3dscatter(self, scheme, pos='111'):
         """plot scatter3d part of the figure"""
 
         axes = self.myplot.new3daxes(pos=pos)
+
+        primarycolor = primarycolors(scheme)
+        color1 = primarycolor.next()
+        color2 = primarycolor.next()
 
         kws = {}
         kws['silent'] = True
@@ -104,7 +107,7 @@ class PlotMatchingHalo(object):
         kws['alpha'] = 1.0
         kws['color'] = color1
 
-        lim = self._getarea()
+        lim = self._getarea(which='init')
         kws['xmin'] = lim['x'][0]
         kws['xmax'] = lim['x'][1]
 
@@ -125,20 +128,26 @@ class PlotMatchingHalo(object):
                               self.secinitsnap['z'],
                               axes, **dict(kws))
 
-    def _latest3dscatter(self, color1, color2, pos='111'):
+    def _latest3dscatter(self, scheme, pos='111'):
         """plot scatter3d part of the figure"""
 
         axes = self.myplot.new3daxes(pos=pos)
+
+        primarycolor = primarycolors(scheme)
+        color1 = primarycolor.next()
+        color2 = primarycolor.next()
+
+        primaryshadow = primaryshadows(scheme)
+        shadow1 = primaryshadow.next()
+        shadow2 = primaryshadow.next()
 
         kws = {}
         kws['silent'] = True
         kws['xlabel'] = 'x'
         kws['ylabel'] = 'y'
         kws['zlabel'] = 'z'
-        kws['alpha'] = 1.0
-        kws['color'] = color1
 
-        lim = self._getarea()
+        lim = self._getarea(which='final')
         kws['xmin'] = lim['x'][0]
         kws['xmax'] = lim['x'][1]
 
@@ -148,20 +157,62 @@ class PlotMatchingHalo(object):
         kws['zmin'] = lim['z'][0]
         kws['zmax'] = lim['z'][1]
 
+        kws['alpha'] = 1.0
+        kws['color'] = color1
         self.myplot.scatter3d(self.prilatestsnap['x'],
                               self.prilatestsnap['y'],
                               self.prilatestsnap['z'],
                               axes, **dict(kws))
 
+        kws['alpha'] = 0.25
+        kws['color'] = shadow1
+        self.myplot.scatter3d(self.prilatestsnap['x'],
+                              self.prilatestsnap['y'],
+                              [lim['z'][0]] * self.num_p['pri'],
+                              axes, **dict(kws))
+
+        self.myplot.scatter3d(self.prilatestsnap['x'],
+                              [lim['y'][1]] * self.num_p['pri'],
+                              self.prilatestsnap['z'],
+                              axes, **dict(kws))
+
+        self.myplot.scatter3d([lim['x'][0]] * self.num_p['pri'],
+                              self.prilatestsnap['y'],
+                              self.prilatestsnap['z'],
+                              axes, **dict(kws))
+
+        kws['alpha'] = 1.0
         kws['color'] = color2
         self.myplot.scatter3d(self.seclatestsnap['x'],
                               self.seclatestsnap['y'],
                               self.seclatestsnap['z'],
                               axes, **dict(kws))
 
-    def _init2dscatter(self, color1, color2, pos='111', xlabel='xlabel',
+        kws['alpha'] = 0.25
+        kws['color'] = shadow2
+        self.myplot.scatter3d(self.seclatestsnap['x'],
+                              self.seclatestsnap['y'],
+                              [lim['z'][0]] * self.num_p['sec'],
+                              axes, **dict(kws))
+
+        self.myplot.scatter3d(self.seclatestsnap['x'],
+                              [lim['y'][1]] * self.num_p['sec'],
+                              self.seclatestsnap['z'],
+                              axes, **dict(kws))
+
+        self.myplot.scatter3d([lim['x'][0]] * self.num_p['sec'],
+                              self.seclatestsnap['y'],
+                              self.seclatestsnap['z'],
+                              axes, **dict(kws))
+
+
+    def _init2dscatter(self, scheme, pos='111', xlabel='xlabel',
                        ylabel='ylabel', xtag='x', ytag='y'):
         """plotting the scatter plane"""
+
+        primarycolor = primarycolors(scheme)
+        color1 = primarycolor.next()
+        color2 = primarycolor.next()
 
         kws = {}
         kws['silent'] = True
@@ -170,7 +221,7 @@ class PlotMatchingHalo(object):
         kws['alpha'] = 1.0
         kws['color'] = color1
 
-        lim = self._getarea()
+        lim = self._getarea(which='init')
         kws['xmin'] = lim[xtag][0]
         kws['xmax'] = lim[xtag][1]
 
@@ -184,16 +235,39 @@ class PlotMatchingHalo(object):
         self.myplot.scatter(self.secinitsnap[xtag], self.secinitsnap[ytag],
                             pos=pos, **dict(kws))
 
-    def _getarea(self):
-        """Returning area of the 2d plots"""
+    def _getarea(self, which='init'):
+        """Returning area of the 2d plots
+
+        Parameters
+        ----------
+        which : str, optional
+            which snaphot ('init' or 'final') should be used for calculating
+            the limits
+        """
         lim = {'x': [], 'y': [], 'z': []}
 
         for axis in ['x', 'y', 'z']:
-            lim[axis].append(np.min((np.min(self.priinitsnap[axis]),
-                                     np.min(self.prilatestsnap[axis]))) - 1)
+            if which == 'init':
+                lim[axis].append(np.min((np.min(self.priinitsnap[axis]),
+                                         np.min(self.secinitsnap[axis]))))
+                lim[axis].append(np.max((np.max(self.priinitsnap[axis]),
+                                         np.max(self.secinitsnap[axis]))))
+            elif which == 'final':
+                lim[axis].append(np.min((np.min(self.prilatestsnap[axis]),
+                                         np.min(self.seclatestsnap[axis]))))
+                lim[axis].append(np.max((np.max(self.prilatestsnap[axis]),
+                                         np.max(self.seclatestsnap[axis]))))
 
-            lim[axis].append(np.max((np.max(self.priinitsnap[axis]),
-                                     np.max(self.prilatestsnap[axis]))) + 1)
+        dist = np.max((lim['x'][1]-lim['x'][0],
+                       lim['y'][1]-lim['y'][0],
+                       lim['z'][1]-lim['z'][0]))
+
+        dist *= 1.25 if which == 'init' else 1.75
+
+        for axis in ['x', 'y', 'z']:
+            ofs = (dist - (lim[axis][1]-lim[axis][0])) / 2
+            lim[axis][0] = lim[axis][0]-ofs if lim[axis][0]-ofs > 0 else 0
+            lim[axis][1] = lim[axis][1]+ofs if lim[axis][1]+ofs < 100 else 100
 
         return lim
 

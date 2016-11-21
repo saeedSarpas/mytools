@@ -49,6 +49,21 @@ def primarycolors(colorscheme):
         yield color
 
 
+def primaryshadows(colorscheme):
+    """Primary colors generator
+
+    Returning primary colors one by one
+
+    Parameters
+    ----------
+    colorscheme : str
+    """
+
+    cdict = get(colorscheme)
+    for color in cdict['primary_shadows']:
+        yield color
+
+
 CDICT = {
     'AUTUMN_COLORSCHEME': {
         'dict': {
@@ -96,8 +111,10 @@ CDICT = {
             '#9dbe59', '#e5cf6c', '#e68570', '#5884b3'],
         'primary_colors': [
             '#ff4843', '#328bdc', '#ffbf43', '#5fae5b', '#fbac47'],
+        'primary_shadows': [
+            '#d9b9b8', '#b8c9d9', '#d9ceb8', '#bad9b8', '#d9cab8'],
         'background': '#f0f0f0',
-        'gridcolor': '#ffffff',
-        'axiscolor': '#555555'
+        'gridcolor': '#aaaaaa',
+        'axiscolor': '#888888'
     }
 }
