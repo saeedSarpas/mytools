@@ -143,6 +143,9 @@ int main(int argc, char *argv[])
     print_halo_particles(mh, pri, sec, prisnap, secsnap, prilatestsnap,
                          seclatestsnap, p);
 
+    dispose_snapshot(prilatestsnap);
+    dispose_snapshot(seclatestsnap);
+
     done(_s_h_p_);
   }
 
@@ -153,11 +156,6 @@ int main(int argc, char *argv[])
   if(!p->loadMatches || p->saveSingleMatches){
     dispose_snapshot(prisnap);
     dispose_snapshot(secsnap);
-  }
-
-  if(p->saveSingleMatches){
-    dispose_snapshot(prilatestsnap);
-    dispose_snapshot(seclatestsnap);
   }
 
   done(_c_u_);
@@ -369,7 +367,7 @@ static void print_halo_particles(matchinghalo *mh,
     for(j = 0; j < pri->halos[pri_id].num_p; j++){
       part_id = pri->halos[pri_id].particle_ids[j];
 
-      fprintf(fp, fmt, prisnap->particles[part_id].pos[0],
+      fprintf(fp, fmt, prilatestsnap->particles[part_id].pos[0],
               prilatestsnap->particles[part_id].pos[1],
               prilatestsnap->particles[part_id].pos[2]);
     }
@@ -378,7 +376,7 @@ static void print_halo_particles(matchinghalo *mh,
     for(j = 0; j < sec->halos[sec_id].num_p; j++){
       part_id = sec->halos[sec_id].particle_ids[j];
 
-      fprintf(fp, fmt, secsnap->particles[part_id].pos[0],
+      fprintf(fp, fmt, seclatestsnap->particles[part_id].pos[0],
               seclatestsnap->particles[part_id].pos[1],
               seclatestsnap->particles[part_id].pos[2]);
     }
