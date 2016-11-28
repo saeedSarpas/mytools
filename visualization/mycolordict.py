@@ -50,9 +50,9 @@ def primarycolors(colorscheme):
 
 
 def primaryshadows(colorscheme):
-    """Primary colors generator
+    """Shadow generator
 
-    Returning primary colors one by one
+    Returning shadows one by one
 
     Parameters
     ----------
@@ -65,7 +65,7 @@ def primaryshadows(colorscheme):
 
 
 CDICT = {
-    'AUTUMN_COLORSCHEME': {
+    'RAINBOW': {
         'dict': {
             'red': [
                 (0.0, 0.0, 0.3568627450980392),
@@ -89,32 +89,13 @@ CDICT = {
                 (1, 0.1921568627450980, 0.1921568627450980)
             ]
         },
-        'helper_colors': [
-            '#2e3740', '#798c8a', '#4c5359', '#1d2025', '#d0d9d8'],
-        'primary_colors': [
-            '#581845', '#900C3F', '#C70039', '#FF5733', '#FFC30F'],
-        'ecolor': '#febb00',
-        'linecolor': '#000000',
-        'facecolor': '#fef4ea',
-        'background': '#f2f2f2',
-        'gridcolor': '#ffffff',
-        'axiscolor': '#444444'
-    },
-    'SANDSTONE': {
-        'helper_colors': [
-            '#7584AD', '#314570', '#AED1D6', '#E09873', '#A37F6F'],
-        'primary_colors': [
-            '#1e0a0b', '#4a2245', '#8a2245', '#cb3c3e', '#f9703c', '#ff861d']
-    },
-    'RAINBOW': {
-        'helper_colors': [
-            '#9dbe59', '#e5cf6c', '#e68570', '#5884b3'],
         'primary_colors': [
             '#ff4843', '#328bdc', '#ffbf43', '#5fae5b', '#fbac47'],
         'primary_shadows': [
-            '#d9b9b8', '#b8c9d9', '#d9ceb8', '#bad9b8', '#d9cab8'],
+            '#d9cab8', '#bad9b8', '#d9ceb8', '#b8c9d9', '#d9b9b8'],
+        'helper_colors': ['#5884b3', '#e68570', '#e5cf6c', '#9dbe59'],
         'background': '#f0f0f0',
-        'gridcolor': '#aaaaaa',
+        'gridcolor': '#f0f0f0',
         'axiscolor': '#888888'
     }
 }

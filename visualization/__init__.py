@@ -1,3 +1,4 @@
 """Visualization"""
 
-__all__ = ['myplot']
+__all__ = ['myplot',
+           'mycolordict']
