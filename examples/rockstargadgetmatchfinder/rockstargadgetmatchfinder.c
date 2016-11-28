@@ -30,12 +30,17 @@
 #include "./../../math/interval/expspaced.h"
 
 
+#define INTERNALMATCHINGTRUE 1
+#define INTERNALMATCHINGFALSE 0
+
+
 typedef struct _params
 {
   char *priHalos;
   char *secHalos;
   char *priSnap;
   char *secSnap;
+  int internalMatching;
   int loadMatches;
   char *loadMatchesPath;
   double massOffset;
@@ -88,9 +93,15 @@ int main(int argc, char *argv[])
     prisnap = load_gadget_snap(p->priSnap);
     done(_l_p_g_);
 
-    clock_t _l_s_g_ = start("Loading secondary gadget snapshot");
-    secsnap = load_gadget_snap(p->secSnap);
-    done(_l_s_g_);
+    if(p->internalMatching == INTERNALMATCHINGTRUE){
+      clock_t _i_m_ = start("Internal Matching (no need to load the snapshot)");
+      secsnap = prisnap;
+      done(_i_m_);
+    } else {
+      clock_t _l_s_g_ = start("Loading secondary gadget snapshot");
+      secsnap = load_gadget_snap(p->secSnap);
+      done(_l_s_g_);
+    }
 
     int griddims[3] = {p->initVolResolution,
                        p->initVolResolution,
@@ -127,18 +138,24 @@ int main(int argc, char *argv[])
       prisnap = load_gadget_snap(p->priSnap);
       done(_l_p_g_);
 
-      clock_t _l_s_g_ = start("\tLoading secondary gadget snapshot");
-      secsnap = load_gadget_snap(p->secSnap);
-      done(_l_s_g_);
-
-      clock_t _l_p_l_g_ = start("\tLoading primary latest gadget snapshot");
-      prilatestsnap = load_gadget_snap(p->priLatestSnap);
-      done(_l_p_l_g_);
-
-      clock_t _l_s_l_g_ = start("\tLoading secondary latest gadget snapshot");
-      seclatestsnap = load_gadget_snap(p->secLatestSnap);
-      done(_l_s_l_g_);
+      if(p->internalMatching == INTERNALMATCHINGTRUE){
+        clock_t _i_m_ = start("Internal Matching (no need to load the secsnap)");
+        secsnap = prisnap;
+        done(_i_m_);
+      } else {
+        clock_t _l_s_g_ = start("Loading secondary gadget snapshot");
+        secsnap = load_gadget_snap(p->secSnap);
+        done(_l_s_g_);
+      }
     }
+
+    clock_t _l_p_l_g_ = start("\tLoading primary latest gadget snapshot");
+    prilatestsnap = load_gadget_snap(p->priLatestSnap);
+    done(_l_p_l_g_);
+
+    clock_t _l_s_l_g_ = start("\tLoading secondary latest gadget snapshot");
+    seclatestsnap = load_gadget_snap(p->secLatestSnap);
+    done(_l_s_l_g_);
 
     print_halo_particles(mh, pri, sec, prisnap, secsnap, prilatestsnap,
                          seclatestsnap, p);
@@ -219,6 +236,12 @@ static params* loadconfig(const char *path)
   input = cfg_getstring(inputs, "sec_snap");
   p->secSnap = strdup(input);
 
+  if(strcmp(p->priSnap, p->secSnap) == 0)
+    p->internalMatching = INTERNALMATCHINGTRUE;
+  else
+    p->internalMatching = INTERNALMATCHINGFALSE;
+
+
   config_setting_t *options = cfg_findsetting(cfg, "options");
 
   p->loadMatches = cfg_getbool(options, "load_matches");
@@ -290,16 +313,16 @@ static void print_results(halofinder *pri, halofinder *sec,
 
   FILE *outputfile = open_file(p->outputPath, "w");
 
-  fprintf(outputfile, "# Primary input: %s\n", p->priHalos);
-  fprintf(outputfile, "# Secondary input: %s\n", p->secHalos);
-  fprintf(outputfile, "# Mass offset: %f\n", p->massOffset);
-  fprintf(outputfile, "# Maximum halo displacement: %f\n", p->maxDisplacement);
-  fprintf(outputfile, "# Initial volume grid: %d\n", p->initVolResolution);
-  fprintf(outputfile, "# # of halos in primary input: %" PRId64 "\n",
+  fprintf(outputfile, "Primary input: %s\n", p->priHalos);
+  fprintf(outputfile, "Secondary input: %s\n", p->secHalos);
+  fprintf(outputfile, "Mass offset: %f\n", p->massOffset);
+  fprintf(outputfile, "Maximum halo displacement: %f\n", p->maxDisplacement);
+  fprintf(outputfile, "Initial volume grid: %d\n", p->initVolResolution);
+  fprintf(outputfile, "num of halos in primary input: %" PRId64 "\n",
           pri->header->num_halos);
-  fprintf(outputfile, "# # of halos in secondary input: %" PRId64 "\n",
+  fprintf(outputfile, "num of halos in secondary input: %" PRId64 "\n",
           sec->header->num_halos);
-  fprintf(outputfile, "# # of found matches: %d\n", foundmatches);
+  fprintf(outputfile, "num of found matches: %d\n", foundmatches);
 
   for(i = 0; i < pri->header->num_halos; i++)
     if(mh->matchingids[i] != MATCHINGHALONOTSET)
