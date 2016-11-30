@@ -3,9 +3,9 @@ CFLAGS := -Wall -std=gnu11 -lconfig -lm
 
 MAKE := make
 
-MODULE_NAME := rockstargadgetmatchfinder
+MODULE_NAME := rg_matchfinder
 
-FILE := rockstargadgetmatchfinder.c
+FILE := rg_matchfinder.c
 
 DEPS := ./../../configfile/mylibconfig.c \
         ./../../time/mytime.c \

@@ -17,7 +17,7 @@ class RockstarHMF(object):
     def __init__(self, paths):
         """Initializing RockstarHMF class and loading rockstar file
 
-        Make sure to path the output Rockstar file containing parents ids
+        Make sure the Rockstar file contains parents ids
 
         Parameters
         ----------

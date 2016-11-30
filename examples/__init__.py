@@ -1,5 +1,4 @@
 """Report"""
 
-__all__ = [
-    'rockstarhmf',
-    'rockstargadgethmp']
+__all__ = ['r_hmp',
+           'rg_hmp']

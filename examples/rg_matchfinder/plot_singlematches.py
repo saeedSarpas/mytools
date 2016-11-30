@@ -1,4 +1,4 @@
-"""plotmatchinghalo.py
+"""plot-singlematches.py
 Generating scatter plots of a given matching halos
 """
 
@@ -10,7 +10,7 @@ from ...visualization.myplot import MyPlot
 from ...visualization.mycolordict import primarycolors, primaryshadows
 
 
-class PlotMatchingHalo(object):
+class PlotSingleMatches(object):
     """PlotMatchingHalo class!"""
 
     def __init__(self, path):
@@ -89,11 +89,13 @@ class PlotMatchingHalo(object):
         self.myplot.plt.tight_layout(pad=2.5)
 
         self.myplot.save(path)
+        self.myplot.plt.clf()
+        self.myplot.plt.close()
 
     def _init3dscatter(self, scheme, pos='111'):
         """plot scatter3d part of the figure"""
 
-        axes = self.myplot.new3daxes(pos=pos)
+        ax = self.myplot.new3daxes(pos=pos)
 
         primarycolor = primarycolors(scheme)
         color1 = primarycolor.next()
@@ -120,18 +122,18 @@ class PlotMatchingHalo(object):
         self.myplot.scatter3d(self.priinitsnap['x'],
                               self.priinitsnap['y'],
                               self.priinitsnap['z'],
-                              axes, **dict(kws))
+                              ax, s=40, **dict(kws))
 
         kws['color'] = color2
         self.myplot.scatter3d(self.secinitsnap['x'],
                               self.secinitsnap['y'],
                               self.secinitsnap['z'],
-                              axes, **dict(kws))
+                              ax, s=10, **dict(kws))
 
     def _latest3dscatter(self, scheme, pos='111'):
         """plot scatter3d part of the figure"""
 
-        axes = self.myplot.new3daxes(pos=pos)
+        ax = self.myplot.new3daxes(pos=pos)
 
         primarycolor = primarycolors(scheme)
         color1 = primarycolor.next()
@@ -162,48 +164,48 @@ class PlotMatchingHalo(object):
         self.myplot.scatter3d(self.prilatestsnap['x'],
                               self.prilatestsnap['y'],
                               self.prilatestsnap['z'],
-                              axes, **dict(kws))
+                              ax, s=40, **dict(kws))
 
-        kws['alpha'] = 0.25
+        kws['alpha'] = 0.3
         kws['color'] = shadow1
         self.myplot.scatter3d(self.prilatestsnap['x'],
                               self.prilatestsnap['y'],
                               [lim['z'][0]] * self.num_p['pri'],
-                              axes, **dict(kws))
+                              ax, s=40, **dict(kws))
 
         self.myplot.scatter3d(self.prilatestsnap['x'],
                               [lim['y'][1]] * self.num_p['pri'],
                               self.prilatestsnap['z'],
-                              axes, **dict(kws))
+                              ax, s=40, **dict(kws))
 
         self.myplot.scatter3d([lim['x'][0]] * self.num_p['pri'],
                               self.prilatestsnap['y'],
                               self.prilatestsnap['z'],
-                              axes, **dict(kws))
+                              ax, s=40, **dict(kws))
 
         kws['alpha'] = 1.0
         kws['color'] = color2
         self.myplot.scatter3d(self.seclatestsnap['x'],
                               self.seclatestsnap['y'],
                               self.seclatestsnap['z'],
-                              axes, **dict(kws))
+                              ax, s=10, **dict(kws))
 
-        kws['alpha'] = 0.25
+        kws['alpha'] = 0.3
         kws['color'] = shadow2
         self.myplot.scatter3d(self.seclatestsnap['x'],
                               self.seclatestsnap['y'],
                               [lim['z'][0]] * self.num_p['sec'],
-                              axes, **dict(kws))
+                              ax, s=10, **dict(kws))
 
         self.myplot.scatter3d(self.seclatestsnap['x'],
                               [lim['y'][1]] * self.num_p['sec'],
                               self.seclatestsnap['z'],
-                              axes, **dict(kws))
+                              ax, s=10, **dict(kws))
 
         self.myplot.scatter3d([lim['x'][0]] * self.num_p['sec'],
                               self.seclatestsnap['y'],
                               self.seclatestsnap['z'],
-                              axes, **dict(kws))
+                              ax, s=10, **dict(kws))
 
 
     def _init2dscatter(self, scheme, pos='111', xlabel='xlabel',
@@ -229,11 +231,11 @@ class PlotMatchingHalo(object):
         kws['ymax'] = lim[ytag][1]
 
         self.myplot.scatter(self.priinitsnap[xtag], self.priinitsnap[ytag],
-                            pos=pos, **dict(kws))
+                            pos=pos, s=40, **dict(kws))
 
         kws['color'] = color2
         self.myplot.scatter(self.secinitsnap[xtag], self.secinitsnap[ytag],
-                            pos=pos, **dict(kws))
+                            pos=pos, s=10, **dict(kws))
 
     def _getarea(self, which='init'):
         """Returning area of the 2d plots
