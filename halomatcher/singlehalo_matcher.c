@@ -14,10 +14,12 @@
 #include "./../search/half_interval/find_ge.h"
 #include "./../avltree/avl_tree.h"
 #include "./../memory/allocate.h"
+#include "./../sort/mergesort/mergesort.h"
 
 
 static int compare_mass(const void*, int, const void*);
-static int compare_matches(const void*, const void*);
+static int compare_matches(void*, int, void*, int);
+static void set_matches(void*, int, void*, int);
 static void reset_global_counter();
 static void increment();
 static void fill_grid_indices(avl_node*);
@@ -64,7 +66,7 @@ vector* singlehalo_matcher(halo *h, halofinder *hf, halomatcher_params params)
     ntot_gridparts += grid_nparts[i];
 
   // Creating a vector for saving matching halos
-  vector *matches = vector_new(8, sizeof(match));
+  vector *matches = vector_new(2048, sizeof(match));
 
   // Finding matching halos in the secaondary halos
   int j, nmatching_gridparts = 0;
@@ -103,10 +105,11 @@ vector* singlehalo_matcher(halo *h, halofinder *hf, halomatcher_params params)
     }
   }
 
-  qsort(matches->elems, matches->log_length, sizeof(match),
-        compare_matches);
+  mergesort(matches->elems, 0, matches->log_length - 1, set_matches,
+            compare_matches, sizeof(match));
 
   free(grid_indices);
+  free(grid_nparts);
   return matches;
 }
 
@@ -129,14 +132,30 @@ static int compare_mass(const void *halos, int index, const void *target_mass)
 /*
  * Compare matches for sorting matches arrays in a decsending order
  */
-static int compare_matches(const void *fm1, const void *fm2)
+static int compare_matches(void *arr1, int index1, void *arr2, int index2)
 {
-  const float g1 = ((match*)fm1)->goodness;
-  const float g2 = ((match*)fm2)->goodness;
+  match* m1 = (match*)((char*)arr1 + index1 * sizeof(match));
+  match* m2 = (match*)((char*)arr2 + index2 * sizeof(match));
 
-  if(g1 > g2) return -1;
-  else if(g1 < g2) return +1;
-  else return 0;
+  if(m1->goodness > m2->goodness)
+    return MS_LESS_THAN;
+  else if(m1->goodness < m2->goodness)
+    return MS_GREATER_THAN;
+  else
+    return MS_EQUALS;
+}
+
+
+
+/*
+ * Set matches for sorting matches arrays in a decsending order
+ */
+static void set_matches(void *target_arr, int target_index, void *arr, int index)
+{
+  match* m1 = (match*)((char*)target_arr + target_index * sizeof(match));
+  match* m2 = (match*)((char*)arr + index * sizeof(match));
+
+  *m1 = *m2;
 }
 
 

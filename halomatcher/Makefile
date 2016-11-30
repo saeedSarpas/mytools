@@ -20,6 +20,7 @@ _DEPS := ./../memory/allocate \
          ./../io/open_file \
          ./../io/write_to \
          ./../io/read_from \
-         ./../time/mytime
+         ./../time/mytime \
+         ./../sort/mergesort/mergesort
 
 include ./../Makefile

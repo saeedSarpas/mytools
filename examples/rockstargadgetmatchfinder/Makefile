@@ -30,7 +30,8 @@ DEPS := ./../../configfile/mylibconfig.c \
         ./../../search/half_interval/find_ge.c \
         ./../../loading/simple_loading.c \
         ./../../vector/vector.c \
-        ./../../math/interval/expspaced.c
+        ./../../math/interval/expspaced.c \
+        ./../../sort/mergesort/mergesort.c
 
 .PHONY : all
 
