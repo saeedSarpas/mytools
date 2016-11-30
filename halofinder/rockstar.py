@@ -8,6 +8,9 @@ from __future__ import print_function
 import numpy as np
 
 
+NOTAVLBL = -1
+
+
 class Rockstar(object):
     """Loading Rockstar ascii file
 
@@ -35,7 +38,7 @@ class Rockstar(object):
         """Constructor for Rockstar class"""
 
         self.path = path
-        self.datatype, self.halos = [], []
+        self.datatype, self.halos, self.halossortedbyid = [], [], []
         self.binnedhalos = {}
 
         # Extracting header information
@@ -132,6 +135,17 @@ class Rockstar(object):
             self.halos = np.array(
                 [d for d in self.halos if d['PID'] == -1],
                 dtype=self.datatype)
+
+    def sortbyid(self):
+        """Sorted halos by id, left unavailable halos zeros"""
+
+        highestid = np.max(self.halos['id']) + 1
+
+        self.halossortedbyid = np.zeros(highestid, dtype=self.datatype)
+        self.halossortedbyid['id'] = [-1] * highestid
+
+        for halo in self.halos:
+            self.halossortedbyid[halo['id']] = halo
 
     def binning(self, mbins):
         """Binning halos based on a given mass bins
