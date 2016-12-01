@@ -31,7 +31,6 @@ typedef struct _snapshotparticle {
 typedef struct _snapshot {
   snapshotheader *header;
   snapshotparticle *particles;
-  void (*dispose)(struct _snapshot*);
 } snapshot;
 
 
