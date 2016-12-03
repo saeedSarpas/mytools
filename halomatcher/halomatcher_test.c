@@ -79,3 +79,41 @@ Ensure(halomatcher, finds_matching_halos_properly)
     assert_that_double(mh->goodnesses[i], is_equal_to_double(100.0));
   }
 }
+
+
+Ensure(halomatcher, finds_matching_halos_in_case_of_multiple_matches)
+{
+  halomatcher_params p = {.massOffset = 5,
+                          .maxDisplacement = 5.0,
+                          .loadMatches = 0,
+                          .loadMatchesPath = "",
+                          .saveMatches = 0,
+                          .saveMatchesPath = ""};
+
+  int i, j, initial_data = 1;
+
+  for(i = 0; i < sec->header->num_halos; i++){
+    for(j = 0; j < 3; j++)
+      sec->halos[i].pos[j] = i * 1.234;
+    avl_dispose(sec->halos[i].init_volume);
+    sec->halos[i].init_volume = NULL;
+    for(j = 0; j < NUMSECHALOPARTS; j++)
+      sec->halos[i].init_volume = avl_insert(
+        sec->halos[i].init_volume, 1, &initial_data, 1, sizeof(int));
+  }
+
+  for(i = 0; i < pri->header->num_halos; i++){
+    avl_dispose(pri->halos[i].init_volume);
+    pri->halos[i].init_volume = NULL;
+    for(j = 0; j < NUMSECHALOPARTS; j++)
+      pri->halos[i].init_volume = avl_insert(
+        pri->halos[i].init_volume, 1, &initial_data, 1, sizeof(int));
+  }
+
+  matchinghalo *mh = halomatcher(pri, sec, p);
+
+  for(i = 0; i < pri->header->num_halos; i++){
+    assert_that(mh->matchingids[i], is_equal_to(1));
+    assert_that_double(mh->goodnesses[i], is_equal_to_double(100.0));
+  }
+}

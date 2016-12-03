@@ -18,8 +18,6 @@
 
 
 static int compare_mass(const void*, int, const void*);
-static int compare_matches(void*, int, void*, int);
-static void set_matches(void*, int, void*, int);
 static void reset_global_counter();
 static void increment();
 static void fill_grid_indices(avl_node*);
@@ -66,11 +64,11 @@ vector* singlehalo_matcher(halo *h, halofinder *hf, halomatcher_params params)
     ntot_gridparts += grid_nparts[i];
 
   // Creating a vector for saving matching halos
-  vector *matches = vector_new(2048, sizeof(match));
+  vector *matches = vector_new(4, sizeof(match));
 
   // Finding matching halos in the secaondary halos
   int j, nmatching_gridparts = 0;
-  float matchgoodness, dx2[3];
+  float bestmatchgoodness = 1.0, matchgoodness = 0.0, dx2[3];
   avl_node *found_node;
   match matchholder;
   for(i = min_index; i < hf->header->num_halos; i++){
@@ -98,18 +96,24 @@ vector* singlehalo_matcher(halo *h, halofinder *hf, halomatcher_params params)
 
     matchgoodness = (float) nmatching_gridparts / ntot_gridparts * 100;
 
-    if(matchgoodness > 0.0){
+    if(matchgoodness > bestmatchgoodness){
+      bestmatchgoodness = matchgoodness;
+
+      matches->log_length = 0;
+
+      matchholder.matchid = i;
+      matchholder.goodness = matchgoodness;
+      vector_push(matches, &matchholder);
+    } else if(matchgoodness == bestmatchgoodness){
       matchholder.matchid = i;
       matchholder.goodness = matchgoodness;
       vector_push(matches, &matchholder);
     }
   }
 
-  mergesort(matches->elems, 0, matches->log_length - 1, set_matches,
-            compare_matches, sizeof(match));
-
   free(grid_indices);
   free(grid_nparts);
+
   return matches;
 }
 
@@ -127,37 +131,6 @@ static int compare_mass(const void *halos, int index, const void *target_mass)
   else if(halo_mass > t_mass) return GREATER_THAN_T_VALUE;
   else return EQUAL_TO_T_VALUE;
 }
-
-
-/*
- * Compare matches for sorting matches arrays in a decsending order
- */
-static int compare_matches(void *arr1, int index1, void *arr2, int index2)
-{
-  match* m1 = (match*)((char*)arr1 + index1 * sizeof(match));
-  match* m2 = (match*)((char*)arr2 + index2 * sizeof(match));
-
-  if(m1->goodness > m2->goodness)
-    return MS_LESS_THAN;
-  else if(m1->goodness < m2->goodness)
-    return MS_GREATER_THAN;
-  else
-    return MS_EQUALS;
-}
-
-
-
-/*
- * Set matches for sorting matches arrays in a decsending order
- */
-static void set_matches(void *target_arr, int target_index, void *arr, int index)
-{
-  match* m1 = (match*)((char*)target_arr + target_index * sizeof(match));
-  match* m2 = (match*)((char*)arr + index * sizeof(match));
-
-  *m1 = *m2;
-}
-
 
 
 /*

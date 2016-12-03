@@ -71,14 +71,9 @@ Ensure(singlehalo_matcher, finds_matching_halos_properly)
 
   vector *matches_v = singlehalo_matcher(prihalo, sec, p);
 
-  unsigned int i;
-  match *dummy_match;
-  for(i = 0; i < matches_v->log_length; i++){
-    dummy_match = vector_get_elem(matches_v, i);
-    assert_that(dummy_match->matchid, is_equal_to(i));
-    if(i == PRIHALOID)
-      assert_that(dummy_match->goodness, is_equal_to(100));
-    else
-      assert_that(dummy_match->goodness < 100);
-  }
+  assert_that(matches_v->log_length, is_equal_to(1));
+
+  match *dummy_match = vector_get_elem(matches_v, 0);
+  assert_that(dummy_match->matchid, is_equal_to(PRIHALOID));
+  assert_that(dummy_match->goodness, is_equal_to(100));
 }
