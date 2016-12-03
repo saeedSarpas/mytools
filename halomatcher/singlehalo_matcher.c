@@ -7,6 +7,7 @@
  * Parameters
  * h: The refrence halo
  * hf: A halofinder structure containing an array of halos for comparison
+ * secmatches: An array of vectors
  *
  * author: Saeed Sarpas
  */
@@ -22,10 +23,11 @@
 
 
 static int compare_mass(const void*, int, const void*);
-static int find_common_elements(vector*, vector*);
+static void find_common_elements(vector*, vector*, int64_t*, int64_t*);
 
 
-vector* singlehalo_matcher(halo *h, halofinder *hf, halomatcher_params params)
+vector* singlehalo_matcher(halo *h, halofinder *hf, vector **secmatches,
+                           halomatcher_params params)
 {
   float min_mass = h->m / params.massOffset;
   float max_mass = h->m * params.massOffset;
@@ -37,8 +39,10 @@ vector* singlehalo_matcher(halo *h, halofinder *hf, halomatcher_params params)
 
   unsigned int i, j;
   match matchholder;
+  match *dummy_match;
   vector *matches = new_vector(4, sizeof(match));
-  float highest_match_gn = 1.0, match_gn = 0.0, dx[3];
+  float highest_match_gn1 = 1.0, match_gn1 = 0.0, match_gn2 = 0.0, dx[3];
+  int64_t common_parts1, common_parts2;
   for(i = min_index; i < hf->header->num_halos; i++){
     if(hf->halos[i].id == HALONOTSET) continue;
     if(hf->halos[i].m > max_mass) break;
@@ -53,23 +57,50 @@ vector* singlehalo_matcher(halo *h, halofinder *hf, halomatcher_params params)
     float dist = sqrt(pow(dx[0], 2) + pow(dx[1], 2) + pow(dx[2], 2));
     if(dist > params.maxDisplacement) continue;
 
-    int common_parts = find_common_elements(h->init_volume,
-                                            hf->halos[i].init_volume);
+    find_common_elements(h->init_volume, hf->halos[i].init_volume,
+                         &common_parts1, &common_parts2);
 
-    match_gn = (float)common_parts / h->num_p * 100;
+    match_gn1 = (float)common_parts1 / h->num_p * 100;
+    match_gn2 = (float)common_parts2 / hf->halos[i].num_p * 100;
 
-    if(match_gn > highest_match_gn){
-      highest_match_gn = match_gn;
+    // Primary halo
+    if(match_gn1 > highest_match_gn1){
+      highest_match_gn1 = match_gn1;
       matches->logLength = 0;
 
       matchholder.matchid = i;
-      matchholder.goodness = match_gn;
+      matchholder.goodness = match_gn1;
       vector_push(matches, &matchholder);
     }
-    else if(match_gn == highest_match_gn){
+    else if(match_gn1 == highest_match_gn1){
       matchholder.matchid = i;
-      matchholder.goodness = match_gn;
+      matchholder.goodness = match_gn1;
       vector_push(matches, &matchholder);
+    }
+
+    // Secondary halos
+    if(match_gn2 > 0){
+      if(secmatches[i] == NULL){
+        secmatches[i] = new_vector(4, sizeof(match));
+        matchholder.matchid = h->id;
+        matchholder.goodness = match_gn2;
+        vector_push(secmatches[i], &matchholder);
+      }
+      else {
+        dummy_match = vector_get(secmatches[i], 0);
+
+        if(match_gn2 == dummy_match->goodness){
+          matchholder.matchid = h->id;
+          matchholder.goodness = match_gn2;
+          vector_push(secmatches[i], &matchholder);
+        }
+        else if(match_gn2 > dummy_match->goodness){
+          secmatches[i]->logLength = 0;
+          matchholder.matchid = h->id;
+          matchholder.goodness = match_gn2;
+          vector_push(secmatches[i], &matchholder);
+        }
+      }
     }
   }
 
@@ -88,9 +119,12 @@ static int compare_mass(const void *halos, int index, const void *target_mass)
 }
 
 
-static int find_common_elements(vector *v1, vector *v2)
+static void find_common_elements(vector *v1, vector *v2,
+                                 int64_t *ce1, int64_t *ce2)
 {
-  unsigned int i = 0, j = 0, common_parts = 0;
+  unsigned int i = 0, j = 0;
+  *ce1 = 0;
+  *ce2 = 0;
   while(i < v1->logLength && j < v2->logLength){
     if(((grid_info*)vector_get(v1, i))->index >
        ((grid_info*)vector_get(v2, j))->index)
@@ -99,11 +133,10 @@ static int find_common_elements(vector *v1, vector *v2)
             ((grid_info*)vector_get(v2, j))->index)
       i++;
     else{
-      common_parts += ((grid_info*)vector_get(v1, i))->nParts;
+      *ce1 += ((grid_info*)vector_get(v1, i))->nParts;
+      *ce2 += ((grid_info*)vector_get(v2, i))->nParts;
       i++;
       j++;
     }
   }
-
-  return common_parts;
 }

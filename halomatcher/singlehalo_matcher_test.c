@@ -55,6 +55,7 @@ BeforeEach(singlehalo_matcher)
   for(i = 0; i < sec->header->num_halos; i++){
     sec->halos[i].id = i;
     sec->halos[i].m = 1000;
+    sec->halos[i].num_p = NUMSECHALOS;
 
     for(j = 0; j < 3; j++)
       sec->halos[i].pos[j] = 1.234;
@@ -85,11 +86,20 @@ Ensure(singlehalo_matcher, finds_matching_halos_properly)
                           .saveMatches = 0,
                           .saveMatchesPath = ""};
 
-  vector *matches_v = singlehalo_matcher(prihalo, sec, p);
+  int i;
+  vector **secmatches = allocate(NUMSECHALOS, sizeof(*secmatches));
 
-  assert_that(matches_v->logLength, is_equal_to(1));
+  vector *primatch = singlehalo_matcher(prihalo, sec, secmatches, p);
 
-  match *dummy_match = vector_get(matches_v, 0);
-  assert_that(dummy_match->matchid, is_equal_to(PRIHALOID));
-  assert_that(dummy_match->goodness, is_equal_to(100));
+  assert_that(primatch->logLength, is_equal_to(1));
+
+  match *match = vector_get(primatch, 0);
+  assert_that(match->matchid, is_equal_to(PRIHALOID));
+  assert_that(match->goodness, is_equal_to(100));
+
+  for(i = 0; i < NUMSECHALOS; i++){
+    assert_that(secmatches[i]->logLength, is_equal_to(1));
+    match = vector_get(secmatches[i], 0);
+    assert_that(match->matchid, is_equal_to(prihalo->id));
+  }
 }

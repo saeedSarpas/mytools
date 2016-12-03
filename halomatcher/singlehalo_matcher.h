@@ -24,7 +24,7 @@ typedef struct _match
 } match;
 
 
-vector* singlehalo_matcher(halo*, halofinder*, halomatcher_params);
+vector* singlehalo_matcher(halo*, halofinder*, vector**, halomatcher_params);
 
 
 #endif /* SINGLEHALO_MATCHER_H */

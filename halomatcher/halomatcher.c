@@ -41,10 +41,12 @@ static float two_halos_distance(halo*, halo*, float);
 matchinghalo* halomatcher(halofinder *pri, halofinder *sec,
                           halomatcher_params params)
 {
+  unsigned int i, j;
+
   vector **primatches = allocate(pri->header->num_halos, sizeof(*primatches));
   vector **secmatches = allocate(sec->header->num_halos, sizeof(*secmatches));
-
-  unsigned int i, j;
+  for(i = 0; i < sec->header->num_halos; i++)
+    secmatches[i] = NULL;
 
   if(params.loadMatches)
     load_matches(params.loadMatchesPath, primatches, secmatches);
@@ -56,14 +58,8 @@ matchinghalo* halomatcher(halofinder *pri, halofinder *sec,
     for(i = 0; i < pri->header->num_halos; i++){
       progress = simple_loading(progress, i, ntot_halos);
       if(pri->halos[i].id != HALONOTSET)
-        primatches[i] = singlehalo_matcher(&pri->halos[i], sec, params);
-    }
-
-    /* Searching for matches based on the second list of halos */
-    for(i = 0; i < sec->header->num_halos; i++){
-      progress = simple_loading(progress, i+pri->header->num_halos, ntot_halos);
-      if(sec->halos[i].id != HALONOTSET)
-        secmatches[i] = singlehalo_matcher(&sec->halos[i], pri, params);
+        primatches[i] = singlehalo_matcher(&pri->halos[i], sec,
+                                           secmatches, params);
     }
   }
 
@@ -93,6 +89,7 @@ matchinghalo* halomatcher(halofinder *pri, halofinder *sec,
 
     for(i = 0; i < primatches[primatch_id]->logLength; i++){
       primatch = (match*)vector_get(primatches[primatch_id], i);
+      if(secmatches[primatch->matchid] == NULL) continue;
       if(secmatches[primatch->matchid]->logLength == 0) continue;
 
       for(j = 0; j < secmatches[primatch->matchid]->logLength; j++){
@@ -140,7 +137,8 @@ matchinghalo* halomatcher(halofinder *pri, halofinder *sec,
     dispose_vector(&primatches[i]);
 
   for(i = 0; i < sec->header->num_halos; i++)
-    dispose_vector(&secmatches[i]);
+    if(secmatches[i] != NULL)
+      dispose_vector(&secmatches[i]);
 
   free(primatches);
   free(secmatches);
