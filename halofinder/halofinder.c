@@ -11,7 +11,6 @@
 #include <stdlib.h>
 #include "halofinder.h"
 #include "./../memory/allocate.h"
-#include "./../avltree/avl_tree.h"
 
 
 /*
@@ -57,19 +56,19 @@ void allocate_particle_ids(halo *h, int num_p)
  *
  * NOTE: memory leak since we don't free hf itself
  */
-void dispose_halofinder(halofinder *hf)
+void dispose_halofinder(halofinder **hf)
 {
   int i;
-  for(i = 0; i < hf->header->num_halos; i++){
-    if(hf->halos[i].particle_ids != NULL){
-      free(hf->halos[i].particle_ids);
-      hf->halos[i].particle_ids = NULL;
+  for(i = 0; i < (*hf)->header->num_halos; i++){
+    if((*hf)->halos[i].particle_ids != NULL){
+      free((*hf)->halos[i].particle_ids);
+      (*hf)->halos[i].particle_ids = NULL;
     }
 
-    if(hf->halos[i].init_volume != NULL)
-      avl_dispose(hf->halos[i].init_volume);
+    if((*hf)->halos[i].init_volume != NULL)
+      dispose_vector(&(*hf)->halos[i].init_volume);
   }
 
-  free(hf);
-  hf = NULL;
+  free(*hf);
+  *hf = NULL;
 }

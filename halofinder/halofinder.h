@@ -3,6 +3,7 @@
 
 
 #include <inttypes.h>
+#include "./../vector/vector.h"
 
 
 #ifndef HALONOTSET
@@ -26,7 +27,7 @@ typedef struct _halo {
   float min_pos_err, min_vel_err, min_bulkvel_err;
   int64_t num_p, num_child_particles, p_start, desc, n_core;
   int64_t *particle_ids;
-  struct avl_node *init_volume;
+  vector *init_volume;
 } halo;
 
 
@@ -38,7 +39,7 @@ typedef struct _halofinder {
 
 halofinder* new_halofinder(int);
 void allocate_particle_ids(halo*, int);
-void dispose_halofinder(halofinder*);
+void dispose_halofinder(halofinder**);
 
 
 #endif /* HALOFINDER_H */
