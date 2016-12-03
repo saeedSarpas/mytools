@@ -9,33 +9,60 @@
 
 
 #include "fill_init_volume.h"
-#include "./../avltree/avl_tree.h"
+#include "./../avltree/avltree.h"
+#include "./../avltree/avl_find.h"
+#include "./../avltree/avl_insert.h"
+#include "./../avltree/avl_inorder_traversal.h"
+#include "./../vector/vector_push.h"
 #include "./../grid/row_major_order/point_to_grid.h"
 #include "./../memory/allocate.h"
 
 
+static void fill_init_volume_vector(avlnode*, void*);
+
+
 void fill_init_volume(halofinder *hf, snapshot *s, int *dims)
 {
-  float *pos;
   int i, j, index;
+  float *pos;
 
-  double *box = allocate(3, sizeof(double));
-  for(i = 0; i < 3; i++)
-    box[i] = (double) s->header->boxsize;
+  double box[3] = {(double)s->header->boxsize,
+                   (double)s->header->boxsize,
+                   (double)s->header->boxsize};
 
-  int initial_data = 1;
-  avl_node *found_node;
-  for(i = 0; i < hf->header->num_halos; i++)
+  int initial_data = 1, num_grids;
+
+  avlnode *found_node;
+
+  for(i = 0; i < hf->header->num_halos; i++){
+    num_grids = 0;
+    avltree *tree = new_avltree(set_int_key, compare_int_keys);
     for(j = 0; j < hf->halos[i].num_p; j++){
+
       pos = s->particles[hf->halos[i].particle_ids[j]].pos;
       index = point_to_grid(pos, box, dims);
-      found_node = avl_find(hf->halos[i].init_volume, index);
-      if(found_node == NULL)
-        hf->halos[i].init_volume = avl_insert(hf->halos[i].init_volume, index,
-                                              &initial_data, 1, sizeof(int));
-      else
+
+      found_node = avl_find(tree, &index);
+
+      if(found_node == NULL){
+        avl_insert(tree, &index, &initial_data, 1, sizeof(int));
+        num_grids++;
+      } else {
         (*(int*)found_node->data)++;
+      }
     }
 
-  return;
+    hf->halos[i].init_volume = new_vector(num_grids + 1, sizeof(grid_info));
+    avl_inorder_traversal(tree, fill_init_volume_vector,
+                          hf->halos[i].init_volume);
+
+    dispose_avltree(&tree);
+  }
+}
+
+
+static void fill_init_volume_vector(avlnode *node, void *v)
+{
+  grid_info grid = {.index = *(int*)node->key, .nParts = *(int*)node->data};
+  vector_push(v, &grid);
 }

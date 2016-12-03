@@ -27,7 +27,7 @@ typedef struct _halo {
   float min_pos_err, min_vel_err, min_bulkvel_err;
   int64_t num_p, num_child_particles, p_start, desc, n_core;
   int64_t *particle_ids;
-  vector *init_volume;
+  vector *init_volume; // vector of grid_info s
 } halo;
 
 
@@ -35,6 +35,12 @@ typedef struct _halofinder {
   haloheader *header;
   halo *halos;
 } halofinder;
+
+
+typedef struct _grid_info {
+  int index;
+  int nParts;
+} grid_info;
 
 
 halofinder* new_halofinder(int);
