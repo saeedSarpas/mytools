@@ -32,7 +32,7 @@ Ensure(avl_insert, is_able_to_create_a_new_tree)
   avl_insert(tree, &id,  NULL);
   assert_that(tree->root, is_non_null);
 
-  dispose_avltree(tree);
+  dispose_avltree(&tree);
 }
 
 
@@ -46,7 +46,7 @@ Ensure(avl_insert, keeps_the_tree_bst)
 
   avl_inorder_traversal(tree, check_childs, NULL);
 
-  dispose_avltree(tree);
+  dispose_avltree(&tree);
 }
 
 
@@ -63,7 +63,7 @@ Ensure(avl_insert, prevents_from_adding_nodes_with_the_same_keys)
 
   assert_that(counter, is_equal_to(1));
 
-  dispose_avltree(tree);
+  dispose_avltree(&tree);
 }
 
 
@@ -77,7 +77,7 @@ Ensure(avl_insert, set_the_data_properly)
 
   avl_inorder_traversal(tree, check_int_data, NULL);
 
-  dispose_avltree(tree);
+  dispose_avltree(&tree);
 }
 
 

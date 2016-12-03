@@ -38,5 +38,5 @@ Ensure(avl_find, works_properly)
   found = avl_find(tree, &i);
   assert_that(found, is_null);
 
-  dispose_avltree(tree);
+  dispose_avltree(&tree);
 }

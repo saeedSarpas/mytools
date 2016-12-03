@@ -29,13 +29,16 @@ avltree* new_avltree(void (*setkey)(avlnode*, void*), int (*compare)(void*, void
 }
 
 
-void dispose_avltree(avltree *tree)
+void dispose_avltree(avltree **tree)
 {
   avlnode *min = NULL;
-  while(tree->root != NULL){
-    min = min_node(tree->root);
-    avl_delete(tree, min->key);
+  while((*tree)->root != NULL){
+    min = min_node((*tree)->root);
+    avl_delete((*tree), min->key);
   }
+
+  free(*tree);
+  *tree = NULL;
 }
 
 

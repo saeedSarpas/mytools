@@ -36,7 +36,7 @@ Ensure(avl_delete, keeps_the_tree_bst)
 
   avl_inorder_traversal(tree, check_childs, NULL);
 
-  dispose_avltree(tree);
+  dispose_avltree(&tree);
 }
 
 

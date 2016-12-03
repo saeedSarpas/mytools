@@ -36,7 +36,7 @@ Ensure(avl_inorder_traversal, goes_through_all_nodes)
 
   assert_that(counter, is_equal_to(NUM_OF_NODES));
 
-  dispose_avltree(tree);
+  dispose_avltree(&tree);
 }
 
 
@@ -51,7 +51,7 @@ Ensure(avl_inorder_traversal, returns_nodes_in_ascending_order)
   int old_key = -1;
   avl_inorder_traversal(tree, check_ascending_order, &old_key);
 
-  dispose_avltree(tree);
+  dispose_avltree(&tree);
 }
 
 

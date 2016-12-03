@@ -29,7 +29,7 @@ typedef struct _avltree
 
 avltree* new_avltree(void (*setkey)(avlnode*, void*),
                      int (*compare)(void*, void*));
-void dispose_avltree(avltree*);
+void dispose_avltree(avltree**);
 void set_float_key(avlnode*, void*);
 void set_int_key(avlnode*, void*);
 int compare_float_keys(void*, void*);
