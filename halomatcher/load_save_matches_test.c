@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include "load_save_matches.h"
 #include "halomatcher.h"
+#include "./../vector/vector_get.h"
+#include "./../vector/vector_push.h"
 #include "./../io/open_file.h"
 #include "./../io/write_to.h"
 #include "./../memory/allocate.h"
@@ -67,19 +69,19 @@ BeforeEach(load_save_matches)
   int j;
   match dummy_match = {.matchid = MATCHID, .goodness = GOODNESS};
   for(i = 0; i < header.nprihalos; i++){
-    vector *dummy_vector = vector_new(i+1, sizeof(match));
+    vector *dummy_vector = new_vector(i+1, sizeof(match));
     for(j = 0; j <= i; j++)
       vector_push(dummy_vector, &dummy_match);
     write_to(file, i, sizeof(match), dummy_vector->elems);
-    vector_dispose(dummy_vector);
+    dispose_vector(&dummy_vector);
   }
 
   for(i = 0; i < header.nsechalos; i++){
-    vector *dummy_vector = vector_new(i+1, sizeof(match));
+    vector *dummy_vector = new_vector(i+1, sizeof(match));
     for(j = 0; j <= i; j++)
       vector_push(dummy_vector, &dummy_match);
     write_to(file, i, sizeof(match), dummy_vector->elems);
-    vector_dispose(dummy_vector);
+    dispose_vector(&dummy_vector);
   }
 
   fclose(file);
@@ -108,7 +110,7 @@ Ensure(load_save_matches, loads_matches_from_disk_properly)
   match *dummy_match = allocate(1, sizeof(*dummy_match));
   for(i = 0; i < N_PRI_HALOS; i++)
     for(j = 0; j < i; j++){
-      dummy_match = vector_get_elem(primatches[i], j);
+      dummy_match = vector_get(primatches[i], j);
       assert_that(dummy_match->matchid, is_equal_to(MATCHID));
       assert_that_double(dummy_match->goodness, is_equal_to_double(GOODNESS));
     }
@@ -133,13 +135,13 @@ Ensure(load_save_matches, saves_matches_to_disk_properly)
 
   match dummy_match = {.matchid = MATCHID, .goodness = GOODNESS};
   for(i = 0; i < N_PRI_HALOS; i++){
-    primatches[i] = vector_new(i, sizeof(match));
+    primatches[i] = new_vector(i, sizeof(match));
     for(j = 0; j < i; j++)
       vector_push(primatches[i], &dummy_match);
   }
 
   for(i = 0; i < N_SEC_HALOS; i++){
-    secmatches[i] = vector_new(i, sizeof(match));
+    secmatches[i] = new_vector(i, sizeof(match));
     for(j = 0; j < i; j++)
       vector_push(secmatches[i], &dummy_match);
   }
@@ -156,7 +158,7 @@ Ensure(load_save_matches, saves_matches_to_disk_properly)
 
   for(i = 0; i < N_PRI_HALOS; i++)
     for(j = 0; j < i; j++){
-      thematch = vector_get_elem(primatches_r[i], j);
+      thematch = vector_get(primatches_r[i], j);
       assert_that(thematch->matchid, is_equal_to(MATCHID));
     }
 

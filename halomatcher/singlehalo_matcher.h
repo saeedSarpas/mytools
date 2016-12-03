@@ -2,7 +2,6 @@
 #define SINGLEHALO_MATCHER_H
 
 
-#include "./matchinghalo.h"
 #include "./../halofinder/halofinder.h"
 #include "./../vector/vector.h"
 

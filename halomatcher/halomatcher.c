@@ -14,6 +14,8 @@
 #include "load_save_matches.h"
 #include "./../memory/allocate.h"
 #include "./../vector/vector.h"
+#include "./../vector/vector_get.h"
+#include "./../vector/vector_push.h"
 #include "./../loading/simple_loading.h"
 #include "./../time/mytime.h"
 
@@ -22,7 +24,7 @@ static float max_goodness(vector*);
 static vector* fill_goodest_matches(vector*, float);
 static void put_first_match_into_mh(vector*, matchinghalo*, int);
 static float min_distance(vector*, halofinder*, int, halofinder*);
-static float two_halos_distance(halo*, halo*);
+static float two_halos_distance(halo*, halo*, float);
 
 
 /*
@@ -39,17 +41,18 @@ static float two_halos_distance(halo*, halo*);
 matchinghalo* halomatcher(halofinder *pri, halofinder *sec,
                           halomatcher_params params)
 {
-  vector **primatches = allocate(pri->header->num_halos, sizeof(vector*));
-  vector **secmatches = allocate(sec->header->num_halos, sizeof(vector*));
+  vector **primatches = allocate(pri->header->num_halos, sizeof(*primatches));
+  vector **secmatches = allocate(sec->header->num_halos, sizeof(*secmatches));
 
   unsigned int i, j;
 
   if(params.loadMatches)
     load_matches(params.loadMatchesPath, primatches, secmatches);
   else {
-    /* Searching for matches based on the first list of halos */
     int progress = -1;
     int ntot_halos = pri->header->num_halos + sec->header->num_halos - 1;
+
+    /* Searching for matches based on the first list of halos */
     for(i = 0; i < pri->header->num_halos; i++){
       progress = simple_loading(progress, i, ntot_halos);
       if(pri->halos[i].id != HALONOTSET)
@@ -72,26 +75,28 @@ matchinghalo* halomatcher(halofinder *pri, halofinder *sec,
   }
 
   matchinghalo *mh = new_matchinghalo(pri->header->num_halos);
+
   match *primatch, *secmatch;
+  match *matchholder = allocate(1, sizeof(*matchholder));
 
   int primatch_id;
-  match *matchholder = allocate(1, sizeof(match));
-  float max_gn, min_dist, dist;
   vector *primatch_matches = NULL;
-  //Best matches based on goodness
-  vector *goodest_matches = NULL;
+
+  float max_gn, min_dist, dist;
+
+  vector *goodest_matches = NULL; //Best matches based on goodness
 
   for(primatch_id = 0; primatch_id < pri->header->num_halos; primatch_id++){
-    if(primatches[primatch_id]->log_length == 0) continue;
+    if(primatches[primatch_id]->logLength == 0) continue;
 
-    primatch_matches = vector_new(8, sizeof(match));
+    primatch_matches = new_vector(8, sizeof(match));
 
-    for(i = 0; i < primatches[primatch_id]->log_length; i++){
-      primatch = (match*)vector_get_elem(primatches[primatch_id], i);
-      if(secmatches[primatch->matchid]->log_length == 0) continue;
+    for(i = 0; i < primatches[primatch_id]->logLength; i++){
+      primatch = (match*)vector_get(primatches[primatch_id], i);
+      if(secmatches[primatch->matchid]->logLength == 0) continue;
 
-      for(j = 0; j < secmatches[primatch->matchid]->log_length; j++){
-        secmatch = (match*)vector_get_elem(secmatches[primatch->matchid], j);
+      for(j = 0; j < secmatches[primatch->matchid]->logLength; j++){
+        secmatch = (match*)vector_get(secmatches[primatch->matchid], j);
 
         if(secmatch->matchid == primatch_id){
           matchholder->matchid = primatch->matchid;
@@ -102,40 +107,40 @@ matchinghalo* halomatcher(halofinder *pri, halofinder *sec,
     }
 
     // In case of we only found one match
-    if(primatch_matches->log_length == 1)
+    if(primatch_matches->logLength == 1)
       put_first_match_into_mh(primatch_matches, mh, primatch_id);
     // If there is more than one match, find the matches with best goodness
-    else if(primatch_matches->log_length > 1){
+    else if(primatch_matches->logLength > 1){
       max_gn = max_goodness(primatch_matches);
       goodest_matches = fill_goodest_matches(primatch_matches, max_gn);
       // If there is only one match with the best goodness value
-      if(goodest_matches->log_length == 1)
+      if(goodest_matches->logLength == 1)
         put_first_match_into_mh(goodest_matches, mh, primatch_id);
       // If there is more than one "best" match, check the distances and
       // consider the closest match as the real one
-      else if(goodest_matches->log_length > 1){
+      else if(goodest_matches->logLength > 1){
         min_dist = min_distance(goodest_matches, pri, primatch_id, sec);
-        for(i = 0; i < goodest_matches->log_length; i++){
-          matchholder = vector_get_elem(goodest_matches, i);
+        for(i = 0; i < goodest_matches->logLength; i++){
+          matchholder = vector_get(goodest_matches, i);
           dist = two_halos_distance(&pri->halos[primatch_id],
-                                    &sec->halos[matchholder->matchid]);
+                                    &sec->halos[matchholder->matchid],
+                                    pri->header->box_size[0]);
           if(dist == min_dist){
             mh->matchingids[primatch_id] = matchholder->matchid;
             mh->goodnesses[primatch_id] = matchholder->goodness;
           }
         }
       }
-      free(goodest_matches);
-      goodest_matches->log_length = 0;
+      dispose_vector(&goodest_matches);
     }
-    vector_dispose(primatch_matches);
+    dispose_vector(&primatch_matches);
   }
 
   for(i = 0; i < pri->header->num_halos; i++)
-    vector_dispose(primatches[i]);
+    dispose_vector(&primatches[i]);
 
   for(i = 0; i < sec->header->num_halos; i++)
-    vector_dispose(secmatches[i]);
+    dispose_vector(&secmatches[i]);
 
   free(primatches);
   free(secmatches);
@@ -146,7 +151,7 @@ matchinghalo* halomatcher(halofinder *pri, halofinder *sec,
 
 static void put_first_match_into_mh(vector *matches, matchinghalo *mh, int id)
 {
-  match *matchholder = vector_get_elem(matches, 0);
+  match *matchholder = vector_get(matches, 0);
   mh->matchingids[id] = matchholder->matchid;
   mh->goodnesses[id] = matchholder->goodness;
 }
@@ -160,8 +165,8 @@ static float max_goodness(vector *v)
 
   unsigned int i;
   float max_gn = 0.0;
-  for(i = 0; i < v->log_length; i++){
-    matchholder = (match*)vector_get_elem(v, i);
+  for(i = 0; i < v->logLength; i++){
+    matchholder = (match*)vector_get(v, i);
     if(matchholder->goodness > max_gn)
       max_gn = matchholder->goodness;
   }
@@ -181,13 +186,13 @@ static float min_distance(vector *matches, halofinder *pri, int id,
   unsigned int i;
   match *matchholder = NULL;
 
-  for(i = 0; i < matches->log_length; i++){
-    matchholder = vector_get_elem(matches, i);
+  for(i = 0; i < matches->logLength; i++){
+    matchholder = vector_get(matches, i);
     dist = two_halos_distance(&pri->halos[id],
-                              &sec->halos[matchholder->matchid]);
+                              &sec->halos[matchholder->matchid],
+                              pri->header->box_size[0]);
 
-    if(dist < min_dist)
-      min_dist = dist;
+    if(dist < min_dist) min_dist = dist;
   }
 
   return min_dist;
@@ -200,11 +205,11 @@ static float min_distance(vector *matches, halofinder *pri, int id,
 static vector* fill_goodest_matches(vector *matches, float max_gn)
 {
   match *matchholder = NULL;
-  vector *v_matches = vector_new(8, sizeof(match));
+  vector *v_matches = new_vector(8, sizeof(match));
 
   unsigned int i;
-  for(i = 0; i < matches->log_length; i++){
-    matchholder = vector_get_elem(matches, i);
+  for(i = 0; i < matches->logLength; i++){
+    matchholder = vector_get(matches, i);
     if(matchholder->goodness == max_gn)
       vector_push(v_matches, matchholder);
   }
@@ -216,13 +221,14 @@ static vector* fill_goodest_matches(vector *matches, float max_gn)
 /*
  * Calculating the distance between two halos
  */
-static float two_halos_distance(halo *pri, halo *sec)
+static float two_halos_distance(halo *pri, halo *sec, float box_length)
 {
-  float dist;
+  float dx[3];
+  int i;
+  for(i = 0; i < 3; i++){
+    dx[i] = fabs(pri->pos[i] - sec->pos[i]);
+    if(dx[i] > box_length / 2) dx[i] -= box_length / 2;
+  }
 
-  dist = sqrt(pow(pri->pos[0] - sec->pos[0], 2) +
-              pow(pri->pos[1] - sec->pos[1], 2) +
-              pow(pri->pos[2] - sec->pos[2], 2));
-
-  return dist;
+  return sqrt(pow(dx[0], 2) + pow(dx[1], 2) + pow(dx[2], 2));
 }

@@ -10,7 +10,8 @@
 #include "halomatcher.h"
 #include "singlehalo_matcher.h"
 #include "./../halofinder/halofinder.h"
-#include "./../avltree/avl_tree.h"
+#include "./../vector/vector.h"
+#include "./../vector/vector_push.h"
 
 
 Describe(halomatcher);
@@ -29,36 +30,48 @@ halofinder *sec;
 BeforeEach(halomatcher)
 {
   int i, j;
-  int initial_data = 1;
+  grid_info grid;
 
   pri = new_halofinder(NUMPRIHALOS);
   for(i = 0; i < pri->header->num_halos; i++){
     pri->halos[i].id = i;
     pri->halos[i].m = 1000;
+    pri->halos[i].num_p = NUMPRIHALOPARTS;
+
     for(j = 0; j < 3; j++)
       pri->halos[i].pos[j] = 1.234;
-    for(j = 0; j < NUMPRIHALOPARTS; j++)
-      pri->halos[i].init_volume = avl_insert(
-        pri->halos[i].init_volume, i+j, &initial_data, 1, sizeof(int));
+
+    pri->halos[i].init_volume = new_vector(NUMPRIHALOPARTS, sizeof(grid_info));
+    for(j = 0; j < NUMPRIHALOPARTS; j++){
+      grid.index = i+j;
+      grid.nParts = 1;
+      vector_push(pri->halos[i].init_volume, &grid);
+    }
   }
 
   sec = new_halofinder(NUMSECHALOS);
   for(i = 0; i < sec->header->num_halos; i++){
     sec->halos[i].id = i;
     sec->halos[i].m = 1000;
+    sec->halos[i].num_p = NUMSECHALOPARTS;
+
     for(j = 0; j < 3; j++)
       sec->halos[i].pos[j] = 1.234;
-    for(j = 0; j < NUMSECHALOPARTS; j++)
-      sec->halos[i].init_volume = avl_insert(
-        sec->halos[i].init_volume, i+j, &initial_data, 1, sizeof(int));
+
+    sec->halos[i].init_volume = new_vector(NUMSECHALOPARTS, sizeof(grid_info));
+    for(j = 0; j < NUMSECHALOPARTS; j++){
+      grid.index = i+j;
+      grid.nParts = 1;
+      vector_push(sec->halos[i].init_volume, &grid);
+    }
   }
 }
 
 
 AfterEach(halomatcher)
 {
-  dispose_halofinder(pri);
-  dispose_halofinder(sec);
+  dispose_halofinder(&pri);
+  dispose_halofinder(&sec);
 }
 
 
@@ -90,24 +103,26 @@ Ensure(halomatcher, finds_matching_halos_in_case_of_multiple_matches)
                           .saveMatches = 0,
                           .saveMatchesPath = ""};
 
-  int i, j, initial_data = 1;
+  int i, j;
+  grid_info grid;
 
   for(i = 0; i < sec->header->num_halos; i++){
     for(j = 0; j < 3; j++)
       sec->halos[i].pos[j] = i * 1.234;
-    avl_dispose(sec->halos[i].init_volume);
-    sec->halos[i].init_volume = NULL;
-    for(j = 0; j < NUMSECHALOPARTS; j++)
-      sec->halos[i].init_volume = avl_insert(
-        sec->halos[i].init_volume, 1, &initial_data, 1, sizeof(int));
+
+    dispose_vector(&sec->halos[i].init_volume);
+    sec->halos[i].init_volume = new_vector(1, sizeof(grid_info));
+    grid.index = 1;
+    grid.nParts = NUMSECHALOPARTS;
+    vector_push(sec->halos[i].init_volume, &grid);
   }
 
   for(i = 0; i < pri->header->num_halos; i++){
-    avl_dispose(pri->halos[i].init_volume);
-    pri->halos[i].init_volume = NULL;
-    for(j = 0; j < NUMSECHALOPARTS; j++)
-      pri->halos[i].init_volume = avl_insert(
-        pri->halos[i].init_volume, 1, &initial_data, 1, sizeof(int));
+    dispose_vector(&pri->halos[i].init_volume);
+    pri->halos[i].init_volume = new_vector(1, sizeof(grid));
+    grid.index = 1;
+    grid.nParts = NUMPRIHALOPARTS;
+    vector_push(pri->halos[i].init_volume, &grid);
   }
 
   matchinghalo *mh = halomatcher(pri, sec, p);

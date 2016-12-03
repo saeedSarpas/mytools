@@ -13,14 +13,14 @@ _TESTS := matchinghalo_test \
 _DEPS := ./../memory/allocate \
          ./../memory/copy \
          ./../search/half_interval/find_ge \
-         ./../avltree/avl_tree \
          ./../vector/vector \
+         ./../vector/vector_get \
+         ./../vector/vector_push \
          ./../halofinder/halofinder \
          ./../loading/simple_loading \
          ./../io/open_file \
          ./../io/write_to \
          ./../io/read_from \
-         ./../time/mytime \
-         ./../sort/mergesort/mergesort
+         ./../time/mytime
 
 include ./../Makefile
