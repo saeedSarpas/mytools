@@ -51,7 +51,7 @@ BeforeEach(save_snap_to)
 
 AfterEach(save_snap_to)
 {
-  dispose_snapshot(filled_snap);
+  dispose_snapshot(&filled_snap);
   remove(GADGET_SNAP_ADDR);
 }
 

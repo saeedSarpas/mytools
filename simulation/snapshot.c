@@ -40,11 +40,14 @@ snapshot* new_snapshot(int tot_nparticles)
  *
  * NOTE: memory leak since we don't free s itself
  */
-void dispose_snapshot(snapshot *s)
+void dispose_snapshot(snapshot **s)
 {
-  free(s->header);
-  s->header = NULL;
+  free((*s)->header);
+  (*s)->header = NULL;
 
-  free(s->particles);
-  s->particles = NULL;
+  free((*s)->particles);
+  (*s)->particles = NULL;
+
+  free(*s);
+  *s = NULL;
 }
