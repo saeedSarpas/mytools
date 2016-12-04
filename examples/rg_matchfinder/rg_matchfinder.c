@@ -160,19 +160,20 @@ int main(int argc, char *argv[])
     print_halo_particles(mh, pri, sec, prisnap, secsnap, prilatestsnap,
                          seclatestsnap, p);
 
-    dispose_snapshot(prilatestsnap);
-    dispose_snapshot(seclatestsnap);
+    dispose_snapshot(&prilatestsnap);
+    dispose_snapshot(&seclatestsnap);
 
     done(_s_h_p_);
   }
 
   clock_t _c_u_ = start("Cleaning up");
-  dispose_halofinder(pri);
-  dispose_halofinder(sec);
+  dispose_halofinder(&pri);
+  dispose_halofinder(&sec);
 
   if(!p->loadMatches || p->saveSingleMatches){
-    dispose_snapshot(prisnap);
-    dispose_snapshot(secsnap);
+    dispose_snapshot(&prisnap);
+    if(p->internalMatching != INTERNALMATCHINGTRUE)
+      dispose_snapshot(&secsnap);
   }
 
   done(_c_u_);

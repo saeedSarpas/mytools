@@ -24,12 +24,18 @@ DEPS := ./../../configfile/mylibconfig.c \
         ./../../halomatcher/matchinghalo.c \
         ./../../halomatcher/singlehalo_matcher.c \
         ./../../halomatcher/halomatcher.c \
-        ./../../avltree/avl_tree.c \
+        ./../../avltree/avltree.c \
+        ./../../avltree/avl_find.c \
+        ./../../avltree/avl_insert.c \
+        ./../../avltree/avl_delete.c \
+        ./../../avltree/avl_inorder_traversal.c \
         ./../../grid/row_major_order/point_to_grid.c \
         ./../../grid/row_major_order/three_to_one.c \
         ./../../search/half_interval/find_ge.c \
         ./../../loading/simple_loading.c \
         ./../../vector/vector.c \
+        ./../../vector/vector_push.c \
+        ./../../vector/vector_get.c \
         ./../../math/interval/expspaced.c \
         ./../../sort/mergesort/mergesort.c
 
