@@ -96,15 +96,15 @@ void write_matches(char *path, vector **primatches, vector **secmatches,
   int i, nmatches = 0;
   for(i = 0; i < header.nprihalos; i++){
     pristarts[i] = nmatches;
-    nprimatches[i] = primatches[i]->logLength;
-    nmatches += primatches[i]->logLength;
+    nprimatches[i] = primatches[i] != NULL ? primatches[i]->logLength : 0;
+    nmatches += nprimatches[i];
   }
 
   nmatches = 0;
   for(i = 0; i < header.nsechalos; i++){
     secstarts[i] = nmatches;
-    nsecmatches[i] = secmatches[i]->logLength;
-    nmatches += secmatches[i]->logLength;
+    nsecmatches[i] = secmatches[i] != NULL ? secmatches[i]->logLength : 0;
+    nmatches += nsecmatches[i];
   }
 
   FILE *file = open_file(path, "wb");
@@ -116,10 +116,12 @@ void write_matches(char *path, vector **primatches, vector **secmatches,
   write_to(file, header.nsechalos, sizeof(int), secstarts);
 
   for(i = 0; i < header.nprihalos; i++)
-    write_to(file, primatches[i]->logLength, sizeof(match), primatches[i]->elems);
+    if(primatches[i] != NULL)
+      write_to(file, nprimatches[i], sizeof(match), primatches[i]->elems);
 
   for(i = 0; i < header.nsechalos; i++)
-    write_to(file, secmatches[i]->logLength, sizeof(match), secmatches[i]->elems);
+    if(secmatches[i] != NULL)
+      write_to(file, nsecmatches[i], sizeof(match), secmatches[i]->elems);
 
   fclose(file);
 

@@ -169,3 +169,74 @@ Ensure(load_save_matches, saves_matches_to_disk_properly)
 
   return;
 }
+
+
+Ensure(load_save_matches, can_handle_null_in_pri_or_secmatches)
+{
+  vector **primatches = allocate(N_PRI_HALOS, sizeof(vector*));
+  vector **secmatches = allocate(N_SEC_HALOS, sizeof(vector*));
+
+  int i, j;
+
+  match dummy_match = {.matchid = MATCHID, .goodness = GOODNESS};
+  for(i = 0; i < N_PRI_HALOS; i++){
+    if(i % 2 == 0){
+      primatches[i] = NULL;
+      continue;
+    }
+    else{
+      primatches[i] = new_vector(i, sizeof(match));
+      for(j = 0; j < i; j++)
+        vector_push(primatches[i], &dummy_match);
+    }
+  }
+
+  for(i = 0; i < N_SEC_HALOS; i++){
+    if(i % 2 == 0){
+      secmatches[i] = new_vector(i, sizeof(match));
+      for(j = 0; j < i; j++)
+        vector_push(secmatches[i], &dummy_match);
+    }
+    else{
+      secmatches[i] = NULL;
+      continue;
+    }
+  }
+
+  write_matches(MATCHES_FILE_ADDR, primatches, secmatches, N_PRI_HALOS,
+                N_SEC_HALOS);
+
+  match *thematch = allocate(1, sizeof(*thematch));
+
+  vector **primatches_r = allocate(N_PRI_HALOS, sizeof(vector*));
+  vector **secmatches_r = allocate(N_SEC_HALOS, sizeof(vector*));
+
+  load_matches(MATCHES_FILE_ADDR, primatches_r, secmatches_r);
+
+  for(i = 0; i < N_PRI_HALOS; i++)
+    if(i % 2 == 0)
+      assert_that(primatches_r[i]->logLength, is_equal_to(0));
+    else{
+      for(j = 0; j < i; j++){
+        thematch = vector_get(primatches_r[i], j);
+        assert_that(thematch->matchid, is_equal_to(MATCHID));
+      }
+    }
+
+  for(i = 0; i < N_SEC_HALOS; i++)
+    if(i % 2 == 0){
+      for(j = 0; j < i; j++){
+        thematch = vector_get(secmatches_r[i], j);
+        assert_that(thematch->matchid, is_equal_to(MATCHID));
+      }
+    }
+    else
+      assert_that(secmatches_r[i]->logLength, is_equal_to(0));
+
+  free(primatches);
+  free(secmatches);
+  free(primatches_r);
+  free(secmatches_r);
+
+  return;
+}
