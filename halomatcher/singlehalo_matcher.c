@@ -24,11 +24,14 @@
 
 static int compare_mass(const void*, int, const void*);
 static void find_common_elements(vector*, vector*, int64_t*, int64_t*);
+static int fequal(float, float, float);
 
 
 vector* singlehalo_matcher(halo *h, halofinder *hf, vector **secmatches,
                            halomatcher_params params)
 {
+  if(h->id == HALONOTSET) return new_vector(0, sizeof(match));
+
   float min_mass = h->m / params.massOffset;
   float max_mass = h->m * params.massOffset;
 
@@ -37,10 +40,10 @@ vector* singlehalo_matcher(halo *h, halofinder *hf, vector **secmatches,
 
   if(min_index == NOT_FOUND) return new_vector(0, sizeof(match));
 
-  unsigned int i, j;
+  unsigned int i, j, sec_id;
   match matchholder;
-  match *dummy_match;
-  vector *matches = new_vector(4, sizeof(match));
+  match *saved_match;
+  vector *primatches = new_vector(4, sizeof(match));
   float highest_match_gn1 = 1.0, match_gn1 = 0.0, match_gn2 = 0.0, dx[3];
   int64_t common_parts1, common_parts2;
   for(i = min_index; i < hf->header->num_halos; i++){
@@ -63,48 +66,50 @@ vector* singlehalo_matcher(halo *h, halofinder *hf, vector **secmatches,
     match_gn1 = (float)common_parts1 / h->num_p * 100;
     match_gn2 = (float)common_parts2 / hf->halos[i].num_p * 100;
 
+    sec_id = (int)hf->halos[i].id;
+
     // Primary halo
     if(match_gn1 > highest_match_gn1){
       highest_match_gn1 = match_gn1;
-      matches->logLength = 0;
 
-      matchholder.matchid = i;
+      primatches->logLength = 0;
+      matchholder.matchid = sec_id;
       matchholder.goodness = match_gn1;
-      vector_push(matches, &matchholder);
+      vector_push(primatches, &matchholder);
     }
-    else if(match_gn1 == highest_match_gn1){
-      matchholder.matchid = i;
+    else if(fequal(match_gn1, highest_match_gn1, 0.1)){
+      matchholder.matchid = sec_id;
       matchholder.goodness = match_gn1;
-      vector_push(matches, &matchholder);
+      vector_push(primatches, &matchholder);
     }
 
     // Secondary halos
     if(match_gn2 > 0){
-      if(secmatches[i] == NULL){
-        secmatches[i] = new_vector(4, sizeof(match));
-        matchholder.matchid = h->id;
+      if(secmatches[sec_id] == NULL || secmatches[sec_id]->logLength == 0){
+        secmatches[sec_id] = new_vector(4, sizeof(match));
+        matchholder.matchid = (int)h->id;
         matchholder.goodness = match_gn2;
-        vector_push(secmatches[i], &matchholder);
+        vector_push(secmatches[sec_id], &matchholder);
       }
       else {
-        dummy_match = vector_get(secmatches[i], 0);
+        saved_match = vector_get(secmatches[sec_id], 0);
 
-        if(match_gn2 == dummy_match->goodness){
-          matchholder.matchid = h->id;
+        if(fequal(match_gn2, saved_match->goodness, 0.1)){
+          matchholder.matchid = (int)h->id;
           matchholder.goodness = match_gn2;
-          vector_push(secmatches[i], &matchholder);
+          vector_push(secmatches[sec_id], &matchholder);
         }
-        else if(match_gn2 > dummy_match->goodness){
-          secmatches[i]->logLength = 0;
-          matchholder.matchid = h->id;
+        else if(match_gn2 > saved_match->goodness){
+          secmatches[sec_id]->logLength = 0;
+          matchholder.matchid = (int)h->id;
           matchholder.goodness = match_gn2;
-          vector_push(secmatches[i], &matchholder);
+          vector_push(secmatches[sec_id], &matchholder);
         }
       }
     }
   }
 
-  return matches;
+  return primatches;
 }
 
 
@@ -120,11 +125,11 @@ static int compare_mass(const void *halos, int index, const void *target_mass)
 
 
 static void find_common_elements(vector *v1, vector *v2,
-                                 int64_t *ce1, int64_t *ce2)
+                                 int64_t *cp1, int64_t *cp2)
 {
   unsigned int i = 0, j = 0;
-  *ce1 = 0;
-  *ce2 = 0;
+  *cp1 = 0;
+  *cp2 = 0;
   while(i < v1->logLength && j < v2->logLength){
     if(((grid_info*)vector_get(v1, i))->index >
        ((grid_info*)vector_get(v2, j))->index)
@@ -133,10 +138,16 @@ static void find_common_elements(vector *v1, vector *v2,
             ((grid_info*)vector_get(v2, j))->index)
       i++;
     else{
-      *ce1 += ((grid_info*)vector_get(v1, i))->nParts;
-      *ce2 += ((grid_info*)vector_get(v2, i))->nParts;
+      *cp1 += ((grid_info*)vector_get(v1, i))->nParts;
+      *cp2 += ((grid_info*)vector_get(v2, j))->nParts;
       i++;
       j++;
     }
   }
+}
+
+
+static int fequal(float a, float b, float epsilon)
+{
+  return fabs(a - b) < epsilon;
 }

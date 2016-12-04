@@ -43,29 +43,29 @@ matchinghalo* halomatcher(halofinder *pri, halofinder *sec,
 {
   unsigned int i, j;
 
-  vector **primatches = allocate(pri->header->num_halos, sizeof(*primatches));
-  vector **secmatches = allocate(sec->header->num_halos, sizeof(*secmatches));
+  vector **primatches_v = allocate(pri->header->num_halos, sizeof(vector*));
+  vector **secmatches_v = allocate(sec->header->num_halos, sizeof(vector*));
   for(i = 0; i < sec->header->num_halos; i++)
-    secmatches[i] = NULL;
+    secmatches_v[i] = new_vector(0, sizeof(0));
 
   if(params.loadMatches)
-    load_matches(params.loadMatchesPath, primatches, secmatches);
+    load_matches(params.loadMatchesPath, primatches_v, secmatches_v);
   else {
     int progress = -1;
-    int ntot_halos = pri->header->num_halos + sec->header->num_halos - 1;
+    int ntot_halos = pri->header->num_halos - 1;
 
     /* Searching for matches based on the first list of halos */
     for(i = 0; i < pri->header->num_halos; i++){
       progress = simple_loading(progress, i, ntot_halos);
       if(pri->halos[i].id != HALONOTSET)
-        primatches[i] = singlehalo_matcher(&pri->halos[i], sec,
-                                           secmatches, params);
+        primatches_v[pri->halos[i].id] = singlehalo_matcher(
+          &pri->halos[i], sec, secmatches_v, params);
     }
   }
 
   if(params.saveMatches && !params.loadMatches){
     clock_t _s_m_ = start("\tSaving found matches to file");
-    write_matches(params.saveMatchesPath, primatches, secmatches,
+    write_matches(params.saveMatchesPath, primatches_v, secmatches_v,
                   pri->header->num_halos, sec->header->num_halos);
     done(_s_m_);
   }
@@ -76,24 +76,22 @@ matchinghalo* halomatcher(halofinder *pri, halofinder *sec,
   match *matchholder = allocate(1, sizeof(*matchholder));
 
   int primatch_id;
-  vector *primatch_matches = NULL;
 
   float max_gn, min_dist, dist;
 
-  vector *goodest_matches = NULL; //Best matches based on goodness
 
   for(primatch_id = 0; primatch_id < pri->header->num_halos; primatch_id++){
-    if(primatches[primatch_id]->logLength == 0) continue;
+    if(primatches_v[primatch_id]->logLength == 0) continue;
 
-    primatch_matches = new_vector(8, sizeof(match));
+    vector *primatch_matches = new_vector(8, sizeof(match));
 
-    for(i = 0; i < primatches[primatch_id]->logLength; i++){
-      primatch = (match*)vector_get(primatches[primatch_id], i);
-      if(secmatches[primatch->matchid] == NULL) continue;
-      if(secmatches[primatch->matchid]->logLength == 0) continue;
+    for(i = 0; i < primatches_v[primatch_id]->logLength; i++){
+      primatch = (match*)vector_get(primatches_v[primatch_id], i);
+      if(secmatches_v[primatch->matchid] == NULL) continue;
+      if(secmatches_v[primatch->matchid]->logLength == 0) continue;
 
-      for(j = 0; j < secmatches[primatch->matchid]->logLength; j++){
-        secmatch = (match*)vector_get(secmatches[primatch->matchid], j);
+      for(j = 0; j < secmatches_v[primatch->matchid]->logLength; j++){
+        secmatch = (match*)vector_get(secmatches_v[primatch->matchid], j);
 
         if(secmatch->matchid == primatch_id){
           matchholder->matchid = primatch->matchid;
@@ -109,7 +107,8 @@ matchinghalo* halomatcher(halofinder *pri, halofinder *sec,
     // If there is more than one match, find the matches with best goodness
     else if(primatch_matches->logLength > 1){
       max_gn = max_goodness(primatch_matches);
-      goodest_matches = fill_goodest_matches(primatch_matches, max_gn);
+      //Best matches based on goodness
+      vector *goodest_matches = fill_goodest_matches(primatch_matches, max_gn);
       // If there is only one match with the best goodness value
       if(goodest_matches->logLength == 1)
         put_first_match_into_mh(goodest_matches, mh, primatch_id);
@@ -134,14 +133,14 @@ matchinghalo* halomatcher(halofinder *pri, halofinder *sec,
   }
 
   for(i = 0; i < pri->header->num_halos; i++)
-    dispose_vector(&primatches[i]);
+    dispose_vector(&primatches_v[i]);
 
   for(i = 0; i < sec->header->num_halos; i++)
-    if(secmatches[i] != NULL)
-      dispose_vector(&secmatches[i]);
+    if(secmatches_v[i] != NULL)
+      dispose_vector(&secmatches_v[i]);
 
-  free(primatches);
-  free(secmatches);
+  free(primatches_v);
+  free(secmatches_v);
 
   return mh;
 }
