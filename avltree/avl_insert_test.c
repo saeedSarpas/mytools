@@ -85,7 +85,7 @@ static void check_childs(avlnode *node, void *data)
 {
   if(node->height > 2){
     assert_true(abs(node->left->height - node->right->height) <= 1);
-    assert_true(node->left->key < node->right->key);
+    assert_true(*(int*)node->left->key <= *(int*)node->right->key);
   }
 }
 

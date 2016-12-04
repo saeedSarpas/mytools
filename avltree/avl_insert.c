@@ -76,18 +76,18 @@ static avlnode* insert(avltree *tree, avlnode *node, void *key, void *data,
 
   int balance = get_balance(node);
 
-  if(balance > 1 && key < node->left->key)
+  if(balance > 1 && tree->compare(node->left->key, key) == AVL_GREATER_THAN)
     return right_rotate(node);
 
-  if(balance < -1 && key > node->right->key)
+  if(balance < -1 && tree->compare(node->right->key, key) == AVL_LESS_THAN)
     return left_rotate(node);
 
-  if(balance > 1 && key > node->left->key){
+  if(balance > 1 && tree->compare(node->left->key, key) == AVL_LESS_THAN){
     node->left =  left_rotate(node->left);
     return right_rotate(node);
   }
 
-  if(balance < -1 && key < node->right->key){
+  if(balance < -1 && tree->compare(node->right->key, key) == AVL_GREATER_THAN){
     node->right = right_rotate(node->right);
     return left_rotate(node);
   }
