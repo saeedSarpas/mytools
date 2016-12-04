@@ -22,7 +22,8 @@
 void* vector_get(vector *v, int i)
 {
   if(i >= (int)v->logLength || i < 0){
-    printf("[Trying to get element out of the vector boundaries]\n");
+    printf("[Error! Trying to get element out of the vector boundaries]\n");
+    printf("[       element %d of an array of %d elements]\n", i, v->logLength);
     exit(EXIT_FAILURE);
   }
   return (char*)v->elems + i * v->elemSize;

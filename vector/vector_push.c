@@ -36,7 +36,7 @@ void vector_push(vector *v, void *elem_addr)
 
 static void vector_grow(struct _vector *v)
 {
-  v->allocLength *= 2;
+  v->allocLength = (v->allocLength == 0) ? 1 : 2 * v->allocLength;
   v->elems = realloc(v->elems, v->allocLength * v->elemSize);
   if(v->elems == NULL){
     printf("[Unable to reallocate the vector]\n");
