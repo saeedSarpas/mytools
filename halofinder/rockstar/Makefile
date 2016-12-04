@@ -10,7 +10,7 @@ _DEPS := ./../../memory/allocate \
          ./../../memory/copy \
          ./../../io/open_file \
          ./../../io/read_from \
-         ./../../avltree/avl_tree \
+         ./../../vector/vector \
          ./../halofinder
 
 include ./../../Makefile

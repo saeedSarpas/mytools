@@ -71,7 +71,7 @@ Ensure(sort_rockstar_halos, sorts_halos_properly_based_on_their_mass)
   for (i = 1; i < NUMHALOS; i++)
     assert_true(hf->halos[i].m >= hf->halos[i-1].m);
 
-  dispose_halofinder(hf);
+  dispose_halofinder(&hf);
 }
 
 
@@ -85,5 +85,5 @@ Ensure(sort_rockstar_halos, works_with_real_snapshots)
   for (i = 1; i < hf->header->num_halos; i++)
     assert_true(hf->halos[i].m >= hf->halos[i-1].m);
 
-  dispose_halofinder(hf);
+  dispose_halofinder(&hf);
 }

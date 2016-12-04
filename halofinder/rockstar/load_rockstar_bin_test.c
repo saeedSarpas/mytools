@@ -47,7 +47,7 @@ BeforeEach(load_rockstar_bin)
     p_start =  i * NUMPARTS;
 
     rockstarhalo h;
-    h.id = i;
+    h.id = NUMHALOS - i - 1;
     for(j = 0; j < 3; j++)
       h.pos[j] = HALOPOS;
     for(j = 3; j < 6; j++)
@@ -99,7 +99,7 @@ Ensure(load_rockstar_bin, loads_halo_data_properly)
       assert_that(hf->halos[i].particle_ids[j], is_equal_to(PARTID));
   }
 
-  dispose_halofinder(hf);
+  dispose_halofinder(&hf);
 }
 
 
@@ -132,5 +132,5 @@ Ensure(load_rockstar_bin, works_with_real_rockstar_binary_file)
     }
   }
 
-  dispose_halofinder(hf);
+  dispose_halofinder(&hf);
 }
