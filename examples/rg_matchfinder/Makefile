@@ -15,11 +15,16 @@ DEPS := ./../../configfile/mylibconfig.c \
         ./../../io/open_file.c \
         ./../../io/read_from.c \
         ./../../io/write_to.c \
+        ./../../io/check_file.c \
+        ./../../strings/concat/concat.c \
         ./../../halofinder/halofinder.c \
         ./../../halofinder/rockstar/load_rockstar_bin.c \
         ./../../halofinder/rockstar/sort_rockstar_halos.c \
         ./../../halofinder/fill_init_volume.c \
         ./../../simulation/snapshot.c \
+        ./../../simulation/load_snap_from.c \
+        ./../../simulation/save_snap_to.c \
+        ./../../simulation/check_if_saved_exist.c \
         ./../../simulation/gadget/load_gadget_snap.c \
         ./../../halomatcher/matchinghalo.c \
         ./../../halomatcher/singlehalo_matcher.c \
