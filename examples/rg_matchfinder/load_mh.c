@@ -15,6 +15,7 @@
 
 #include <stdlib.h>
 #include "./load_mh.h"
+#include "./../../avltree/avl_insert.h"
 #include "./../../io/open_file.h"
 #include "./../../memory/allocate.h"
 
@@ -22,13 +23,13 @@
 static void go_to_line(FILE*, int);
 
 
-avl_node* load_mh(char *path)
+avltree* load_mh(char *path)
 {
   FILE *matches_file = open_file(path, "r");
 
   go_to_line(matches_file, 8);
 
-  avl_node *matches = allocate(1, sizeof(*matches));
+  avltree *matches_tree = new_avltree(set_int_key, compare_int_keys);
 
   int pri_halo_id;
   float dummy;
@@ -38,13 +39,14 @@ avl_node* load_mh(char *path)
   for(i = 0; i < num_of_matches; i++){
     fscanf(matches_file, " %d %e %d %e %f\n", &pri_halo_id, &dummy,
            &match_holder->matchid, &dummy, &match_holder->goodness);
-    matches = avl_insert(matches, pri_halo_id, match_holder, 1, sizeof(match));
+
+    avl_insert(matches_tree, &pri_halo_id, match_holder, 1, sizeof(match));
   }
 
   free(match_holder);
   fclose(matches_file);
 
-  return matches;
+  return matches_tree;
 }
 
 
