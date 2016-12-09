@@ -40,3 +40,18 @@ Ensure(avl_find, works_properly)
 
   dispose_avltree(&tree);
 }
+
+
+Ensure(avl_find, handles_null_input)
+{
+  avltree *tree = new_avltree(set_int_key, compare_int_keys);
+
+  int i;
+  for(i = 0; i < NUM_OF_NODES; i++)
+    avl_insert(tree, &i, NULL);
+
+  avlnode *found = NULL;
+  found = avl_find(tree, NULL);
+
+  assert_that(found, is_null);
+}

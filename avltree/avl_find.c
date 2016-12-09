@@ -20,6 +20,8 @@ static avlnode* find(avltree*, avlnode*, void*);
 
 avlnode* avl_find(avltree *tree, void *key)
 {
+  if(key == NULL) return NULL;
+
   return find(tree, tree->root, key);
 }
 
