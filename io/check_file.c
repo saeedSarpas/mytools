@@ -20,7 +20,7 @@
 int check_file(const char *path)
 {
   char *copied_path = strdup(path);
-  if(access(copied_path, F_OK) == -1)
+  if(access(copied_path, F_OK) != -1)
     return CF_FILE_EXIST;
   else
     return CF_FILE_NONEXIST;
