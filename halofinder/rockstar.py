@@ -38,44 +38,13 @@ class Rockstar(object):
         """Constructor for Rockstar class"""
 
         self.path = path
-        self.datatype, self.halos, self.halossortedbyid = [], [], []
+        self.dtype, self.halos, self.halossortedbyid = [], [], []
         self.binnedhalos = {}
+        self.usecols = []
 
-        # Extracting header information
-        self.headers = {'units': {}}
+        self.header = self._loadheader()
 
-        with open(self.path) as _file:
-            for i, line in enumerate(_file):
-                line = line.strip('#').strip('\n')
-                if i == 0: # First line: column names
-                    self.headers['column_tags'] = line.split(' ')
-                elif 0 < i <= 2:
-                    statements = line.split(';')
-                    for statement in statements:
-                        _extractkeyvalue(statement, '=', self.headers)
-                elif 2 < i <= 8:
-                    statements = line.split(';')
-                    for statement in statements:
-                        _extractkeyvalue(statement, ':', self.headers)
-                elif 8 < i <= 15: # Units
-                    if ' in ' in line:
-                        delim = ' in '
-                    elif ' is ' in line:
-                        delim = ' is '
-                    elif ' are ' in line:
-                        delim = ' are '
-                    else:
-                        continue
-                    parts = line.partition(':')[2].strip().partition(delim)
-                    key = parts[0].strip().replace(' ', '_')
-                    val = parts[2].strip()
-                    self.headers['units'][key] = val
-                elif i > 15:
-                    break
-
-        _file.close()
-
-    def load(self, only=[], exclude=[], onlyhosts=False):
+    def load(self, only=None, exclude=None, onlyhosts=False):
         """Loading Rockstar ascii file to Rockstar.data
 
         Parameters
@@ -92,57 +61,29 @@ class Rockstar(object):
         >>> rockstar.load(only=['id', 'PID'], onlyhosts=True)
         """
 
-        with open(self.path) as _file:
-            for i, line in enumerate(_file):
-                if i == 20:
-                    testline = line.strip('#').strip('\n').split(' ')
-                elif i > 20:
-                    break
-        _file.close()
-
-        if len(testline) != len(self.headers['column_tags']):
-            tmp_headers = self.headers['column_tags'][:len(testline) - 1]
-            tmp_headers.append('PID')
-            self.headers['column_tags'] = tmp_headers
-
-        zip_tag_elem = zip(self.headers['column_tags'], testline)
-
-        self.datatype, usecols, headers = [], [], []
-        for i, (tag, elem) in enumerate(zip_tag_elem):
-            if len(only) > 0 and tag not in only:
-                continue
-            if tag in exclude:
-                continue
-
-            self.datatype.append((tag, np.dtype(type(_2number(elem)).__name__)))
-            headers.append(tag)
-            usecols.append(i)
-
-        self.headers['included_columns'] = headers
-
-        if len(self.datatype) < 1:
-            raise LookupError('datatype array is empty')
+        self._loaddtype(only, exclude)
 
         self.halos = np.genfromtxt(self.path,
                                    skip_header=19,
-                                   usecols=usecols,
-                                   dtype=self.datatype)
+                                   usecols=self.usecols,
+                                   dtype=self.dtype)
 
         if onlyhosts:
-            if 'PID' not in self.headers['included_columns']:
+            if 'PID' not in self.header['included_columns']:
                 raise KeyError("Can't find PID")
 
             self.halos = np.array(
                 [d for d in self.halos if d['PID'] == -1],
-                dtype=self.datatype)
+                dtype=self.dtype)
+
 
     def sortbyid(self):
         """Sorted halos by id, left unavailable halos zeros"""
 
         highestid = np.max(self.halos['id']) + 1
 
-        self.halossortedbyid = np.zeros(highestid, dtype=self.datatype)
-        self.halossortedbyid['id'] = [-1] * highestid
+        self.halossortedbyid = np.zeros(highestid, dtype=self.dtype)
+        self.halossortedbyid['id'] = [NOTAVLBL] * highestid
 
         for halo in self.halos:
             self.halossortedbyid[halo['id']] = halo
@@ -165,7 +106,7 @@ class Rockstar(object):
         for idx, (minm, maxm) in enumerate(zip(mbins[:-1], mbins[1:])):
             self.binnedhalos[idx] = np.array(
                 [h for h in self.halos if minm < h['mbound_vir'] <= maxm],
-                dtype=self.datatype)
+                dtype=self.dtype)
 
     def setheader(self, key, value):
         """Add new attribute to headers
@@ -176,8 +117,81 @@ class Rockstar(object):
         value :
         """
 
-        self.headers[key] = value
+        self.header[key] = value
 
+    def _loadheader(self):
+        """Loading the header of the rockstar ascii halo file"""
+
+        header = {'units': {}}
+
+        with open(self.path) as _file:
+            for i, line in enumerate(_file):
+                line = line.strip('#').strip('\n')
+                if i == 0: # First line: column names
+                    header['column_tags'] = line.split(' ')
+                elif 0 < i <= 2:
+                    statements = line.split(';')
+                    for statement in statements:
+                        _extractkeyvalue(statement, '=', header)
+                elif 2 < i <= 8:
+                    statements = line.split(';')
+                    for statement in statements:
+                        _extractkeyvalue(statement, ':', header)
+                elif 8 < i <= 15: # Units
+                    if ' in ' in line:
+                        delim = ' in '
+                    elif ' is ' in line:
+                        delim = ' is '
+                    elif ' are ' in line:
+                        delim = ' are '
+                    else:
+                        continue
+                    parts = line.partition(':')[2].strip().partition(delim)
+                    key = parts[0].strip().replace(' ', '_')
+                    val = parts[2].strip()
+                    header['units'][key] = val
+                elif i > 15:
+                    break
+
+        return header
+
+    def _loaddtype(self, only=None, exclude=None):
+        """Loading the datatypes of the rockstar ascii halo file"""
+
+        with open(self.path) as _file:
+            for i, line in enumerate(_file):
+                if i == 20:
+                    inputs = line.strip('#').strip('\n').split(' ')
+                elif i > 20:
+                    break
+
+        # Due to a reported bug in Rockstar, after generating parents of halos,
+        # the header won't be updated properly. Following we try to solve this
+        # problem.
+        # NOTE: it's not the best way to handle this bug!
+        if len(inputs) != len(self.header['column_tags']):
+            tmp_headers = self.header['column_tags'][:len(inputs) - 1]
+            tmp_headers.append('PID')
+            self.header['column_tags'] = tmp_headers
+
+        self.dtype, self.usecols, tags = [], [], []
+        zip_tag_elem = zip(self.header['column_tags'], inputs)
+
+        for i, (tag, elem) in enumerate(zip_tag_elem):
+            if only is not None and len(only) > 0 and tag not in only:
+                continue
+            if exclude is not None and len(exclude) > 0 and tag in exclude:
+                continue
+
+            self.dtype.append((tag, np.dtype(type(_2number(elem)).__name__)))
+
+            tags.append(tag)
+            self.usecols.append(i)
+
+        self.header['included_columns'] = tags
+
+        if len(self.dtype) < 1:
+            raise LookupError('datatype array is empty')
 
 def _extractkeyvalue(statement, delimiter, dictionary):
     """Extracting data from a statement using a delimiter and inserting them
