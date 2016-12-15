@@ -6,6 +6,8 @@ import matplotlib.colors as mcolors
 import numpy as np
 from ..visualization import mycolordict as cdict
 from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.axes_grid1 import host_subplot
+import mpl_toolkits.axisartist as AA
 # from matplotlib.ticker import NullFormatter
 
 
@@ -58,6 +60,10 @@ class MyPlot(object):
             Color of the error bars
         shaded : bool, optional
             Shadow under the y-error bars
+        shadedcolor : string, optional
+            Color of the shaded region
+        shadedalpha : float, optional
+            Transparency of the shaded region
         linestyle : str, optional
             Style of the line, e.g., 'solid'
         xscale, yscale : str, optional
@@ -103,14 +109,52 @@ class MyPlot(object):
 
         if 'shaded' in kwargs and kwargs.get('shaded') is True:
             if 'yerr' in plotparams:
+                k = kwargs.get
                 yyerr = zip(plotparams['y'], plotparams['yerr'])
-                yneg = [y - yerr for y, yerr in yyerr]
-                ypos = [y + yerr for y, yerr in yyerr]
-                self.plt.fill_between(
-                    plotparams['x'], yneg, ypos,
-                    facecolor=params['shadow'],
-                    edgecolor=params['shadow'],
-                    interpolate=True)
+                ylow = [y - yerr for y, yerr in yyerr]
+                yhigh = [y + yerr for y, yerr in yyerr]
+                c = k('shadedcolor') if 'shadedcolor' in kwargs \
+                    else params['shadow']
+                alpha = k('shadedalpha') if 'shadedalpha' in kwargs \
+                        else 1.0
+                self.fill_between(plotparams['x'], ylow, yhigh, c, ax=ax,
+                                  alpha=alpha)
+
+    def fill_between(self, xs, ylow, yhigh, color, pos="111", ax=None,
+                     alpha=1.0, interpolate=True, **kwargs):
+        """Generating shaded region
+
+        Parameters
+        ----------
+        xs : list of numbers
+        ylow, yhigh : list of number for specifying the shaded region
+        color : string
+        alpha : float, optional
+        scheme : str, optional
+            Color scheme name
+        label : str, optional
+            Plot label
+        xscale, yscale : str, optional
+            Scale of the axis, e.g., 'log', 'linear'
+        xmin, xmax, ymin, ymax : float, optional
+            Axis boundries
+        xlabel, ylabel : str, optional
+            Axis labels
+        """
+        if ax is None:
+            ax = self.plt.subplot(pos)
+
+        ax.fill_between(xs, ylow, yhigh, facecolor=color, edgecolor=color,
+                              alpha=alpha, interpolate=interpolate)
+
+        self._setscales(**kwargs)
+        self._setlabels(**kwargs)
+        self._setarea(**kwargs)
+        self._stylespines(**kwargs)
+        self._setaxiscolor(**kwargs)
+        self._setgrid(**kwargs)
+
+        self.plt.draw()
 
 
     def plot(self, plotparams, pos="111", ax=None, **kwargs):
@@ -130,8 +174,6 @@ class MyPlot(object):
             Plot label
         color : str, optional
             Color of the plot
-        ecolor : str, optional
-            Color of the error bars
         shaded : bool, optional
             Shadow under the y-error bars
         linestyle : str, optional
@@ -386,6 +428,53 @@ class MyPlot(object):
         frame.set_linewidth(0.0)
         frame.set_facecolor(bgcolor)
         frame.set_alpha(0.7)
+
+
+    def secondaxis(self, ticksloc, ticklabels, label, axes=None,
+                   axis='x', scale='linear', **kwargs):
+        """Creating a new twin x axis at the top of the plot
+
+        Parameters
+        ----------
+        pos : list of numbers
+            Positions of ticks
+        labels : list of labels
+            Could be numbers of strings
+        axes : Axes2D object
+        axis : string
+            Specifies for which axis we want to add a twin scale
+        colorscheme : string, optional
+            The name of colorscheme from mycolordict module
+        """
+
+        if axes is None:
+            axes = self.plt.gca()
+
+        twinax = axes.twiny() if axis is 'x' else axes.twinx()
+
+        twinax.set_xticks(ticksloc)
+        twinax.set_xscale(scale)
+        twinax.set_xticklabels(ticklabels)
+        twinax.set_xlabel(label)
+        # twinax.set_xlim(axes.get_xlim())
+
+
+        cscheme = _getcscheme(**kwargs)
+
+        twinax.spines["top"].set_visible(True)
+        twinax.spines["right"].set_visible(True)
+        twinax.spines['top'].set_color(cscheme['axiscolor'])
+        twinax.spines['right'].set_color(cscheme['axiscolor'])
+
+        twinax.xaxis.label.set_color(cscheme['axiscolor'])
+        twinax.tick_params(axis='x', colors=cscheme['axiscolor'])
+        for label in twinax.xaxis.get_majorticklabels():
+            label.set_fontsize(8)
+            label.set_color(cscheme['axiscolor'])
+
+        twinax.yaxis.label.set_color(cscheme['axiscolor'])
+        twinax.tick_params(axis='y', colors=cscheme['axiscolor'])
+
 
     def save(self, name):
         """Saving plot

@@ -94,6 +94,6 @@ CDICT = {
         'helper_colors': ['#e68570', '#688eb5', '#e1ca61', '#91ab59'],
         'background': '#f0f0f0',
         'gridcolor': '#ffffff',
-        'axiscolor': '#888888'
+        'axiscolor': '#666666'
     }
 }
