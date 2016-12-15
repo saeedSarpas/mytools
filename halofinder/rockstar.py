@@ -88,7 +88,7 @@ class Rockstar(object):
         for halo in self.halos:
             self.halossortedbyid[halo['id']] = halo
 
-    def binning(self, mbins):
+    def binning(self, mbins, prop='mbound_vir'):
         """Binning halos based on a given mass bins
 
         Parameters
@@ -105,8 +105,56 @@ class Rockstar(object):
 
         for idx, (minm, maxm) in enumerate(zip(mbins[:-1], mbins[1:])):
             self.binnedhalos[idx] = np.array(
-                [h for h in self.halos if minm < h['mbound_vir'] <= maxm],
+                [h for h in self.halos if minm < h[prop] <= maxm],
                 dtype=self.dtype)
+
+    def vs(self, prop1, prop2, nbins=21, path='./plot.png', **kwargs):
+        """Plotting the relations between Rockstar output properties
+
+        Parameters
+        ----------
+        prop1, prop2 : string
+            Halos properties to plot
+        nbins : integer
+            Number of bins
+        path : string, optional
+        xscale, yscale : string, optional
+        xmin, xmax, ymin, ymax : numbers, optional
+        """
+
+        sortedhalos = np.sort(self.halos, order=prop1)
+
+        if 'xscale' in kwargs:
+            xscale = kwargs.get('xscale')
+        else:
+            x99 = np.percentile(sortedhalos[prop1], 99)
+            x50 = np.percentile(sortedhalos[prop1], 50)
+            xscale = 'log' if x50 == 0 or x99/x50 >= 10 else 'linear'
+
+        if xscale == 'log':
+            bins = np.logspace(np.log10(sortedhalos[prop1][0]),
+                               np.log10(sortedhalos[prop1][-1]),
+                               num=nbins, base=10)
+        else:
+            bins = np.linspace(sortedhalos[prop1][0], sortedhalos[prop1][-1],
+                               num=nbins)
+
+        xs, ys = [], []
+        for bmin, bmax in zip(bins[:-1], bins[1:]):
+            values = [sortedhalos[prop2][i]
+                     for i in range(len(sortedhalos[prop1]))
+                     if bmin < sortedhalos[prop1][i] <= bmax]
+            if len(values) == 0:
+                continue
+            else:
+                ys.append(sum(values) / len(values))
+                if xscale == 'log':
+                    xs.append(10**(np.log10(bmin * bmax) / 2))
+                else:
+                    xs.append((bmin + bmax) / 2)
+
+        return xs, ys
+
 
     def setheader(self, key, value):
         """Add new attribute to headers
