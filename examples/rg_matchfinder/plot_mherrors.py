@@ -6,6 +6,7 @@ from __future__ import print_function
 
 import gc
 import numpy as np
+from scipy import stats
 
 from math import sqrt, acos
 
@@ -59,6 +60,7 @@ class MatchingHalosErrors(object):
 
         self.plot(path=path)
         self.plotvector(path=path)
+        self.plotvs(path=path)
 
 
     def plot(self, path='./', only=None):
@@ -87,15 +89,13 @@ class MatchingHalosErrors(object):
             yscale = 'linear' if 'yscale' not in PLOTS[prop] \
                      else PLOTS[prop]['yscale']
 
-            self._plot(e['num_p_high'],
-                              e[prop + '_err'],
-                              ymin, ymax,
-                              r"$num\_p_{(high)}$",
-                              PLOTS[prop]['ylabel'],
-                              path + prop + '.png',
-                              yscale=yscale)
-
-        self.plotvs(path=path)
+            self._plot(e['num_p_low'],
+                       e[prop + '_err'],
+                       ymin, ymax,
+                       r"$num\_p_{(low)}$",
+                       PLOTS[prop]['ylabel'],
+                       path + prop + '.png',
+                       yscale=yscale)
 
 
     def plotvector(self, path='./', only=None):
@@ -125,13 +125,13 @@ class MatchingHalosErrors(object):
             else:
                 ymax = np.percentile(e['modulus_err'], 99.5) * 1.5
 
-            self._plot(e['num_p_high'],
-                              e['modulus_err'],
-                              ymin, ymax,
-                              r"$num\_p_{(high)}$",
-                              MODULI[prop]['ylabel'],
-                              path + prop + '.png',
-                              yscale=yscale)
+            self._plot(e['num_p_low'],
+                       e['modulus_err'],
+                       ymin, ymax,
+                       r"$num\_p_{(low)}$",
+                       MODULI[prop]['ylabel'],
+                       path + prop + '.png',
+                       yscale=yscale)
 
             # Plotting angle distribution
             if 'ymin_angle' in MODULI[prop]:
@@ -148,10 +148,10 @@ class MatchingHalosErrors(object):
             else:
                 ymax_angle = np.percentile(e['angle_err'], 99.5) * 1.5
 
-            self._plot(e['num_p_high'],
+            self._plot(e['num_p_low'],
                        e['angle_err'],
                        ymin_angle, ymax_angle,
-                       r"$num\_p_{(high)}$",
+                       r"$num\_p_{(low)}$",
                        MODULI[prop]['ylabel_angle'],
                        path + prop + '_angledist.png',
                        yscale=yscale_angle)
@@ -164,31 +164,51 @@ class MatchingHalosErrors(object):
         myplot = MyPlot()
 
         kws = {
+            'xlabel': '',
+            'ylabel': '',
             'xscale': 'log',
             'yscale': 'log',
-            'xlabel': '$M_{vir} [M_{\\odot} h^{-1}]$',
             'silent': True
             }
 
         # Plotting M_vir vs. num_p of the high resolution run
-        xs, ys = self.halos['high'].vs('mvir', 'num_p', nbins=201, path=path)
+        xs1, ys1 = self.halos['high'].vs('mvir', 'num_p', nbins=201, path=path)
 
+        kws['xlabel'] = r'$M_{vir, high} [M_{\odot} h^{-1}]$'
         kws['ylabel'] = r'$num\_p_{(high)}$'
-        myplot.plot({'x': xs, 'y': ys}, **dict(kws))
+        myplot.plot({'x': xs1, 'y': ys1}, **dict(kws))
 
         myplot.save(path + 'mvir_vs_num_p_high.png')
         myplot.plt.clf()
 
         # Plotting M_vir vs. num_p of the low resolution run
-        xs, ys = self.halos['low'].vs('mvir', 'num_p', nbins=201, path=path)
+        xs2, ys2 = self.halos['low'].vs('mvir', 'num_p', nbins=201, path=path)
 
+        kws['xlabel'] = r'$M_{vir, low} [M_{\odot} h^{-1}]$'
         kws['ylabel'] = r'$num\_p_{(low)}$'
-        myplot.plot({'x': xs, 'y': ys}, **dict(kws))
+        myplot.plot({'x': xs2, 'y': ys2}, **dict(kws))
 
         myplot.save(path + 'mvir_vs_num_p_low.png')
         myplot.plt.clf()
 
         # Plotting num_p_high vs. num_p_low
+        num_p_low, num_p_high = self.nump_low_vs_nump_high(nbins=201)
+
+        kws['xlabel'] = r'$num\_p_{(low)}$'
+        kws['ylabel'] = r'$num\_p_{(high)}$'
+
+        myplot.plot({'x': num_p_low, 'y': num_p_high}, **dict(kws))
+
+        myplot.save(path + 'num_p_low_vs_num_p_high.png')
+        myplot.plt.clf()
+
+        del myplot
+
+
+    def nump_low_vs_nump_high(self, nbins=None):
+        """Calculating a soften version of num_p for low and high resolution
+        runs
+        """
         vs = []
 
         low = self.halos['low'].halossortedbyid
@@ -200,24 +220,30 @@ class MatchingHalosErrors(object):
             vs.append((low[id1]['num_p'], high[id2]['num_p']))
 
         vs = np.array(vs, dtype=[('num_p_low', np.float64),
-                                 ('num_p_high', np.float64)])
-
+                                ('num_p_high', np.float64)])
         vs = np.sort(vs, order='num_p_low')
 
-        kws = {
-            'xscale': 'linear',
-            'yscale': 'linear',
-            'xlabel': r'$num\_p_{(low)}$',
-            'ylabel': r'$num\_p_{(high)}$',
-            'silent': True
-        }
+        if nbins is None or not isinstance(nbins, int):
+            return  vs['num_p_low'], vs['num_p_high']
+        else:
+            xs, ys = [], []
+            bins = np.logspace(np.log10(vs['num_p_low'][0]),
+                               np.log10(vs['num_p_low'][-1]),
+                               num=21, base=10)
 
-        myplot.plot({'x': vs['num_p_low'], 'y': vs['num_p_high']}, **dict(kws))
+            for bmin, bmax in zip(bins[:-1], bins[1:]):
+                i_min = np.searchsorted(vs['num_p_low'], bmin, side='right')
+                i_max = np.searchsorted(vs['num_p_low'], bmax, side='right')
 
-        myplot.save(path + 'num_p_low_vs_num_p_high.png')
-        myplot.plt.clf()
+                values = vs['num_p_high'][i_min:i_max]
 
-        del myplot
+                if len(values) == 0: continue
+
+                xs.append(10**(np.log10(bmin * bmax) / 2))
+                ys.append(sum(values) / len(values))
+
+            return xs, ys
+
 
 
     def _generrors(self, prop):
@@ -233,7 +259,7 @@ class MatchingHalosErrors(object):
 
         if prop not in self.tags: raise KeyError
 
-        output = {prop + '_err': [], 'num_p_high': []}
+        output = {prop + '_err': [], 'num_p_low': []}
 
         low = self.halos['low'].halossortedbyid
         high = self.halos['high'].halossortedbyid
@@ -244,7 +270,7 @@ class MatchingHalosErrors(object):
             if low[id1][prop] == 0 or high[id2][prop] == 0: continue
 
             # Filling the output dictionary
-            output['num_p_high'].append(high[id2]['num_p'])
+            output['num_p_low'].append(low[id1]['num_p'])
             output[prop + '_err'].append(
                 (low[id1][prop] - high[id2][prop]) / float(high[id2][prop]))
 
@@ -264,7 +290,7 @@ class MatchingHalosErrors(object):
 
         if(props[0] and props[1] and props[2]) not in self.tags: raise KeyError
 
-        output = {'modulus_err': [], 'angle_err': [], 'num_p_high': []}
+        output = {'modulus_err': [], 'angle_err': [], 'num_p_low': []}
 
         low = self.halos['low'].halossortedbyid
         high = self.halos['high'].halossortedbyid
@@ -288,7 +314,7 @@ class MatchingHalosErrors(object):
             if v1 == 0 or v2 ==0: continue
 
             # Filling the output dictionary
-            output['num_p_high'].append(high[id2]['num_p'])
+            output['num_p_low'].append(low[id1]['num_p'])
             output['modulus_err'].append(sqrt(
                 (low[id1][props[0]] - high[id2][props[0]])**2 +
                 (low[id1][props[1]] - high[id2][props[1]])**2 +
@@ -302,8 +328,8 @@ class MatchingHalosErrors(object):
     def _plot(self, num_p, err, ymin, ymax, xlabel,
               ylabel, path, yscale='linear'):
         """Plotting a scatter plot"""
-        plot = MyPlot()
-        axes = plot.new2daxes()
+        myplot = MyPlot()
+        axes = myplot.new2daxes()
 
         xmin = np.min(num_p)
         xmax = np.max(num_p)
@@ -325,10 +351,10 @@ class MatchingHalosErrors(object):
             'alpha': 0.25
         }
 
-        plot.scatter(num_p, err, ax=axes, s=4, **dict(scatterkws))
+        myplot.scatter(num_p, err, ax=axes, s=4, **dict(scatterkws))
 
         # Plotting shaded percentiles
-        binedges = np.logspace(np.log10(xmin), np.log10(xmax), num=21, base=10)
+        binedges = np.logspace(np.log10(xmin), np.log10(xmax), num=27, base=10)
 
         x, y, ylow, yhigh = [], [], [], []
 
@@ -341,6 +367,18 @@ class MatchingHalosErrors(object):
                 ylow.append(np.percentile(errs, 15.9))
                 yhigh.append(np.percentile(errs, 84.1))
 
+        # Plotting a line at y = 0
+        linekws = {
+            'color': get('RAINBOW')['axiscolor'],
+            'silent': True
+        }
+
+        myplot.plot({'x': [xmin, xmax], 'y': [0, 0]}, ax=axes, **dict(linekws))
+
+        # Displacing the first x to the smallest num_p
+        x[0] = xmin
+
+
         fill_betweenkws = {
             'xmax': xmax,
             'xmin': xmin,
@@ -350,7 +388,7 @@ class MatchingHalosErrors(object):
             'yscale': yscale,
             'silent': True
         }
-        plot.fill_between(x, ylow, yhigh, shadow, ax=axes,
+        myplot.fill_between(x, ylow, yhigh, shadow, ax=axes,
                           alpha=0.5, **dict(fill_betweenkws))
 
         # Plotting line corresponding to 50% percentile
@@ -364,60 +402,75 @@ class MatchingHalosErrors(object):
             'color': '#000000',
             'silent': True
         }
-        plot.plot({'x': x, 'y': y}, ax=axes, **dict(plotkws))
+        myplot.plot({'x': x, 'y': y}, ax=axes, **dict(plotkws))
 
-        plot.save(path)
+        # Second x axis
+        num_p_low, num_p_high = self.nump_low_vs_nump_high(nbins=21)
+        slope = stats.linregress(num_p_high, num_p_low).slope
+
+        min_pow = int(np.log10(np.min(num_p_low) / slope))
+        max_pow = int(np.log10(np.max(num_p_low) / slope))
+
+        xticks = [10**i for i in range(min_pow, max_pow + 1)]
+
+        ticksloc = [x * slope for x in xticks]
+        tickslabels = ["$10^{" + str(i) + "}$"
+                       for i in range(min_pow, max_pow + 1)]
+
+        myplot.secondaxis(ticksloc, tickslabels, r"$num\_p_{(high)}$",
+                          axes=axes, scale='log', showminorticks=False)
+
+        myplot.save(path)
 
         # Cleaning up...
-        plot.plt.clf()
-        plot.plt.close()
+        myplot.plt.clf()
         gc.collect()
 
 
 PLOTS = {
     'mvir': {
         'ylabel': r"$\Delta M_{vir} / M_{vir, high}$",
-        'ymax': 4,
+        'ymax': 1,
         'ymin': -1
     },
     'mbound_vir': {
         'ylabel': r"$\Delta M_{bound\_vir} / M_{bound\_vir, high}$",
-        'ymax': 4,
+        'ymax': 1,
         'ymin': -1
     },
     'rvir': {
         'ylabel': r"$\Delta R_{vir} / R_{vir, high}$",
-        'ymax': 0.8,
+        'ymax': 0.4,
         'ymin': -0.4
     },
     'vmax': {
         'ylabel': r"$\Delta V_{max} / V_{max, high}$",
-        'ymax': 1,
-        'ymin': -1
+        'ymax': 0.5,
+        'ymin': -0.5
     },
     'rvmax': {
         'ylabel': r"$\Delta R(V_{max}) / R(V_{max})_{high}}$",
-        'ymax': 6,
+        'ymax': 4,
         'ymin': -1
     },
     'vrms': {
         'ylabel': r"$\Delta V_{RMS} / V_{RMS, high}$",
-        'ymax': 0.6,
-        'ymin': -1.0
+        'ymax': 0.4,
+        'ymin': -0.6
     },
     'm200b': {
         'ylabel': r"$\Delta M_{200b} / M_{200b, high}$",
-        'ymax': 4,
+        'ymax': 1,
         'ymin': -1
     },
     'm200c': {
         'ylabel': r"$\Delta M_{200c} / M_{200c, high}$",
-        'ymax': 4,
+        'ymax': 1,
         'ymin': -1
     },
     'm500c': {
         'ylabel': r"$\Delta M_{500c} / M_{500c, high}$",
-        'ymax': 4,
+        'ymax': 1,
         'ymin': -1
     },
     'm2500c': {
@@ -427,13 +480,13 @@ PLOTS = {
     },
     'Xoff': {
         'ylabel': r"$\Delta Xoff / Xoff_{high}}$",
-        'ymax': 20,
-        'ymin': -2
+        'ymax': 10,
+        'ymin': -1
     },
     'Voff': {
         'ylabel': r"$\Delta Voff / Voff_{high}}$",
-        'ymax': 20,
-        'ymin': -2
+        'ymax': 5,
+        'ymin': -1
     },
     'b_to_a': {
         'ylabel': r"$\Delta \left(\frac{b}{a}\right) / \left(\frac{b}{a}\right)_{high}}$",
@@ -458,11 +511,13 @@ PLOTS = {
     },
     'Rs': {
         'ylabel': r"$\Delta R_s / R_{s, high}}$",
-        'ymax': 8,
+        'ymax': 3,
         'ymin': -1
     },
     'Halfmass_Radius': {
-        'ylabel': r"$\Delta R_{M/2} / R_{M/2., high}$"
+        'ylabel': r"$\Delta R_{(M/2)} / R_{(M/2), high}$",
+        'ymax': 2,
+        'ymin': -1
     }
 }
 
@@ -471,25 +526,25 @@ MODULI = {
     'pos': {
         'input': ['x', 'y', 'z'],
         'ylabel': r"$|\vec{X}_{high} - \vec{X}_{low}| [Mpc\/h^{-1}]$",
-        'ylabel_angle': r"$\arccos\left((\vec{X}_{high}\/ .\/ \vec{X}_{low}) / |\vec{X}_{high}|\/|\vec{X}_{low}|\right) [Rad]$",
-        'ymax': 1.2,
-        'ymin': -0.1,
-        'ymax_angle': 0.015,
+        'ylabel_angle': r"$\angle \vec{X}_{high} \/ \vec{X}_{low} \/ [Rad]$",
+        'ymax': 0.6,
+        'ymin': 0,
+        'ymax_angle': 3.141592,
         'ymin_angle': 0
     },
     'vel': {
         'input': ['vx', 'vy', 'vz'],
         'ylabel': r"$|\vec{V}_{high} - \vec{V}_{low}| [km\/s^{-1}]$",
-        'ylabel_angle': r"$\arccos \left((\vec{V}_{high}\/ .\/ \vec{V}_{low}) / |\vec{V}_{high}|\/|\vec{V}_{low}|\right) [Rad]$",
-        'ymax': 200,
-        'ymin': -10,
+        'ylabel_angle': r"$\angle \vec{V}_{high} \/ \vec{V}_{low} \/ [Rad]$",
+        'ymax': 150,
+        'ymin': 0,
         'ymax_angle': 3.141592,
         'ymin_angle': 0
     },
     'ang_mom': {
         'input': ['Jx', 'Jy', 'Jz'],
         'ylabel': r"$|\vec{J}_{high} - \vec{J}_{low}| [(M_{\odot} \/h^{-1}) (Mpc\/h^{-1}) (km\/s^{-1})]$",
-        'ylabel_angle': r"$\arccos \left((\vec{J}_{high}\/ .\/ \vec{J}_{low}) / |\vec{J}_{high}|\/|\vec{J}_{low}|\right) [Rad]$",
+        'ylabel_angle': r"$\angle \vec{J}_{high} \/ \vec{J}_{low} \/ [Rad]$",
         'ymax': 1e14,
         'ymin': 0,
         'ymax_angle': 3.141592,

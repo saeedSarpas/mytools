@@ -6,9 +6,6 @@ import matplotlib.colors as mcolors
 import numpy as np
 from ..visualization import mycolordict as cdict
 from mpl_toolkits.mplot3d import Axes3D
-from mpl_toolkits.axes_grid1 import host_subplot
-import mpl_toolkits.axisartist as AA
-# from matplotlib.ticker import NullFormatter
 
 
 class MyPlot(object):
@@ -153,8 +150,6 @@ class MyPlot(object):
         self._stylespines(**kwargs)
         self._setaxiscolor(**kwargs)
         self._setgrid(**kwargs)
-
-        self.plt.draw()
 
 
     def plot(self, plotparams, pos="111", ax=None, **kwargs):
@@ -431,7 +426,7 @@ class MyPlot(object):
 
 
     def secondaxis(self, ticksloc, ticklabels, label, axes=None,
-                   axis='x', scale='linear', **kwargs):
+                   axis='x', scale='linear', showminorticks=True, **kwargs):
         """Creating a new twin x axis at the top of the plot
 
         Parameters
@@ -452,12 +447,18 @@ class MyPlot(object):
 
         twinax = axes.twiny() if axis is 'x' else axes.twinx()
 
-        twinax.set_xticks(ticksloc)
-        twinax.set_xscale(scale)
-        twinax.set_xticklabels(ticklabels)
-        twinax.set_xlabel(label)
-        # twinax.set_xlim(axes.get_xlim())
+        set_scale = twinax.set_xscale if axis is 'x' else twinax.set_yscale
+        set_label = twinax.set_xlabel if axis is 'x' else twinax.set_ylabel
+        set_lim = twinax.set_xlim if axis is 'x' else twinax.set_ylim
+        limit = axes.get_xlim() if axis is 'x' else axes.get_ylim()
 
+        set_scale(scale)
+        set_lim(limit)
+        twinax.set_xticks(ticksloc)
+        twinax.set_xticklabels(ticklabels)
+        set_label(label)
+
+        if showminorticks is False: twinax.minorticks_off()
 
         cscheme = _getcscheme(**kwargs)
 
@@ -466,14 +467,8 @@ class MyPlot(object):
         twinax.spines['top'].set_color(cscheme['axiscolor'])
         twinax.spines['right'].set_color(cscheme['axiscolor'])
 
-        twinax.xaxis.label.set_color(cscheme['axiscolor'])
-        twinax.tick_params(axis='x', colors=cscheme['axiscolor'])
-        for label in twinax.xaxis.get_majorticklabels():
-            label.set_fontsize(8)
-            label.set_color(cscheme['axiscolor'])
-
-        twinax.yaxis.label.set_color(cscheme['axiscolor'])
-        twinax.tick_params(axis='y', colors=cscheme['axiscolor'])
+        self._setaxiscolor(axes=axes, **kwargs)
+        self._setaxiscolor(axes=twinax, **kwargs)
 
 
     def save(self, name):
@@ -488,81 +483,97 @@ class MyPlot(object):
         self.plt.savefig(name)
 
 
-    def _setscales(self, **kwargs):
+    def _setscales(self, axes=None, **kwargs):
         """Setting plot scale parameters if available"""
+        if axes is None: axes = self.plt.gca()
 
-        if 'xscale' in kwargs: self.plt.gca().set_xscale(kwargs.get('xscale'))
-        if 'yscale' in kwargs: self.plt.gca().set_yscale(kwargs.get('yscale'))
+        if 'xscale' in kwargs: axes.set_xscale(kwargs.get('xscale'))
+        if 'yscale' in kwargs: axes.set_yscale(kwargs.get('yscale'))
 
 
-    def _setlabels(self, **kwargs):
+    def _setlabels(self, axes=None, **kwargs):
         """Setting plot labels parameters if available"""
+        if axes is None: axes = self.plt.gca()
 
-        if 'xlabel' in kwargs: self.plt.gca().set_xlabel(kwargs.get('xlabel'))
-        if 'ylabel' in kwargs: self.plt.gca().set_ylabel(kwargs.get('ylabel'))
+        if 'xlabel' in kwargs: axes.set_xlabel(kwargs.get('xlabel'))
+        if 'ylabel' in kwargs: axes.set_ylabel(kwargs.get('ylabel'))
 
 
-    def _setarea(self, **kwargs):
+    def _setarea(self, axes=None, **kwargs):
         """Setting plot area if available"""
+        if axes is None: axes = self.plt.gca()
 
-        if 'xmin' in kwargs: self.plt.gca().set_xlim(left=kwargs.get('xmin'))
-        if 'xmax' in kwargs: self.plt.gca().set_xlim(right=kwargs.get('xmax'))
-        if 'ymin' in kwargs: self.plt.gca().set_ylim(bottom=kwargs.get('ymin'))
-        if 'ymax' in kwargs: self.plt.gca().set_ylim(top=kwargs.get('ymax'))
+        if 'xmin' in kwargs: axes.set_xlim(left=kwargs.get('xmin'))
+        if 'xmax' in kwargs: axes.set_xlim(right=kwargs.get('xmax'))
+        if 'ymin' in kwargs: axes.set_ylim(bottom=kwargs.get('ymin'))
+        if 'ymax' in kwargs: axes.set_ylim(top=kwargs.get('ymax'))
 
-    def _stylespines(self, **kwargs):
+    def _stylespines(self, axes=None, **kwargs):
         """Removing plot top and right spines"""
+        if axes is None: axes = self.plt.gca()
 
         cscheme = _getcscheme(**kwargs)
 
-        self.plt.gca().spines["top"].set_visible(False)
-        self.plt.gca().xaxis.set_ticks_position('bottom')
-        self.plt.gca().spines["right"].set_visible(False)
-        self.plt.gca().yaxis.set_ticks_position('left')
-        self.plt.gca().spines['bottom'].set_color(cscheme['axiscolor'])
-        self.plt.gca().spines['left'].set_color(cscheme['axiscolor'])
+        axes.spines['top'].set_color(cscheme['axiscolor'])
+        axes.spines['left'].set_color(cscheme['axiscolor'])
+        axes.spines['right'].set_color(cscheme['axiscolor'])
+        axes.spines['bottom'].set_color(cscheme['axiscolor'])
 
 
-    def _setaxiscolor(self, **kwargs):
+    def _setaxiscolor(self, axes=None, **kwargs):
         """Setting plot axis color if available"""
+        if axes is None: axes = self.plt.gca()
 
         cscheme = _getcscheme(**kwargs)
 
-        self.plt.gca().xaxis.label.set_color(cscheme['axiscolor'])
-        self.plt.gca().tick_params(axis='x', colors=cscheme['axiscolor'])
-        for tick in self.plt.gca().xaxis.get_major_ticks():
+        axes.xaxis.label.set_color(cscheme['axiscolor'])
+        axes.tick_params(axis='x', colors=cscheme['axiscolor'])
+        for tick in axes.xaxis.get_major_ticks():
+            tick.label.set_color(cscheme['axiscolor'])
             tick.label.set_fontsize(8)
+        for label in axes.xaxis.get_majorticklabels():
+            label.set_color(cscheme['axiscolor'])
+            label.set_fontsize(8)
 
-        self.plt.gca().yaxis.label.set_color(cscheme['axiscolor'])
-        self.plt.gca().tick_params(axis='y', colors=cscheme['axiscolor'])
-        for tick in self.plt.gca().yaxis.get_major_ticks():
+        axes.yaxis.label.set_color(cscheme['axiscolor'])
+        axes.tick_params(axis='y', colors=cscheme['axiscolor'])
+        for tick in axes.yaxis.get_major_ticks():
+            tick.label.set_color(cscheme['axiscolor'])
             tick.label.set_fontsize(8)
+        for label in axes.yaxis.get_majorticklabels():
+            label.set_color(cscheme['axiscolor'])
+            label.set_fontsize(8)
 
 
-    def _setaxiscolor3d(self, **kwargs):
+    def _setaxiscolor3d(self, axes=None, **kwargs):
         """Setting plot axis color if available"""
+        if axes is None: axes = self.plt.gca()
 
         cscheme = _getcscheme(**kwargs)
 
-        self._setaxiscolor(**kwargs)
+        self._setaxiscolor(axes=axes, **kwargs)
 
-        self.plt.gca().zaxis.label.set_color(cscheme['axiscolor'])
-        self.plt.gca().tick_params(axis='z', colors=cscheme['axiscolor'])
-        for tick in self.plt.gca().zaxis.get_major_ticks():
+        axes.zaxis.label.set_color(cscheme['axiscolor'])
+        axes.tick_params(axis='z', colors=cscheme['axiscolor'])
+        for tick in axes.zaxis.get_major_ticks():
             tick.label.set_fontsize(8)
+        for label in axes.zaxis.get_majorticklabels():
+            label.set_color(cscheme['axiscolor'])
+            label.set_fontsize(8)
 
 
-    def _setgrid(self, **kwargs):
+    def _setgrid(self, axes=None, **kwargs):
         """Setting plot grid and background"""
+        if axes is None: axes = self.plt.gca()
 
         cscheme = _getcscheme(**kwargs)
 
-        self.plt.gca().set_axis_bgcolor(cscheme['background'])
-        self.plt.gca().grid(
+        axes.set_axis_bgcolor(cscheme['background'])
+        axes.grid(
             color=cscheme['gridcolor'], linestyle='solid', linewidth=1)
 
         # set grid lines behind the plot
-        self.plt.gca().set_axisbelow(True)
+        axes.set_axisbelow(True)
 
 def _getcscheme(**kwargs):
     """Returning the colorscheme"""
