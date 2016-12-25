@@ -94,7 +94,6 @@ class MyPlot(object):
         self._setarea(**kwargs)
         self._stylespines(**kwargs)
         self._setaxiscolor(**kwargs)
-        self._setgrid(**kwargs)
 
         ax.errorbar(
             plotparams['x'], plotparams['y'],
@@ -149,7 +148,6 @@ class MyPlot(object):
         self._setarea(**kwargs)
         self._stylespines(**kwargs)
         self._setaxiscolor(**kwargs)
-        self._setgrid(**kwargs)
 
 
     def plot(self, plotparams, pos="111", ax=None, **kwargs):
@@ -202,7 +200,6 @@ class MyPlot(object):
         self._setarea(**kwargs)
         self._stylespines(**kwargs)
         self._setaxiscolor(**kwargs)
-        self._setgrid(**kwargs)
 
         ax.plot(
             plotparams['x'], plotparams['y'],
@@ -253,7 +250,6 @@ class MyPlot(object):
         self._setarea(**kwargs)
         self._stylespines(**kwargs)
         self._setaxiscolor(**kwargs)
-        self._setgrid(**kwargs)
 
         cmap = mcolors.LinearSegmentedColormap(
             'CustomMap', cdict.get(params['scheme'])['cdict'])
@@ -396,7 +392,6 @@ class MyPlot(object):
         self._setscales(**kwargs)
         self._setlabels(**kwargs)
         self._setaxiscolor(**kwargs)
-        self._setgrid(**kwargs)
         self._stylespines(**kwargs)
         self._setarea(**kwargs)
 
@@ -469,6 +464,19 @@ class MyPlot(object):
 
         self._setaxiscolor(axes=axes, **kwargs)
         self._setaxiscolor(axes=twinax, **kwargs)
+
+
+    def setgrid(self, axes=None, **kwargs):
+        """Setting plot grid and background"""
+        if axes is None: axes = self.plt.gca()
+
+        cscheme = _getcscheme(**kwargs)
+
+        axes.set_axis_bgcolor(cscheme['background'])
+        axes.grid(color=cscheme['gridcolor'], linestyle='solid', linewidth=1)
+
+        # set grid lines behind the plot
+        axes.set_axisbelow(True)
 
 
     def save(self, name):
@@ -560,20 +568,6 @@ class MyPlot(object):
         for label in axes.zaxis.get_majorticklabels():
             label.set_color(cscheme['axiscolor'])
             label.set_fontsize(8)
-
-
-    def _setgrid(self, axes=None, **kwargs):
-        """Setting plot grid and background"""
-        if axes is None: axes = self.plt.gca()
-
-        cscheme = _getcscheme(**kwargs)
-
-        axes.set_axis_bgcolor(cscheme['background'])
-        axes.grid(
-            color=cscheme['gridcolor'], linestyle='solid', linewidth=1)
-
-        # set grid lines behind the plot
-        axes.set_axisbelow(True)
 
 def _getcscheme(**kwargs):
     """Returning the colorscheme"""
