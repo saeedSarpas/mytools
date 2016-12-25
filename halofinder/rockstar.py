@@ -108,7 +108,7 @@ class Rockstar(object):
                 [h for h in self.halos if minm < h[prop] <= maxm],
                 dtype=self.dtype)
 
-    def vs(self, prop1, prop2, nbins=21, path='./plot.png', **kwargs):
+    def vs(self, prop1, prop2, nbins=21, **kwargs):
         """Plotting the relations between Rockstar output properties
 
         Parameters
@@ -117,7 +117,6 @@ class Rockstar(object):
             Halos properties to plot
         nbins : integer
             Number of bins
-        path : string, optional
         xscale, yscale : string, optional
         xmin, xmax, ymin, ymax : numbers, optional
         """
