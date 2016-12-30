@@ -6,6 +6,7 @@ import matplotlib.colors as mcolors
 import numpy as np
 from ..visualization import mycolordict as cdict
 from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.ticker import LogFormatter
 
 
 class MyPlot(object):
@@ -420,8 +421,8 @@ class MyPlot(object):
         frame.set_alpha(0.7)
 
 
-    def secondaxis(self, ticksloc, ticklabels, label, axes=None,
-                   axis='x', scale='linear', showminorticks=True, **kwargs):
+    def coaxis(self, ticksloc, ticklabels, label, axes=None,
+               axis='x', scale='linear', showminorticks=True, **kwargs):
         """Creating a new twin x axis at the top of the plot
 
         Parameters
@@ -446,14 +447,22 @@ class MyPlot(object):
         set_label = twinax.set_xlabel if axis is 'x' else twinax.set_ylabel
         set_lim = twinax.set_xlim if axis is 'x' else twinax.set_ylim
         limit = axes.get_xlim() if axis is 'x' else axes.get_ylim()
+        axformatter = twinax.xaxis if axis is 'x' else twinax.yaxis
 
         set_scale(scale)
+
+        if scale is 'log':
+            formatter = LogFormatter(10, labelOnlyBase=True)
+            axformatter.set_major_formatter(formatter)
+            axformatter.set_minor_formatter(formatter)
+
         set_lim(limit)
         twinax.set_xticks(ticksloc)
         twinax.set_xticklabels(ticklabels)
         set_label(label)
 
-        if showminorticks is False: twinax.minorticks_off()
+        if showminorticks is False:
+            twinax.minorticks_off()
 
         cscheme = _getcscheme(**kwargs)
 
@@ -488,7 +497,7 @@ class MyPlot(object):
             name and extension of the plot
         """
 
-        self.plt.savefig(name)
+        self.plt.savefig(name, dpi=360)
 
 
     def _setscales(self, axes=None, **kwargs):

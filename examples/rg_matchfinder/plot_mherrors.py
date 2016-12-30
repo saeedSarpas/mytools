@@ -15,6 +15,10 @@ from ...halofinder.rockstar import Rockstar, NOTAVLBL
 from ...visualization.myplot import MyPlot
 from ...visualization.mycolordict import get
 
+MINNUMOFBINPOINTS = 100
+MAXNUMOFPARTS = 3181904
+MINNUMOFPARTS = 160
+
 
 class MatchingHalosErrors(object):
     """GenerateErrors class"""
@@ -55,16 +59,23 @@ class MatchingHalosErrors(object):
         self.tags = [field[0] for field in self.halos['low'].dtype]
 
 
-    def plotall(self, path='./', lowsymb='l', highsymb='h'):
+    def plotall(self, path='./', lowsymb='l', highsymb='h', confactor=None):
         """Plotting all available properties"""
 
-        self.plot(path=path, lowsymb=lowsymb, highsymb=highsymb)
-        self.plotvector(path=path, lowsymb=lowsymb, highsymb=highsymb)
+        self.plot(path=path, lowsymb=lowsymb, highsymb=highsymb,
+                  confactor=confactor)
+        self.plotconcentration(path=path, lowsymb=lowsymb, highsymb=highsymb,
+                               confactor=confactor)
+        self.plotvector(path=path, lowsymb=lowsymb, highsymb=highsymb,
+                        confactor=confactor)
         self.plotvs(path=path, lowsymb=lowsymb, highsymb=highsymb)
 
 
-    def plot(self, path='./', only=None, lowsymb='l', highsymb='h'):
+    def plot(self, path='./', only=None, lowsymb='l', highsymb='h',
+             confactor=None):
         """Plotting regular properties"""
+
+        PLOTS = _genplots(lowsymb, highsymb)
 
         properties = PLOTS.keys() if only is None else only
 
@@ -74,6 +85,8 @@ class MatchingHalosErrors(object):
             except KeyError:
                 print(prop + " is not available!")
                 continue
+
+            print('Plotting ' + prop + '...')
 
             if 'ymin' in PLOTS[prop]:
                 ymin = PLOTS[prop]['ymin']
@@ -95,44 +108,17 @@ class MatchingHalosErrors(object):
                        ymin, ymax,
                        PLOTS[prop]['ylabel'],
                        path + prop + '_' + lowsymb + '.png',
+                       confactor=confactor,
                        yscale=yscale,
                        lowsymb=lowsymb,
                        highsymb=highsymb)
 
 
-    def plotvector(self, path='./', only=None, lowsymb='l', highsymb='h'):
+    def plotvector(self, path='./', only=None, lowsymb='l', highsymb='h',
+                   confactor=None):
         """Plotting available moduli such as positions, velocities, etc."""
 
-        MODULI = {
-            'pos': {
-                'input': ['x', 'y', 'z'],
-                'ylabel': r"$|\vec{X}_h - \vec{X}_{" + lowsymb + r"}| [Mpc\/h^{-1}]$",
-                'ylabel_angle': r"$\angle \vec{X}_h \/ \vec{X}_{" + lowsymb + r"} \/ [Rad]$",
-                'ymax': 0.6,
-                'ymin': 0,
-                'ymax_angle': 3.141592,
-                'ymin_angle': 0
-            },
-            'vel': {
-                'input': ['vx', 'vy', 'vz'],
-                'ylabel': r"$|\vec{V}_h - \vec{V}_{" + lowsymb + r"}| [km\/s^{-1}]$",
-                'ylabel_angle': r"$\angle \vec{V}_h \/ \vec{V}_{" + lowsymb + r"} \/ [Rad]$",
-                'ymax': 150,
-                'ymin': 0,
-                'ymax_angle': 3.141592,
-                'ymin_angle': 0
-            },
-            'ang_mom': {
-                'input': ['Jx', 'Jy', 'Jz'],
-                'ylabel': r"$|\vec{J}_h - \vec{J}_{" + lowsymb + r"}| [(M_{\odot} \/h^{-1}) (Mpc\/h^{-1}) (km\/s^{-1})]$",
-                'ylabel_angle': r"$\angle \vec{J}_h \/ \vec{J}_{" + lowsymb + r"} \/ [Rad]$",
-                'ymax': 1e14,
-                'ymin': 0,
-                'ymax_angle': 3.141592,
-                'ymin_angle': 0,
-                'yscale': 'log'
-            }
-        }
+        MODULI = _genmoduli(lowsymb, highsymb)
 
         properties = MODULI.keys() if only is None else only
 
@@ -142,6 +128,8 @@ class MatchingHalosErrors(object):
             except KeyError:
                 print("Not able to plot " + prop)
                 continue
+
+            print('Plotting ' + prop + '...')
 
             # Plotting modulus distribution
             if 'ymin' in MODULI[prop]:
@@ -163,6 +151,7 @@ class MatchingHalosErrors(object):
                        ymin, ymax,
                        MODULI[prop]['ylabel'],
                        path + prop + '_' + lowsymb + '.png',
+                       confactor=confactor,
                        yscale=yscale,
                        lowsymb=lowsymb,
                        highsymb=highsymb)
@@ -187,14 +176,36 @@ class MatchingHalosErrors(object):
                        ymin_angle, ymax_angle,
                        MODULI[prop]['ylabel_angle'],
                        path + prop + '_angledist_' + lowsymb + '.png',
+                       confactor=confactor,
                        yscale=yscale_angle,
                        lowsymb=lowsymb,
                        highsymb=highsymb)
 
 
+    def plotconcentration(self, path='./', lowsymb='l', highsymb='h',
+                          confactor=None):
+        """Plotting the concentration parameter, c"""
+
+        print('Plotting concentration parameter, c...')
+
+        e = self._genconcentration()
+
+        self._plot(e['num_p_low'],
+                   e['c_err'],
+                   -1, 1,
+                   r"$\Delta c / c^{" + highsymb + r"}$",
+                   path +  'c_' + lowsymb + '.png',
+                   confactor=confactor,
+                   yscale='linear',
+                   lowsymb=lowsymb,
+                   highsymb=highsymb)
+
+
+
     def plotvs(self, path='./', lowsymb='l', highsymb='h'):
         """Plotting mvir vs. num_p for the high resolution run"""
 
+        print('Plotting vs. plots...')
 
         myplot = MyPlot()
 
@@ -209,8 +220,8 @@ class MatchingHalosErrors(object):
         # Plotting M_vir vs. num_p of the high resolution run
         xs1, ys1 = self.halos['high'].vs('mvir', 'num_p', nbins=201)
 
-        kws['xlabel'] = r'$M_{vir, high} [M_{\odot} h^{-1}]$'
-        kws['ylabel'] = '$N_P^{' + highsymb + '}$'
+        kws['xlabel'] = r'$M_{vir}^{' + highsymb + r'} [M_{\odot} h^{-1}]$'
+        kws['ylabel'] = r'$N_P^{' + highsymb + r'}$'
         myplot.plot({'x': xs1, 'y': ys1}, **dict(kws))
 
         myplot.save(path + 'mvir_vs_num_p_high.png')
@@ -219,18 +230,18 @@ class MatchingHalosErrors(object):
         # Plotting M_vir vs. num_p of the low resolution run
         xs2, ys2 = self.halos['low'].vs('mvir', 'num_p', nbins=201, path=path)
 
-        kws['xlabel'] = r'$M_{vir, low} [M_{\odot} h^{-1}]$'
-        kws['ylabel'] = '$N_P^{' + lowsymb + '}$'
+        kws['xlabel'] = r'$M_{vir}^{' + lowsymb + r'} [M_{\odot} h^{-1}]$'
+        kws['ylabel'] = r'$N_P^{' + lowsymb + r'}$'
         myplot.plot({'x': xs2, 'y': ys2}, **dict(kws))
 
-        myplot.save(path + 'mvir_vs_num_p_low.png')
+        myplot.save(path + 'mvir_vs_num_p_low_' + lowsymb + '.png')
         myplot.plt.clf()
 
         # Plotting num_p_high vs. num_p_low
         num_p_low, num_p_high = self.nump_low_vs_nump_high(nbins=201)
 
-        kws['xlabel'] = '$N_P^{' + lowsymb + '}$'
-        kws['ylabel'] = '$N_P^{' + highsymb + '}$'
+        kws['xlabel'] = r'$N_P^{' + lowsymb + r'}$'
+        kws['ylabel'] = r'$N_P^{' + highsymb + r'}$'
 
         myplot.plot({'x': num_p_low, 'y': num_p_high}, **dict(kws))
 
@@ -346,7 +357,7 @@ class MatchingHalosErrors(object):
                       high[id2][props[1]]**2 +
                       high[id2][props[2]]**2)
 
-            if v1 == 0 or v2 ==0: continue
+            if v1 == 0 or v2 == 0: continue
 
             # Filling the output dictionary
             output['num_p_low'].append(low[id1]['num_p'])
@@ -360,21 +371,67 @@ class MatchingHalosErrors(object):
         return output
 
 
-    def _plot(self, num_p, err, ymin, ymax, ylabel, path,
+    def _genconcentration(self):
+        """Generating concentration parameter, c"""
+        output = {'c_err': [], 'num_p_low': []}
+
+        low = self.halos['low'].halossortedbyid
+        high = self.halos['high'].halossortedbyid
+
+        for id1, id2 in zip(self.matches.data['id1'], self.matches.data['id2']):
+            # Checking the availability of the data
+            if id1 is NOTAVLBL or id2 is NOTAVLBL: continue
+            if low[id1]['Rs'] == 0 or high[id2]['Rs'] == 0: continue
+            if high[id2]['rvir'] == 0: continue
+
+            c_high = high[id2]['rvir'] / high[id2]['Rs']
+            c_low = low[id1]['rvir'] / low[id1]['Rs']
+
+            output['num_p_low'].append(low[id1]['num_p'])
+            output['c_err'].append((c_low - c_high) / c_high)
+
+        return output
+
+
+    def _plot(self, num_p, err, ymin, ymax, ylabel, path, confactor=None,
               yscale='linear', lowsymb='l', highsymb='h'):
-        """Plotting a scatter plot"""
+        """Plotting a scatter plot
+
+        Parameters
+        ----------
+        num_p : array of float
+        err : array of float
+        ymin, ymax : float
+        ylabel : str
+        path : str
+        confactor : float, optional
+            Conversion factor, converting num_p in high res to num_p in low res
+        yscale : str, optional
+        lowsymb, highsymb : str, optional
+        """
+
         myplot = MyPlot()
         axes = myplot.new2daxes()
 
         xmin = np.min(num_p)
         xmax = np.max(num_p)
 
+        num_p_low, num_p_high = self.nump_low_vs_nump_high()
+
+        if confactor is None:
+            print('[Error!] Conversion factor is not available!')
+            confactor = stats.linregress(num_p_low, num_p_high).slope
+            print('         confactor set to ' + str(confactor))
+
+        xmin_box = MINNUMOFPARTS / confactor
+        xmax_box = MAXNUMOFPARTS / confactor
+
         color = get('RAINBOW')['primary_colors'][1]
         shadow = get('RAINBOW')['primary_shadows'][0]
 
         scatterkws = {
-            'xmax': xmax,
-            'xmin': xmin,
+            'xmax': xmax_box,
+            'xmin': xmin_box,
             'ymax': ymax,
             'ymin': ymin,
             'xscale': 'log',
@@ -386,12 +443,12 @@ class MatchingHalosErrors(object):
             'alpha': 0.25
         }
 
-        myplot.scatter(num_p, err, ax=axes, s=4, **dict(scatterkws))
+        myplot.scatter(num_p, err, ax=axes, s=1, **dict(scatterkws))
 
         # Plotting zero line
         linekws = {
             'color': get('RAINBOW')['axiscolor'],
-            'alphs': 0.75,
+            'alphs': 0.5,
             'silent': True
         }
 
@@ -402,9 +459,12 @@ class MatchingHalosErrors(object):
 
         x, y, ylow, yhigh = [], [], [], []
 
-        for bmin, bmax in zip(binedges[:-1], binedges[1:]):
+        bmin = binedges[0]
+        for bmax in binedges[1:]:
             errs = [err[i] for i in range(len(err)) if bmax >= num_p[i] > bmin]
 
+            if len(errs) < MINNUMOFBINPOINTS and bmax != binedges[-1]:
+                continue
 
             if len(errs) != 0:
                 x.append(10**(np.log10(bmin * bmax) / 2))
@@ -412,12 +472,15 @@ class MatchingHalosErrors(object):
                 ylow.append(np.percentile(errs, 15.9))
                 yhigh.append(np.percentile(errs, 84.1))
 
-        # Displacing the first x to the smallest num_p
+            bmin = bmax
+
+        # Stretching the x vector to the boundaries of num_p
         x[0] = xmin
+        x[-1] = xmax
 
         fill_betweenkws = {
-            'xmax': xmax,
-            'xmin': xmin,
+            'xmax': xmax_box,
+            'xmin': xmin_box,
             'ymax': ymax,
             'ymin': ymin,
             'xscale': 'log',
@@ -425,12 +488,12 @@ class MatchingHalosErrors(object):
             'silent': True
         }
         myplot.fill_between(x, ylow, yhigh, shadow, ax=axes,
-                          alpha=0.6, **dict(fill_betweenkws))
+                            alpha=0.6, **dict(fill_betweenkws))
 
-        # Plotting line corresponding to 50% percentile
+        # Plotting the median
         plotkws = {
-            'xmax': xmax,
-            'xmin': xmin,
+            'xmax': xmax_box,
+            'xmin': xmin_box,
             'ymax': ymax,
             'ymin': ymin,
             'xscale': 'log',
@@ -441,20 +504,18 @@ class MatchingHalosErrors(object):
         myplot.plot({'x': x, 'y': y}, ax=axes, **dict(plotkws))
 
         # Second x axis
-        num_p_low, num_p_high = self.nump_low_vs_nump_high(nbins=21)
-        slope = stats.linregress(num_p_high, num_p_low).slope
 
-        min_pow = int(np.log10(np.min(num_p_low) / slope))
-        max_pow = int(np.log10(np.max(num_p_low) / slope))
+        min_pow = int(np.log10(MINNUMOFPARTS))
+        max_pow = int(np.log10(MAXNUMOFPARTS))
 
         xticks = [10**i for i in range(min_pow, max_pow + 1)]
 
-        ticksloc = [x * slope for x in xticks]
-        tickslabels = ["$10^{" + str(i) + "}$"
+        ticksloc = [x / confactor for x in xticks]
+        tickslabels = ['$10^{' + str(i) + '}$'
                        for i in range(min_pow, max_pow + 1)]
 
-        myplot.secondaxis(ticksloc, tickslabels, "$N_P^{" + highsymb + "}$",
-                          axes=axes, scale='log', showminorticks=False)
+        myplot.coaxis(ticksloc, tickslabels, "$N_P^{" + highsymb + "}$",
+                      axes=axes, scale='log', showminorticks=False)
 
         myplot.save(path)
 
@@ -463,96 +524,134 @@ class MatchingHalosErrors(object):
         gc.collect()
 
 
-PLOTS = {
-    'mvir': {
-        'ylabel': r"$\Delta M_{vir} / M_{vir}^h$",
-        'ymax': 1,
-        'ymin': -1
-    },
-    'mbound_vir': {
-        'ylabel': r"$\Delta M_{b\_vir} / M_{b\_vir}^h$",
-        'ymax': 1,
-        'ymin': -1
-    },
-    'rvir': {
-        'ylabel': r"$\Delta R_{vir} / R_{vir}^h$",
-        'ymax': 0.4,
-        'ymin': -0.4
-    },
-    'vmax': {
-        'ylabel': r"$\Delta V_{max} / V_{max}^h$",
-        'ymax': 0.5,
-        'ymin': -0.5
-    },
-    'rvmax': {
-        'ylabel': r"$\Delta R(V_{max}) / R_{V(max)}^h}$",
-        'ymax': 4,
-        'ymin': -1
-    },
-    'vrms': {
-        'ylabel': r"$\Delta V_{RMS} / V_{RMS}^h$",
-        'ymax': 0.4,
-        'ymin': -0.6
-    },
-    'm200b': {
-        'ylabel': r"$\Delta M_{200b} / M_{200b}^h$",
-        'ymax': 1,
-        'ymin': -1
-    },
-    'm200c': {
-        'ylabel': r"$\Delta M_{200c} / M_{200c}^h$",
-        'ymax': 1,
-        'ymin': -1
-    },
-    'm500c': {
-        'ylabel': r"$\Delta M_{500c} / M_{500c}^h$",
-        'ymax': 1,
-        'ymin': -1
-    },
-    'm2500c': {
-        'ylabel': r"$\Delta M_{2500c} / M_{2500c}^h$",
-        'ymax': 0.75,
-        'ymin': -1
-    },
-    'Xoff': {
-        'ylabel': r"$\Delta Xoff / Xoff^h$",
-        'ymax': 10,
-        'ymin': -1
-    },
-    'Voff': {
-        'ylabel': r"$\Delta Voff / Voff^h$",
-        'ymax': 5,
-        'ymin': -1
-    },
-    'b_to_a': {
-        'ylabel': r"$\Delta \left(\frac{b}{a}\right) / \left(\frac{b}{a}\right)^h$",
-        'ymax': 0.4,
-        'ymin': -1
+def _genplots(lowsymb, highsymb):
+    """Generating PLOTS dictionary"""
 
-    },
-    'c_to_a': {
-        'ylabel': r"$\Delta \left(\frac{c}{a}\right) / \left(\frac{c}{a}\right)^h$",
-        'ymax': 0.4,
-        'ymin': -1
-    },
-    'b_to_a(500c)': {
-        'ylabel': r"$\Delta \left(\frac{b}{a}\right)_{500c} / \left(\frac{b}{a}\right)_{500c}^h$",
-        'ymax': 0.4,
-        'ymin': -1
-    },
-    'c_to_a(500c)': {
-        'ylabel': r"$\Delta \left(\frac{c}{a}\right)_{500c} / \left(\frac{c}{a}\right)_{500c}^h$",
-        'ymax': 0.4,
-        'ymin': -1
-    },
-    'Rs': {
-        'ylabel': r"$\Delta R_s / R_{s}^h$",
-        'ymax': 3,
-        'ymin': -1
-    },
-    'Halfmass_Radius': {
-        'ylabel': r"$\Delta R_{(M/2)} / R_{(M/2)}^h$",
-        'ymax': 2,
-        'ymin': -1
+    return {
+        'mvir': {
+            'ylabel': r"$\Delta M_{vir} / M_{vir}^{" + highsymb + r"}$",
+            'ymax': 1,
+            'ymin': -1
+        },
+        'mbound_vir': {
+            'ylabel': r"$\Delta M_{b\_vir} / M_{b\_vir}^{" + highsymb + r"}$",
+            'ymax': 1,
+            'ymin': -1
+        },
+        'rvir': {
+            'ylabel': r"$\Delta R_{vir} / R_{vir}^{" + highsymb + r"}$",
+            'ymax': 0.4,
+            'ymin': -0.4
+        },
+        'vmax': {
+            'ylabel': r"$\Delta V_{max} / V_{max}^{" + highsymb + r"}$",
+            'ymax': 0.5,
+            'ymin': -0.5
+        },
+        'rvmax': {
+            'ylabel': r"$\Delta R_{V(max)} / R_{V(max)}^{" + highsymb + r"}}$",
+            'ymax': 4,
+            'ymin': -1
+        },
+        'vrms': {
+            'ylabel': r"$\Delta V_{RMS} / V_{RMS}^{" + highsymb + r"}$",
+            'ymax': 0.4,
+            'ymin': -0.6
+        },
+        'm200b': {
+            'ylabel': r"$\Delta M_{200b} / M_{200b}^{" + highsymb + r"}$",
+            'ymax': 1,
+            'ymin': -1
+        },
+        'm200c': {
+            'ylabel': r"$\Delta M_{200c} / M_{200c}^{" + highsymb + r"}$",
+            'ymax': 1,
+            'ymin': -1
+        },
+        'm500c': {
+            'ylabel': r"$\Delta M_{500c} / M_{500c}^{" + highsymb + r"}$",
+            'ymax': 1,
+            'ymin': -1
+        },
+        'm2500c': {
+            'ylabel': r"$\Delta M_{2500c} / M_{2500c}^{" + highsymb + r"}$",
+            'ymax': 0.75,
+            'ymin': -1
+        },
+        'Xoff': {
+            'ylabel': r"$\Delta Xoff / Xoff^{" + highsymb + r"}$",
+            'ymax': 10,
+            'ymin': -1
+        },
+        'Voff': {
+            'ylabel': r"$\Delta Voff / Voff^{" + highsymb + r"}$",
+            'ymax': 5,
+            'ymin': -1
+        },
+        'b_to_a': {
+            'ylabel': r"$\Delta \left(\frac{b}{a}\right) / \left(\frac{b}{a}\right)^{" + highsymb + r"}$",
+            'ymax': 0.4,
+            'ymin': -1
+
+        },
+        'c_to_a': {
+            'ylabel': r"$\Delta \left(\frac{c}{a}\right) / \left(\frac{c}{a}\right)^{" + highsymb + r"}$",
+            'ymax': 0.4,
+            'ymin': -1
+        },
+        'b_to_a(500c)': {
+            'ylabel': r"$\Delta {\left(\frac{b}{a}\right)}_{500c} / {\left(\frac{b}{a}\right)}_{500c}^{" + highsymb + r"}$",
+            'ymax': 0.4,
+            'ymin': -1
+        },
+        'c_to_a(500c)': {
+            'ylabel': r"$\Delta {\left(\frac{c}{a}\right)}_{500c} / {\left(\frac{c}{a}\right)}_{500c}^{" + highsymb + r"}$",
+            'ymax': 0.4,
+            'ymin': -1
+        },
+        'Rs': {
+            'ylabel': r"$\Delta R_s / R_{s}^{" + highsymb + r"}$",
+            'ymax': 3,
+            'ymin': -1
+        },
+        'Halfmass_Radius': {
+            'ylabel': r"$\Delta R_{(M/2)} / R_{(M/2)}^{" + highsymb + r"}$",
+            'ymax': 2,
+            'ymin': -1
+        }
     }
-}
+
+
+def _genmoduli(lowsymb, highsymb):
+    """Generating MODULI dictionary"""
+
+    return {
+        'pos': {
+            'input': ['x', 'y', 'z'],
+            'ylabel': r"$|\vec{X}^{" + highsymb + r"} - \vec{X}^{" + lowsymb + r"}| [Mpc\/h^{-1}]$",
+            'ylabel_angle': r"$\angle \vec{X}^{" + highsymb + r"} \/ \vec{X}^{" + lowsymb + r"} \/ [Rad]$",
+            'ymax': 0.6,
+            'ymin': 0,
+            'ymax_angle': 3.141592,
+            'ymin_angle': 0
+        },
+        'vel': {
+            'input': ['vx', 'vy', 'vz'],
+            'ylabel': r"$|\vec{V}^{" + highsymb + r"} - \vec{V}^{" + lowsymb + r"}| [km\/s^{-1}]$",
+            'ylabel_angle': r"$\angle \vec{V}^{" + highsymb + r"} \/ \vec{V}^{" + lowsymb + r"} \/ [Rad]$",
+            'ymax': 150,
+            'ymin': 0,
+            'ymax_angle': 3.141592,
+            'ymin_angle': 0
+        },
+        'ang_mom': {
+            'input': ['Jx', 'Jy', 'Jz'],
+            'ylabel': r"$|\vec{J}^{" + highsymb + r"} - \vec{J}^{" + lowsymb + r"}| [(M_{\odot} \/h^{-1}) (Mpc\/h^{-1}) (km\/s^{-1})]$",
+            'ylabel_angle': r"$\angle \vec{J}^{" + highsymb + r"} \/ \vec{J}^{" + lowsymb + r"} \/ [Rad]$",
+            'ymax': 1e14,
+            'ymin': 0,
+            'ymax_angle': 3.141592,
+            'ymin_angle': 0,
+            'yscale': 'log'
+        }
+    }
