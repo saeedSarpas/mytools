@@ -1,5 +1,5 @@
 /*
- * examples/rg_matchfinder/rg_matchfinder.c
+ * examples/rg_matchfinder/matchfinder.c
  *
  * Finding the matching halos between two rockstar halo lists
  *

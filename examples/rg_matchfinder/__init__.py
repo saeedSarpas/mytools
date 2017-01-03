@@ -1,5 +1,5 @@
 """RockstarGadgetMatchFinder"""
 
-__all__ = ['plot_singlemathes',
-           'plot_mherrors',
+__all__ = ['plotmatches',
+           'mherrors',
            'mh']

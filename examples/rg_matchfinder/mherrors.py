@@ -1,6 +1,4 @@
-"""plot-mherrors.py
-Generating errors of different features of the matching halos
-"""
+"""mherrors.py"""
 
 from __future__ import print_function
 
@@ -20,8 +18,8 @@ MAXNUMOFPARTS = 3181904
 MINNUMOFPARTS = 160
 
 
-class MatchingHalosErrors(object):
-    """GenerateErrors class"""
+class MHErrors(object):
+    """Generating different errors based on matching halos"""
 
     def __init__(self, matchinghalosfile, halos1file, halos2file):
         """Initializing GenerateErrors object
@@ -35,12 +33,11 @@ class MatchingHalosErrors(object):
 
         Examples
         --------
-        >>> from mytools.examples.rockstargadgetmatchfinder.generateerrors \
-        import GenerateErrors as G
-        >>> from mytools.halofinders.rockstar import Rockstar as R
-        >>> g = G('/path/to/matchinghalos, /path/to/pri_halo, /path/to/sec_halo)
-        >>> g.generateerrors()
-        >>> g.save('/path/to/output/file')
+        >>> from mytools.examples.rg_matchfinder.mherrors import MHErrors as MHE
+        >>> mhe = MHE('/path/to/matchinghalos',
+                      '/path/to/pri_halo',
+                      '/path/to/sec_halo')
+        >>> mhe.plotall(path='./directory/', confactor=8)
         """
 
         self.matches = MatchingHalo(matchinghalosfile)

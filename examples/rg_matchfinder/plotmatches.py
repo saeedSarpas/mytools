@@ -1,4 +1,4 @@
-"""plot-singlematches.py
+"""plotmatches.py
 Generating scatter plots of a given matching halos
 """
 
@@ -10,11 +10,11 @@ from ...visualization.myplot import MyPlot
 from ...visualization.mycolordict import primarycolors, primaryshadows
 
 
-class PlotSingleMatches(object):
+class PlotMatches(object):
     """PlotMatchingHalo class!"""
 
     def __init__(self, path):
-        """Initializing PlotMatchingHalo class and loading the match file
+        """Initializing PlotMatches class and loading the match file
 
         Parameters
         ----------
@@ -23,10 +23,10 @@ class PlotSingleMatches(object):
 
         Examples
         --------
-        >>> from mytools.examples.rockstargadgetmatchfinder.plotmatchinghalo \
-        import PlotMatchingHalo as PMH
-        >>> pmh = PMH('/path/to/match/file')
-        >>> pmh.save('/path/to/output/plot/with/extension')
+        >>> from mytools.examples.rg_matchfinder.plotmatches \
+        import PlotMatches as PM
+        >>> pm = PM('/path/to/match/file')
+        >>> pm.plot('/path/to/output/plot/with/extension')
         """
         self.header = {}
 
