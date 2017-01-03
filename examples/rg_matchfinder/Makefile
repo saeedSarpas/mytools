@@ -42,7 +42,7 @@ DEPS := ./../../configfile/mylibconfig.c \
         ./../../vector/vector_push.c \
         ./../../vector/vector_get.c \
         ./../../math/interval/expspaced.c \
-        ./../../sort/mergesort/mergesort.c
+        ./../matchinghalos/save_mh.c
 
 .PHONY : all
 

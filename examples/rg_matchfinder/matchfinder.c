@@ -14,6 +14,8 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <libgen.h>
+#include "./matchfinder.h"
+#include "./../matchinghalos/save_mh.h"
 #include "./../../time/mytime.h"
 #include "./../../configfile/mylibconfig.h"
 #include "./../../memory/allocate.h"
@@ -33,49 +35,22 @@
 #include "./../../math/interval/expspaced.h"
 
 
-#define INTERNALMATCHINGTRUE 1
-#define INTERNALMATCHINGFALSE 0
-
-
-typedef struct _params
-{
-  char *priHalosAddr;
-  char *secHalosAddr;
-  char *priICAddr;
-  char *secICAddr;
-  int internalMatching;
-  int loadBinMatches;
-  char *binMatchesAddr;
-  double massOffset;
-  double maxDisplacement;
-  int initVolResolution;
-  int saveBinMatches;
-  int saveSingleMatches;
-  char *singleMatchesDir;
-  int numSingleMatches;
-  char *priSnapAddr;
-  char *secSnapAddr;
-  char *asciiOutputPath;
-} params;
-
-
-static params* loadconfig(const char*);
+static matchfinder_params* loadconfig(const char*);
 static snapshot* safe_snapshot_load(char*);
-static void print_results(halofinder*, halofinder*, params*, matchinghalo*);
 static void print_halo_particles(matchinghalo*, halofinder*, halofinder*,
                                  snapshot*, snapshot*,
-                                 snapshot*, snapshot*, params*);
+                                 snapshot*, snapshot*, matchfinder_params*);
 
 
 int main(int argc, char *argv[])
 {
   if(argc != 2){
-    printf("[Error] You should specify the path of the configuration file.\n");
-    printf("        ./rockstarmatchfinder /path/to/the/configuration/file\n");
+    printf("[Error] You should specify the path to the configuration file.\n");
+    printf("        ./matchfinder /path/to/the/configuration/file\n");
     exit(EXIT_FAILURE);
   }
 
-  params *p = loadconfig(argv[1]);
+  matchfinder_params *p = loadconfig(argv[1]);
 
   snapshot *pri_ic, *sec_ic;
 
@@ -128,7 +103,7 @@ int main(int argc, char *argv[])
   done(_m_h_);
 
   clock_t _w_r_ = start("Writing results");
-  print_results(pri_msorted, sec_msorted, p, mh);
+  save_mh(pri_msorted, sec_msorted, p, mh);
   done(_w_r_);
 
   snapshot *pri_snap, *sec_snap;
@@ -244,9 +219,9 @@ static void check_file(const char *path, const char *err)
 
  * param: path path to the configuration file
  */
-static params* loadconfig(const char *path)
+static matchfinder_params* loadconfig(const char *path)
 {
-  params *p = allocate(1, sizeof(params));
+  matchfinder_params *p = allocate(1, sizeof(*p));
 
   config_t *cfg = new_cfg();
   cfg_loadfile(cfg, path);
@@ -330,42 +305,11 @@ static params* loadconfig(const char *path)
 }
 
 
-static void print_results(halofinder *pri, halofinder *sec,
-                          params *p, matchinghalo *mh)
-{
-  int i, foundmatches = 0;
-  for(i = 0; i < pri->header->num_halos; i++)
-    if(mh->matchingids[i] != MATCHINGHALONOTSET) foundmatches++;
-
-  FILE *outputfile = open_file(p->asciiOutputPath, "w");
-
-  fprintf(outputfile, "Primary input: %s\n", p->priHalosAddr);
-  fprintf(outputfile, "Secondary input: %s\n", p->secHalosAddr);
-  fprintf(outputfile, "Mass offset: %f\n", p->massOffset);
-  fprintf(outputfile, "Maximum halo displacement: %f\n", p->maxDisplacement);
-  fprintf(outputfile, "Initial volume grid: %d\n", p->initVolResolution);
-  fprintf(outputfile, "num of halos in primary input: %" PRId64 "\n",
-          pri->header->num_halos);
-  fprintf(outputfile, "num of halos in secondary input: %" PRId64 "\n",
-          sec->header->num_halos);
-  fprintf(outputfile, "num of found matches: %d\n", foundmatches);
-
-  for(i = 0; i < pri->header->num_halos; i++)
-    if(mh->matchingids[i] != MATCHINGHALONOTSET)
-      fprintf(outputfile, "%7d %17.15e %7d %17.15e %6.2f\n",
-              i, pri->halos[i].m,
-              mh->matchingids[i], sec->halos[mh->matchingids[i]].m,
-              mh->goodnesses[i]);
-
-  fclose(outputfile);
-}
-
-
 static void print_halo_particles(matchinghalo *mh,
                                  halofinder *pri, halofinder *sec,
                                  snapshot *pri_ic, snapshot *sec_ic,
                                  snapshot *pri_snap, snapshot *sec_snap,
-                                 params *p)
+                                 matchfinder_params *p)
 {
   int i, j, pri_id, sec_id, part_id;
   char fmt[] = "%17.15e\t%17.15e\t%17.15e\n";
