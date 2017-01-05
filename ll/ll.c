@@ -12,8 +12,12 @@
 
 
 #include <stdlib.h>
-#include "ll.h"
+#include "./ll.h"
+#include "./ll_traverse.h"
 #include "./../memory/allocate.h"
+
+
+void freedata(llnode*, void*);
 
 
 ll* new_ll(int sizeofkey)
@@ -28,6 +32,13 @@ ll* new_ll(int sizeofkey)
 
 
 void dispose_ll(ll** linkedlist){
+  ll_traverse(*linkedlist, freedata, NULL);
   free(*linkedlist);
   *linkedlist = NULL;
+}
+
+void freedata(llnode *node, void *data)
+{
+  free(node->data);
+  node->data = NULL;
 }
