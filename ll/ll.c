@@ -22,6 +22,8 @@ ll* new_ll(int sizeofkey)
   linkedlist->head = NULL;
   linkedlist->sizeofkey = sizeofkey;
   linkedlist->len = 0;
+
+  return linkedlist;
 }
 
 

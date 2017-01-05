@@ -46,14 +46,14 @@ void ll_add(ll *linkedlist, void *key, llmode mode, void *data, ...)
       linkedlist->len += 1;
     }
     else{
-    llnode *node = linkedlist->head;
+      llnode *node = linkedlist->head;
 
-    while(node->next)
-      node = node->next;
+      while(node->next)
+        node = node->next;
 
-    node = newnode;
-    newnode->next = NULL;
-    linkedlist->len += 1;
+      node->next = newnode;
+      newnode->next = NULL;
+      linkedlist->len += 1;
     }
   }
   else{
