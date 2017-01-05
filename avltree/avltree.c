@@ -119,6 +119,17 @@ avlnode *min_node(avlnode *node)
 }
 
 
+avlnode *max_node(avlnode *node)
+{
+  avlnode *current = node;
+
+  while(current->right != NULL)
+    current = current->right;
+
+  return current;
+}
+
+
 int max(int a, int b)
 {
   return a > b ? a : b;

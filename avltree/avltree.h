@@ -37,6 +37,7 @@ int compare_int_keys(void*, void*);
 avlnode* right_rotate(avlnode*);
 avlnode* left_rotate(avlnode*);
 avlnode *min_node(avlnode*);
+avlnode *max_node(avlnode*);
 int max(int, int);
 int height(avlnode*);
 int get_balance(avlnode*);
