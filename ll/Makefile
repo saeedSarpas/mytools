@@ -1,8 +1,10 @@
 MODULE_NAME := ll
 
-_FILES := ll
+_FILES := ll \
+          ll_add
 
-_TESTS := ll_test
+_TESTS := ll_test \
+          ll_add_test
 
 _DEPS := ./../memory/allocate \
          ./../memory/copy

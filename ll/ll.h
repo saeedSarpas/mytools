@@ -18,7 +18,6 @@ typedef struct _llnode
 {
   struct _llnode *next;
   union {
-    char *zero;
     int ikey;
     float fkey;
     double dkey;
