@@ -79,10 +79,11 @@ Ensure(triplecascade, returns_the_right_triplecascade_for_a_trivial_input)
   vector **cascades = triplecascade(matches_256_512, matches_512_1024,
       matches_256, matches_512, matches_1024, NSNAPS);
 
-  printf("%d\n", cascades[0]->logLength);
   int i;
   for(i = 0; i < NSNAPS; i++)
     assert_that(cascades[i]->logLength, is_equal_to(1));
 
   assert_that(cascades[NSNAPS]->logLength, is_equal_to(3));
+
+  dispose_triplecascade(&cascades);
 }

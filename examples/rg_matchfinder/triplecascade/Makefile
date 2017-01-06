@@ -11,6 +11,7 @@ _DEPS := ./../mh_cascade/mh_cascade \
          ./../../../avltree/avl_delete \
          ./../../../vector/vector \
          ./../../../vector/vector_push \
+         ./../../../vector/vector_get \
          ./../../../ll/ll \
          ./../../../ll/ll_add \
          ./../../../ll/ll_traverse \

@@ -7,6 +7,7 @@
 
 
 vector** triplecascade(avltree*, avltree*, avltree**, avltree**, avltree**, int);
+void dispose_triplecascade(vector***);
 
 
 
