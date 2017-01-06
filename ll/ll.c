@@ -17,7 +17,8 @@
 #include "./../memory/allocate.h"
 
 
-void freedata(llnode*, void*);
+static void freedata(llnode*, void*);
+static void delnodes(ll*);
 
 
 ll* new_ll(int sizeofkey)
@@ -33,11 +34,22 @@ ll* new_ll(int sizeofkey)
 
 void dispose_ll(ll** linkedlist){
   ll_traverse(*linkedlist, freedata, NULL);
+
+  delnodes((*linkedlist));
+
   free(*linkedlist);
   *linkedlist = NULL;
 }
 
-void freedata(llnode *node, void *data)
+static void delnodes(ll *list)
+{
+  while(list->head){
+    list->head = list->head->next;
+    (list->len)--;
+  }
+}
+
+static void freedata(llnode *node, void *data)
 {
   free(node->data);
   node->data = NULL;
