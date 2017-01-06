@@ -32,6 +32,9 @@ ll* mh_cascade(int halo_id, avltree **internal_matches, int length)
   avlnode *node = NULL;
   int i, found_id = halo_id;
 
+  if(internal_matches == NULL)
+    return cascade;
+
   for(i = length - 1; i >= 0; i--){
     node = avl_find(internal_matches[i], &found_id);
 

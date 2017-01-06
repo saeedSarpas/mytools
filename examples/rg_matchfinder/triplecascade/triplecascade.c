@@ -13,6 +13,8 @@
  * Return
  * an array of allocated vector
  *
+ * NOTE that by sending NULL instead of matches_256, matches_512, matches_1024
+ * the function will skip adding internal
  * NOTE that the last element of the array is the only NULL element of it
  *
  * author: Saeed Sarpas
