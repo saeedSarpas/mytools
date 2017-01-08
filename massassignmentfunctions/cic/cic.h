@@ -2,10 +2,10 @@
 #define CIC_H
 
 
-#include "./../../simulation/shared_simulation_data_type.h"
+#include "./../../simulation/snapshot.h"
 
 
-double* cic(struct particle*, int, int*, double*);
+double* cic(snapshot*, int*, double*);
 
 
 #endif /* CIC_H */

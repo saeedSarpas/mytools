@@ -4,8 +4,7 @@
  *
  * Cloud in cell mass assignment function
  *
- * param: P array of particles
- * param: num_of_parts number of particles
+ * param: S snapshot containing particles
  * param: *grid_dims number of grids in each axis
  * param: *box_lengths length of the simulation box
  *
@@ -21,8 +20,7 @@
 
 static double cic_weigth(int*, double, double);
 
-double* cic(struct particle *P, int num_of_parts, int *grid_dims,
-            double *box_lengths)
+double* cic(snapshot *S, int *grid_dims, double *box_lengths)
 {
   int i, j, k, n, index;
   int di, dj, dk;
@@ -35,42 +33,42 @@ double* cic(struct particle *P, int num_of_parts, int *grid_dims,
 
   double *grid_mass = allocate(tot_num_of_grids, sizeof(double));
 
-  for (n = 0; n < num_of_parts; n++) {
-    i = P[n].Pos[0] / grid_lengths[0];
-    overlap = fmodf(P[n].Pos[0], grid_lengths[0]);
+  for (n = 0; n < S->header->tot_nparticles; n++) {
+    i = S->particles[n].pos[0] / grid_lengths[0];
+    overlap = fmodf(S->particles[n].pos[0], grid_lengths[0]);
     i_weight = cic_weigth(&di, overlap, grid_lengths[0]);
 
-    j = P[n].Pos[1] / grid_lengths[1];
-    overlap = fmodf(P[n].Pos[1], grid_lengths[1]);
+    j = S->particles[n].pos[1] / grid_lengths[1];
+    overlap = fmodf(S->particles[n].pos[1], grid_lengths[1]);
     j_weight = cic_weigth(&dj, overlap, grid_lengths[1]);
 
-    k = P[n].Pos[2] / grid_lengths[2];
-    overlap = fmodf(P[n].Pos[2], grid_lengths[2]);
+    k = S->particles[n].pos[2] / grid_lengths[2];
+    overlap = fmodf(S->particles[n].pos[2], grid_lengths[2]);
     k_weight = cic_weigth(&dk, overlap, grid_lengths[2]);
 
     index = three_to_one(i, j, k, grid_dims);
-    grid_mass[index] += i_weight * j_weight * k_weight * P[n].Mass;
+    grid_mass[index] += i_weight * j_weight * k_weight * S->particles[n].mass;
 
     index = three_to_one(i+di, j, k, grid_dims);
-    grid_mass[index] += (1 - i_weight) * j_weight * k_weight * P[n].Mass;
+    grid_mass[index] += (1 - i_weight) * j_weight * k_weight * S->particles[n].mass;
 
     index = three_to_one(i, j+dj, k, grid_dims);
-    grid_mass[index] += i_weight * (1 - j_weight) * k_weight * P[n].Mass;
+    grid_mass[index] += i_weight * (1 - j_weight) * k_weight * S->particles[n].mass;
 
     index = three_to_one(i, j, k+dk, grid_dims);
-    grid_mass[index] += i_weight * j_weight * (1 - k_weight) * P[n].Mass;
+    grid_mass[index] += i_weight * j_weight * (1 - k_weight) * S->particles[n].mass;
 
     index = three_to_one(i+di, j+dj, k, grid_dims);
-    grid_mass[index] += (1 - i_weight) * (1 - j_weight) * k_weight * P[n].Mass;
+    grid_mass[index] += (1 - i_weight) * (1 - j_weight) * k_weight * S->particles[n].mass;
 
     index = three_to_one(i, j+dj, k+dk, grid_dims);
-    grid_mass[index] += i_weight * (1 - j_weight) * (1 - k_weight) * P[n].Mass;
+    grid_mass[index] += i_weight * (1 - j_weight) * (1 - k_weight) * S->particles[n].mass;
 
     index = three_to_one(i+di, j, k+dk, grid_dims);
-    grid_mass[index] += (1 - i_weight) * j_weight * (1 - k_weight) * P[n].Mass;
+    grid_mass[index] += (1 - i_weight) * j_weight * (1 - k_weight) * S->particles[n].mass;
 
     index = three_to_one(i+di, j+dj, k+dk, grid_dims);
-    grid_mass[index] += (1 - i_weight) * (1 - j_weight) * (1 - k_weight) * P[n].Mass;
+    grid_mass[index] += (1 - i_weight) * (1 - j_weight) * (1 - k_weight) * S->particles[n].mass;
   }
 
   return grid_mass;
