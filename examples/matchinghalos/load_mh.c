@@ -9,6 +9,9 @@
  * path: path to the matching halos file
  *
  * return: an avl tree contains matching halos
+ * the key of the avl nodes is the halo id of the secondary list and the data
+ * is a match structure containing the matched halo id (in the primary) list
+ * and the goodness of the match
  *
  * author: Saeed Sarpas
  */
@@ -28,23 +31,23 @@ avltree* load_mh(char *path)
 {
   FILE *matches_file = open_file(path, "r");
 
-  go_to_line(matches_file, 8);
+  go_to_line(matches_file, 9);
 
   avltree *matches_tree = new_avltree(set_int_key, compare_int_keys);
 
   int pri_halo_id;
   float dummy;
-  match *match_holder = allocate(1, sizeof(*match_holder));
+  match match_holder;
 
   int i, num_of_matches = get_num_of_mh(path);
-  for(i = 0; i < num_of_matches; i++){
-    fscanf(matches_file, " %d %e %d %e %f\n", &pri_halo_id, &dummy,
-           &match_holder->matchid, &dummy, &match_holder->goodness);
 
-    avl_insert(matches_tree, &pri_halo_id, match_holder, 1, sizeof(match));
+  for(i = 0; i < num_of_matches; i++){
+    fscanf(matches_file, " %d %e %d %e %f\n", &match_holder.matchid, &dummy,
+           &pri_halo_id, &dummy, &match_holder.goodness);
+
+    avl_insert(matches_tree, &pri_halo_id, &match_holder, 1, sizeof(match));
   }
 
-  free(match_holder);
   fclose(matches_file);
 
   return matches_tree;
