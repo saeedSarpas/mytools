@@ -76,7 +76,8 @@ int main(int argc, char *argv[])
   // Finding matching halos
   clock_t _f_m_h_ = start("Finding matching halos");
   vector **cascades = triplecascade(matches_256_512, matches_512_1024,
-      NULL, NULL, NULL, 0);
+                                    halos_256->header->num_halos,
+                                    NULL, NULL, NULL, 0);
   done(_f_m_h_);
 
   // Saving output files

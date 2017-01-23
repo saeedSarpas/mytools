@@ -6,7 +6,8 @@
 #include "./../../../vector/vector.h"
 
 
-vector** triplecascade(avltree*, avltree*, avltree**, avltree**, avltree**, int);
+vector** triplecascade(avltree*, avltree*, int,
+                       avltree**, avltree**, avltree**, int);
 void dispose_triplecascade(vector***);
 
 

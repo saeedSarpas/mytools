@@ -5,7 +5,7 @@
  * halos of three runs and their internal matching halos, aka main progenitors)
  *
  * Parameters
- * matches_256_512, matches_512_1024: an avltree containing the cross mathces
+ * matches_512_256, matches_1024_512: an avltree containing the cross mathces
  * matches_256, matches_512, matches_1024: array of avltrees containing
  * internal matches
  * length: the length of matches_xxxx arrays
@@ -35,20 +35,24 @@
 #include "./../../../strings/concat/concat.h"
 #include "./../../../io/check_file.h"
 #include "./../../../time/mytime.h"
+#include "./../../../halomatcher/singlehalo_matcher.h"
 
 
-vector** triplecascade(avltree *matches_256_512, avltree *matches_512_1024,
-    avltree **matches_256, avltree **matches_512, avltree **matches_1024,
-    int length)
+vector** triplecascade(avltree *matches_512_256,
+                       avltree *matches_1024_512,
+                       int nhalos,
+                       avltree **matches_256,
+                       avltree **matches_512,
+                       avltree **matches_1024,
+                       int length)
 {
-  int nhalos_256 = *(int*)((max_node(matches_256_512->root))->key) + 1;
-  vector **triplecascades = allocate(nhalos_256 + 1, sizeof(vector*));
+  vector **triplecascades = allocate(nhalos + 1, sizeof(*triplecascades));
 
   int haloid256, haloid512, haloid1024;
-  avlnode *node_256_512, *node_512_1024;
+  avlnode *node_512_256, *node_1024_512;
 
   int i;
-  for(i = 0; i < nhalos_256; i++){
+  for(i = 0; i < nhalos; i++){
     triplecascades[i] = new_vector(3, sizeof(ll*));
     haloid256 = i;
 
@@ -56,29 +60,29 @@ vector** triplecascade(avltree *matches_256_512, avltree *matches_512_1024,
     vector_push(triplecascades[i], mh_cascade(haloid256, matches_256, length));
 
     // 256 -> 512
-    node_256_512 = avl_find(matches_256_512, &haloid256);
+    node_512_256 = avl_find(matches_512_256, &haloid256);
 
-    if(node_256_512 == NULL)
+    if(node_512_256 == NULL)
         continue;
 
-    haloid512 = *(int*)node_256_512->data;
+    haloid512 = ((match*)node_512_256->data)->matchid;
 
     // 512
     vector_push(triplecascades[i], mh_cascade(haloid512, matches_512, length));
 
     // 512 -> 1024
-    node_512_1024 = avl_find(matches_512_1024, &haloid512);
+    node_1024_512 = avl_find(matches_1024_512, &haloid512);
 
-    if(node_512_1024 == NULL)
+    if(node_1024_512 == NULL)
       continue;
 
-    haloid1024 = *(int*)node_512_1024->data;
+    haloid1024 = ((match*)node_1024_512->data)->matchid;
 
     //1024
     vector_push(triplecascades[i], mh_cascade(haloid1024, matches_1024, length));
   }
 
-  triplecascades[nhalos_256] = NULL;
+  triplecascades[nhalos] = NULL;
 
   return triplecascades;
 }
@@ -86,7 +90,7 @@ vector** triplecascade(avltree *matches_256_512, avltree *matches_512_1024,
 
 void dispose_triplecascade(vector ***cascade)
 {
-  int i = 0, j;
+  unsigned int i = 0, j;
   ll **pointer_to_list = NULL;
   vector *pointer_to_vector = NULL;
 
