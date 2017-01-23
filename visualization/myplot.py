@@ -178,6 +178,7 @@ class MyPlot(object):
             Axis boundries
         xlabel, ylabel : str, optional
             Axis labels
+        alpha: float, optional
 
         Examples
         --------
@@ -202,15 +203,15 @@ class MyPlot(object):
         self._stylespines(**kwargs)
         self._setaxiscolor(**kwargs)
 
-        ax.plot(
-            plotparams['x'], plotparams['y'],
-            color=params['color'],
-            linestyle=params['linestyle'],
-            label=params['label'])
+        ax.plot(plotparams['x'], plotparams['y'],
+                color=params['color'],
+                linestyle=params['linestyle'],
+                label=params['label'],
+                alpha=params['alpha'])
 
 
     def density(self, plotdata, pos="111", ax=None, vmin=None, vmax=None,
-                **kwargs):
+                interpolation=None, **kwargs):
         """Density plot
 
         Parameters:
@@ -232,6 +233,8 @@ class MyPlot(object):
             Axis boundries
         xlabel, ylabel : str, optional
             Axis labels
+        interpolation: str, optional
+            anti aliasing, default: None
         """
 
         if ax is None:
@@ -253,9 +256,10 @@ class MyPlot(object):
         self._setaxiscolor(**kwargs)
 
         cmap = mcolors.LinearSegmentedColormap(
-            'CustomMap', cdict.get(params['scheme'])['cdict'])
+            'CustomMap', cdict.get(params['scheme'])['dict'])
 
-        ax.imshow(plotdata, cmap=cmap, vmin=vmin, vmax=vmax)
+        ax.imshow(plotdata, cmap=cmap, vmin=vmin, vmax=vmax,
+                interpolation=interpolation)
 
     def new3daxes(self, pos='111'):
         """Creatign new 3d axes for plotting
@@ -488,16 +492,19 @@ class MyPlot(object):
         axes.set_axisbelow(True)
 
 
-    def save(self, name):
+    def save(self, name, dpi=360):
         """Saving plot
 
         Parameters
         ----------
         name : str
             name and extension of the plot
+        dpi : integer
+            dots per inch
         """
 
-        self.plt.savefig(name, dpi=360)
+        self.plt.savefig(name, dpi=dpi)
+
 
 
     def _setscales(self, axes=None, **kwargs):
@@ -547,19 +554,19 @@ class MyPlot(object):
         axes.tick_params(axis='x', colors=cscheme['axiscolor'])
         for tick in axes.xaxis.get_major_ticks():
             tick.label.set_color(cscheme['axiscolor'])
-            tick.label.set_fontsize(8)
+            tick.label.set_fontsize(10)
         for label in axes.xaxis.get_majorticklabels():
             label.set_color(cscheme['axiscolor'])
-            label.set_fontsize(8)
+            label.set_fontsize(10)
 
         axes.yaxis.label.set_color(cscheme['axiscolor'])
         axes.tick_params(axis='y', colors=cscheme['axiscolor'])
         for tick in axes.yaxis.get_major_ticks():
             tick.label.set_color(cscheme['axiscolor'])
-            tick.label.set_fontsize(8)
+            tick.label.set_fontsize(10)
         for label in axes.yaxis.get_majorticklabels():
             label.set_color(cscheme['axiscolor'])
-            label.set_fontsize(8)
+            label.set_fontsize(10)
 
 
     def _setaxiscolor3d(self, axes=None, **kwargs):
@@ -573,10 +580,10 @@ class MyPlot(object):
         axes.zaxis.label.set_color(cscheme['axiscolor'])
         axes.tick_params(axis='z', colors=cscheme['axiscolor'])
         for tick in axes.zaxis.get_major_ticks():
-            tick.label.set_fontsize(8)
+            tick.label.set_fontsize(10)
         for label in axes.zaxis.get_majorticklabels():
             label.set_color(cscheme['axiscolor'])
-            label.set_fontsize(8)
+            label.set_fontsize(10)
 
 def _getcscheme(**kwargs):
     """Returning the colorscheme"""
@@ -619,6 +626,7 @@ def _getparams(**kwargs):
         ('linestyle', 'solid'),
         ('scheme', 'RAINBOW'),
         ('shadow', shadow),
+        ('alpha', None),
         ('silent', False)]
 
     params = {}
