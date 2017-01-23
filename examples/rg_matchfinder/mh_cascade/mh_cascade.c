@@ -21,6 +21,7 @@
 #include "./mh_cascade.h"
 #include "./../../../ll/ll_add.h"
 #include "./../../../avltree/avl_find.h"
+#include "./../../../halomatcher/singlehalo_matcher.h"
 
 
 ll* mh_cascade(int halo_id, avltree **internal_matches, int length)
@@ -40,7 +41,7 @@ ll* mh_cascade(int halo_id, avltree **internal_matches, int length)
 
     if(node == NULL) break;
 
-    found_id = *(int*)node->data;
+    found_id = ((match*)node->data)->matchid;
     ll_addback(cascade, &found_id, NULL);
   }
 
