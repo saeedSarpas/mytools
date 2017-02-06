@@ -16,6 +16,7 @@
 
 
 #define NSNAPS 11
+#define NHALOS (NSNAPS + 1)
 
 
 avltree **matches_256 = NULL;
@@ -23,9 +24,8 @@ avltree **matches_512 = NULL;
 avltree **matches_1024 = NULL;
 avltree *matches_512_256 = NULL;
 avltree *matches_1024_512 = NULL;
-int halo256_id;
-int halo512_id;
-int halo1024_id;
+
+int halo256_id, halo512_id, halo1024_id;
 
 
 Describe(triplecascade);
@@ -54,14 +54,13 @@ BeforeEach(triplecascade)
     down_id++;
     up_id++;
 
-    matches_512[i] = new_avltree(set_int_key, compare_int_keys);
     matches_1024[i] = new_avltree(set_int_key, compare_int_keys);
     avl_insert(matches_1024[i], &up_id, &down_id, 1, sizeof(int));
   }
 
   halo1024_id = up_id;
-  halo512_id = --up_id;
-  halo256_id = --up_id;
+  halo512_id = halo1024_id - 1;
+  halo256_id = halo512_id - 1;
 
   matches_512_256 = new_avltree(set_int_key, compare_int_keys);
   avl_insert(matches_512_256, &halo256_id, &halo512_id, 1, sizeof(int));
@@ -103,17 +102,20 @@ Ensure(triplecascade, returns_the_right_triplecascade_for_a_trivial_input)
   for(i = 0; i < NSNAPS; i++)
     assert_that(cascades[i]->logLength, is_equal_to(1));
 
-  assert_that(cascades[NSNAPS]->logLength, is_equal_to(3));
+  assert_that(cascades[NHALOS - 1]->logLength, is_equal_to(3));
 
   ll *list = NULL;
 
   list = vector_get(cascades[NSNAPS], 0);
+  assert_that(list->len, is_equal_to(NSNAPS + 1));
   assert_that(list->head->ikey, is_equal_to(halo256_id));
 
   list = vector_get(cascades[NSNAPS], 1);
+  assert_that(list->len, is_equal_to(NSNAPS + 1));
   assert_that(list->head->ikey, is_equal_to(halo512_id));
 
   list = vector_get(cascades[NSNAPS], 2);
+  assert_that(list->len, is_equal_to(NSNAPS + 1));
   assert_that(list->head->ikey, is_equal_to(halo1024_id));
 
   dispose_triplecascade(&cascades);

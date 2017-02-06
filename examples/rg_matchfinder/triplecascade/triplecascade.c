@@ -53,7 +53,7 @@ vector** triplecascade(avltree *matches_512_256,
 
   int i;
   for(i = 0; i < nhalos; i++){
-    triplecascades[i] = new_vector(3, sizeof(ll*));
+    triplecascades[i] = new_vector(3, sizeof(ll));
     haloid256 = i;
 
     // 256
