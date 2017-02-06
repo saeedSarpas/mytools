@@ -11,8 +11,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 #include "./history_config.h"
+#include "./accretion_history.h"
 #include "./../triplecascade/triplecascade.h"
 #include "./../../matchinghalos/load_mh.h"
 #include "./../../../memory/allocate.h"
@@ -45,13 +45,13 @@ int main(int argc, char *argv[])
   done(_l_m_h_);
 
   // Loading Internal Matching halos
-  clock_t _l_i_m_ = start("Loading internal matches\n");
-  avltree **matches_256 = allocate(p->num_matches, sizeof(avltree*));
-  avltree **matches_512 = allocate(p->num_matches, sizeof(avltree*));
-  avltree **matches_1024 = allocate(p->num_matches, sizeof(avltree*));
+  clock_t _l_i_m_ = start("Loading internal matches");
+  avltree **matches_256 = allocate(p->num_match_files, sizeof(avltree*));
+  avltree **matches_512 = allocate(p->num_match_files, sizeof(avltree*));
+  avltree **matches_1024 = allocate(p->num_match_files, sizeof(avltree*));
 
   int i;
-  for(i = 0; i < p->num_matches; i++){
+  for(i = 0; i < p->num_match_files; i++){
     matches_256[i] = load_mh(p->matches_256[i]);
     matches_512[i] = load_mh(p->matches_512[i]);
     matches_1024[i] = load_mh(p->matches_1024[i]);
@@ -59,18 +59,18 @@ int main(int argc, char *argv[])
   done(_l_i_m_);
 
   // Loading halo files
-  clock_t _l_h_ = start("Loading halo files");
+  clock_t _l_h_ = start("Loading halo files\n");
   halofinder **rockstar[3];
 
   for(i = 0; i < 3; i++)
-    rockstar[i] = allocate(p->num_halos, sizeof(*rockstar[i]));
+    rockstar[i] = allocate(p->num_halo_files, sizeof(*rockstar[i]));
 
   int progress = -1;
-  for(i = 0; i < p->num_halos; i ++){
-    progress = simple_loading(progress, i, p->num_halos - 1);
+  for(i = 0; i < p->num_halo_files; i ++){
     rockstar[0][i] = load_rockstar_bin(p->halos_256[i]);
     rockstar[1][i] = load_rockstar_bin(p->halos_512[i]);
     rockstar[2][i] = load_rockstar_bin(p->halos_1024[i]);
+    progress = simple_loading(progress, i, p->num_halo_files - 1);
   }
   done(_l_h_);
 
@@ -78,22 +78,25 @@ int main(int argc, char *argv[])
   clock_t _g_t_c_ = start("Generating triple cascade of matching halos");
   vector **cascades = triplecascade(matches_512_256,
                                     matches_1024_512,
-                                    rockstar[0][p->num_halos - 1]->header->num_halos,
+                                    rockstar[0][p->num_halo_files - 1]->header->num_halos,
                                     matches_256,
                                     matches_512,
                                     matches_1024,
-                                    p->num_matches);
+                                    p->num_match_files);
   done(_g_t_c_);
 
   // Add modules here to study the evolution of the halo properties along the
   // history of the simulations
+  clock_t _a_h_ = start("Generating accretion history");
+  accretion_history(rockstar, cascades, p);
+  done(_a_h_);
 
   // Cleaning up...
   clock_t _c_u_ = start("Cleaning Up...");
 
   dispose_triplecascade(&cascades);
 
-  for(i = 0; i < p->num_halos; i++){
+  for(i = 0; i < p->num_halo_files; i++){
     dispose_halofinder(&rockstar[0][i]);
     dispose_halofinder(&rockstar[1][i]);
     dispose_halofinder(&rockstar[2][i]);
@@ -103,7 +106,7 @@ int main(int argc, char *argv[])
   free(rockstar[1]);
   free(rockstar[2]);
 
-  for(i = 0; i < p->num_matches; i++){
+  for(i = 0; i < p->num_match_files; i++){
     dispose_avltree(&matches_256[i]);
     dispose_avltree(&matches_512[i]);
     dispose_avltree(&matches_1024[i]);

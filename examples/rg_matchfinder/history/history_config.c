@@ -43,15 +43,15 @@ mh_history_params* load_params(const char *path)
   const char *raw_matches_512_path = cfg_getstring(inputs, "matches_512");
   const char *raw_matches_1024_path = cfg_getstring(inputs, "matches_1024");
 
-  p->num_matches = cfg_getint(inputs, "num_of_match_files");
-  p->matches_256 = allocate(p->num_matches, sizeof(char*));
-  p->matches_512 = allocate(p->num_matches, sizeof(char*));
-  p->matches_1024 = allocate(p->num_matches, sizeof(char*));
+  p->num_match_files = cfg_getint(inputs, "num_of_match_files");
+  p->matches_256 = allocate(p->num_match_files, sizeof(char*));
+  p->matches_512 = allocate(p->num_match_files, sizeof(char*));
+  p->matches_1024 = allocate(p->num_match_files, sizeof(char*));
 
   int i;
   char match_fname[1024], *errormsg;
 
-  for(i = 0; i < p->num_matches; i++){
+  for(i = 0; i < p->num_match_files; i++){
     sprintf(match_fname, raw_matches_256_path, i, i+1);
     p->matches_256[i] = strdup(match_fname);
     errormsg = concat(2, match_fname, " does not exist");
@@ -72,14 +72,14 @@ mh_history_params* load_params(const char *path)
   const char *raw_halos_512_path = cfg_getstring(inputs, "halos_512");
   const char *raw_halos_1024_path = cfg_getstring(inputs, "halos_1024");
 
-  p->num_halos = cfg_getint(inputs, "num_of_halo_files");
-  p->halos_256 = allocate(p->num_halos, sizeof(char*));
-  p->halos_512 = allocate(p->num_halos, sizeof(char*));
-  p->halos_1024 = allocate(p->num_halos, sizeof(char*));
+  p->num_halo_files = cfg_getint(inputs, "num_of_halo_files");
+  p->halos_256 = allocate(p->num_halo_files, sizeof(char*));
+  p->halos_512 = allocate(p->num_halo_files, sizeof(char*));
+  p->halos_1024 = allocate(p->num_halo_files, sizeof(char*));
 
   char halo_fname[1024];
 
-  for(i = 0; i < p->num_halos; i++){
+  for(i = 0; i < p->num_halo_files; i++){
     sprintf(halo_fname, raw_halos_256_path, i);
     p->halos_256[i] = strdup(halo_fname);
     errormsg = concat(2, halo_fname, " does not exist");
@@ -119,7 +119,7 @@ void dispose_params(mh_history_params **p)
   free((*p)->matches_512_256);
   free((*p)->matches_1024_512);
   int i;
-  for(i = 0; i < (*p)->num_matches; i++){
+  for(i = 0; i < (*p)->num_match_files; i++){
     free((*p)->matches_256[i]);
     free((*p)->matches_512[i]);
     free((*p)->matches_1024[i]);
@@ -127,7 +127,7 @@ void dispose_params(mh_history_params **p)
   free((*p)->matches_256);
   free((*p)->matches_512);
   free((*p)->matches_1024);
-  for(i = 0; i < (*p)->num_halos; i++){
+  for(i = 0; i < (*p)->num_halo_files; i++){
     free((*p)->halos_256[i]);
     free((*p)->halos_512[i]);
     free((*p)->halos_1024[i]);

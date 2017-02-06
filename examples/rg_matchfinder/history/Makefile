@@ -28,12 +28,13 @@ DEPS := ./../../../configfile/mylibconfig.c \
         ./../../../ll/ll_traverse.c \
         ./../../../halofinder/halofinder.c \
         ./../../../halofinder/rockstar/load_rockstar_bin.c \
-        ./../../../math/fittingfunctions/fityaebx.c \
+        ./../../../math/fittingfunctions/fityax.c \
         ./../../../loading/simple_loading.c \
         ./../../matchinghalos/load_mh.c \
         ./../triplecascade/triplecascade.c \
         ./../mh_cascade/mh_cascade.c \
-        ./history_config.c
+        ./history_config.c \
+        ./accretion_history.c
 
 .PHONY : all
 
