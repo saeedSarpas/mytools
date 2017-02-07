@@ -23,7 +23,7 @@ static void delnodes(ll*);
 
 ll* new_ll(int sizeofkey)
 {
-  ll *linkedlist = allocate(1, sizeof(*linkedlist));
+  ll *linkedlist = allocate(1, sizeof(ll));
   linkedlist->head = NULL;
   linkedlist->sizeofkey = sizeofkey;
   linkedlist->len = 0;

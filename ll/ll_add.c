@@ -43,7 +43,6 @@ void ll_add(ll *linkedlist, void *key, llmode mode, void *data, ...)
     if(linkedlist->head == NULL){
       newnode->next = NULL;
       linkedlist->head = newnode;
-      linkedlist->len += 1;
     }
     else{
       llnode *node = linkedlist->head;
@@ -53,14 +52,14 @@ void ll_add(ll *linkedlist, void *key, llmode mode, void *data, ...)
 
       node->next = newnode;
       newnode->next = NULL;
-      linkedlist->len += 1;
     }
   }
   else{
     newnode->next = linkedlist->head;
     linkedlist->head = newnode;
-    linkedlist->len += 1;
   }
+
+  linkedlist->len = linkedlist->len + 1;
 }
 
 
