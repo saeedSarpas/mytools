@@ -5,8 +5,9 @@ from __future__ import print_function
 import gc
 import numpy as np
 from scipy import stats
+from scipy.interpolate import interp1d
 
-from math import sqrt, acos
+from math import sqrt, acos, pi
 
 from ...examples.rg_matchfinder.mh import MatchingHalo
 from ...halofinder.rockstar import Rockstar, NOTAVLBL
@@ -56,20 +57,23 @@ class MHErrors(object):
         self.tags = [field[0] for field in self.halos['low'].dtype]
 
 
-    def plotall(self, path='./', lowsymb='l', highsymb='h', confactor=None):
+    def plotall(self, path='./', lowsymb='l', highsymb='h', confactor=None,
+                verticalline=(None, None)):
         """Plotting all available properties"""
 
         self.plot(path=path, lowsymb=lowsymb, highsymb=highsymb,
-                  confactor=confactor)
+                  confactor=confactor, verticalline=verticalline)
         self.plotconcentration(path=path, lowsymb=lowsymb, highsymb=highsymb,
-                               confactor=confactor)
+                               confactor=confactor, verticalline=verticalline)
         self.plotvector(path=path, lowsymb=lowsymb, highsymb=highsymb,
-                        confactor=confactor)
+                        confactor=confactor, verticalline=verticalline)
         self.plotvs(path=path, lowsymb=lowsymb, highsymb=highsymb)
+        self.plotangmag(path=path, lowsymb=lowsymb, highsymb=highsymb,
+                        confactor=confactor, verticalline=verticalline)
 
 
     def plot(self, path='./', only=None, lowsymb='l', highsymb='h',
-             confactor=None):
+             confactor=None, verticalline=(None, 0)):
         """Plotting regular properties"""
 
         PLOTS = _genplots(lowsymb, highsymb)
@@ -108,11 +112,12 @@ class MHErrors(object):
                        confactor=confactor,
                        yscale=yscale,
                        lowsymb=lowsymb,
-                       highsymb=highsymb)
+                       highsymb=highsymb,
+                       verticalline=verticalline)
 
 
     def plotvector(self, path='./', only=None, lowsymb='l', highsymb='h',
-                   confactor=None):
+                   confactor=None, verticalline=(None, 0)):
         """Plotting available moduli such as positions, velocities, etc."""
 
         MODULI = _genmoduli(lowsymb, highsymb)
@@ -151,7 +156,8 @@ class MHErrors(object):
                        confactor=confactor,
                        yscale=yscale,
                        lowsymb=lowsymb,
-                       highsymb=highsymb)
+                       highsymb=highsymb,
+                       verticalline=verticalline)
 
             # Plotting angle distribution
             if 'ymin_angle' in MODULI[prop]:
@@ -176,11 +182,12 @@ class MHErrors(object):
                        confactor=confactor,
                        yscale=yscale_angle,
                        lowsymb=lowsymb,
-                       highsymb=highsymb)
+                       highsymb=highsymb,
+                       verticalline=verticalline)
 
 
     def plotconcentration(self, path='./', lowsymb='l', highsymb='h',
-                          confactor=None):
+                          confactor=None, verticalline=(None, 0)):
         """Plotting the concentration parameter, c"""
 
         print('Plotting concentration parameter, c...')
@@ -195,8 +202,31 @@ class MHErrors(object):
                    confactor=confactor,
                    yscale='linear',
                    lowsymb=lowsymb,
-                   highsymb=highsymb)
+                   highsymb=highsymb,
+                   verticalline=verticalline)
 
+
+    def plotangmag(self, path='./', lowsymb='l', highsymb='h',
+                   confactor=None, verticalline=(None, 0)):
+        """Plotting angular magnitude uncertainty"""
+
+        print('Plotting angular magnitude uncertainty')
+
+        e = self._genangmag()
+
+        # ymin = -1 * np.percentile(-1 * np.array(e['ang_mag_err']), 99.5) * 1.5
+        # ymax = np.percentile(e['ang_mag_err'], 99.5) * 1.5
+
+        self._plot(e['num_p_low'],
+                   e['ang_mag_err'],
+                   -1, 10,
+                   r"$\Delta |\vec{J}|/\vec{J}^{" + highsymb + "}$",
+                   path + 'ang_mom_mag_' + lowsymb + '.png',
+                   confactor=confactor,
+                   yscale='linear',
+                   lowsymb=lowsymb,
+                   highsymb=highsymb,
+                   verticalline=verticalline)
 
 
     def plotvs(self, path='./', lowsymb='l', highsymb='h'):
@@ -221,7 +251,7 @@ class MHErrors(object):
         kws['ylabel'] = r'$N_P^{' + highsymb + r'}$'
         myplot.plot({'x': xs1, 'y': ys1}, **dict(kws))
 
-        myplot.save(path + 'mvir_vs_num_p_high.png')
+        myplot.save(path + 'mvir_vs_num_p_high.png', dpi=720)
         myplot.plt.clf()
 
         # Plotting M_vir vs. num_p of the low resolution run
@@ -286,7 +316,6 @@ class MHErrors(object):
                 ys.append(sum(values) / len(values))
 
             return xs, ys
-
 
 
     def _generrors(self, prop):
@@ -368,6 +397,28 @@ class MHErrors(object):
         return output
 
 
+    def _genangmag(self):
+        """Generating the uncertainty in the angular magnitude"""
+
+        low = self.halos['low'].halossortedbyid
+        high = self.halos['high'].halossortedbyid
+
+        output = {'num_p_low': [], 'ang_mag_err': []}
+
+        for id1, id2 in zip(self.matches.data['id1'], self.matches.data['id2']):
+            # Checking the availability of the data
+            if id1 is NOTAVLBL or id2 is NOTAVLBL: continue
+
+            output['num_p_low'].append(low[id1]['num_p'])
+            j1 = sqrt(low[id1]['Jx']**2 + low[id1]['Jy']**2 + low[id1]['Jz']**2)
+            j2 = sqrt(high[id2]['Jx']**2 + high[id2]['Jy']**2
+                      + high[id2]['Jz']**2)
+
+            output['ang_mag_err'].append((j1 - j2) / j2)
+
+        return output
+
+
     def _genconcentration(self):
         """Generating concentration parameter, c"""
         output = {'c_err': [], 'num_p_low': []}
@@ -391,7 +442,8 @@ class MHErrors(object):
 
 
     def _plot(self, num_p, err, ymin, ymax, ylabel, path, confactor=None,
-              yscale='linear', lowsymb='l', highsymb='h'):
+              yscale='linear', lowsymb='l', highsymb='h',
+              verticalline=(None, 0)):
         """Plotting a scatter plot
 
         Parameters
@@ -445,11 +497,17 @@ class MHErrors(object):
         # Plotting zero line
         linekws = {
             'color': get('RAINBOW')['axiscolor'],
-            'alphs': 0.5,
+            'alpha': 0.4,
             'silent': True
         }
 
         myplot.plot({'x': [xmin, xmax], 'y': [0, 0]}, ax=axes, **dict(linekws))
+
+        # Plotting vertical line
+        if verticalline[0] is not None:
+            myplot.plot({'x': [verticalline[1], verticalline[1]],
+                         'y': [ymin, ymax]}, ax=axes, **dict(linekws))
+
 
         # Plotting shaded percentiles
         binedges = np.logspace(np.log10(xmin), np.log10(xmax), num=27, base=10)
@@ -499,6 +557,13 @@ class MHErrors(object):
             'silent': True
         }
         myplot.plot({'x': x, 'y': y}, ax=axes, **dict(plotkws))
+
+        f = interp1d(np.absolute(y), x, bounds_error=False)
+        print(f(0), f(0.05), f(0.1), f(0.25), f(0.5), f(1), f(pi/180), f(pi/36), f(pi/18), f(pi/12), f(pi/9), f(pi/6), f(pi/4), f(pi/3), f(pi/2), f(pi))
+        # for a,b in zip(np.absolute(y), x):
+        #     print(a, b)
+        # root = np.interp([0, 0.1, 0.25, 0.5], x, np.absolute(y))
+        # print("\t" + str(root))
 
         # Second x axis
 
@@ -614,6 +679,16 @@ def _genplots(lowsymb, highsymb):
         'Halfmass_Radius': {
             'ylabel': r"$\Delta R_{(M/2)} / R_{(M/2)}^{" + highsymb + r"}$",
             'ymax': 2,
+            'ymin': -1
+        },
+        'Spin': {
+            'ylabel': r"$\Delta \lambda / \lambda^{" + highsymb +"}$",
+            'ymax': 5,
+            'ymin': -1
+        },
+        'spin_bullock': {
+            'ylabel': r"$\Delta \lambda_{b} / \lambda^{" + highsymb +"}_{b}$",
+            'ymax': 5,
             'ymin': -1
         }
     }
