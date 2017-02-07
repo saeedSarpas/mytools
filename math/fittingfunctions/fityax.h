@@ -5,7 +5,7 @@
 #include "./../../vector/vector.h"
 
 typedef struct _fitresultyax {
-  float slope;
+  double slope;
 } fitresultyax;
 
 

@@ -22,13 +22,13 @@ AfterEach(fityax) {}
 
 Ensure(fityax, returns_the_opened_file)
 {
-  vector *xs = new_vector(NUM_OF_ELEMS, sizeof(float));
-  vector *ys = new_vector(NUM_OF_ELEMS, sizeof(float));
+  vector *xs = new_vector(NUM_OF_ELEMS, sizeof(double));
+  vector *ys = new_vector(NUM_OF_ELEMS, sizeof(double));
 
   int i;
-  float x, y;
+  double x, y;
   for(i = 0; i < NUM_OF_ELEMS; i++){
-    x = (float)i;
+    x = (double)i;
     y = COEFF_A * x;
     vector_push(xs, &x);
     vector_push(ys, &y);
