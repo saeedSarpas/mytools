@@ -72,7 +72,6 @@ class RockstarHMF(object):
 
         myplot = MyPlot()
         primarycolor = primarycolors('RAINBOW')
-        helpercolor = helpercolors('RAINBOW')
 
         for _, value in self.params.iteritems():
             kws['color'] = primarycolor.next()
@@ -81,8 +80,8 @@ class RockstarHMF(object):
                         **dict(kws))
 
         tinkerplot = Tinker08()
-        kws['color'] = helpercolor.next()
-        myplot.plot(tinkerplot, label='Tinker 2008', **dict(kws))
+        kws['color'] = "#000000"
+        myplot.plot(tinkerplot, label='$Tinker 08$', **dict(kws))
 
         myplot.legend()
 
