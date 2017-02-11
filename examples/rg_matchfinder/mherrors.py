@@ -13,6 +13,7 @@ from ...examples.rg_matchfinder.mh import MatchingHalo
 from ...halofinder.rockstar import Rockstar, NOTAVLBL
 from ...visualization.myplot import MyPlot
 from ...visualization.mycolordict import get
+from ...examples.rg_matchfinder.history.accretionhistory import AccretionHistory
 
 MINNUMOFBINPOINTS = 100
 MAXNUMOFPARTS = 3181904
@@ -70,6 +71,8 @@ class MHErrors(object):
         self.plotvs(path=path, lowsymb=lowsymb, highsymb=highsymb)
         self.plotangmag(path=path, lowsymb=lowsymb, highsymb=highsymb,
                         confactor=confactor, verticalline=verticalline)
+
+        # [NOTE] self.plotaccretionhistory is not included
 
 
     def plot(self, path='./', only=None, lowsymb='l', highsymb='h',
@@ -227,6 +230,64 @@ class MHErrors(object):
                    lowsymb=lowsymb,
                    highsymb=highsymb,
                    verticalline=verticalline)
+
+
+    def plotaccretionhistory(self, fp, res='256', path='./', lowsymb='l',
+                             highsymb='h', confactor=None,
+                             verticalline=(None, 0)):
+        """Plotting the accretion history
+
+        Parameters
+        ----------
+        fp : string
+            Path to the accretion history ascii file
+        """
+
+        ah = AccretionHistory(fp)
+        ah.removecorrupteddata()
+
+        low = self.halos['low'].halossortedbyid
+
+        def conv2a(redshift):
+            """Converting redshift to scale factor"""
+            return 1.0 / (1 + redshift)
+
+        for zz in ['30', '50', '70']:
+            print('Plotting accretion history of a_' + zz)
+
+            err = {'acc_hist_err': [], 'num_p_low': []}
+
+            zlow = 'z' + zz + str(res)
+            zhigh = 'z' + zz + '1024'
+
+            for history in ah.cleanedhistory:
+                # Filling the output dictionary
+                err['num_p_low'].append(
+                    low[history['id' + str(res)]]['num_p'])
+
+                err['acc_hist_err'].append(
+                    (conv2a(history[zlow]) - conv2a(history[zhigh]))
+                    / conv2a(history[zhigh]))
+
+            # ymin = -1 * np.percentile(
+            #     -1 * np.array(err['acc_hist_err']), 99.5) * 1.5
+            # ymax = np.percentile(err['acc_hist_err'], 99.5) * 1.5
+
+            ymin = -1
+            ymax = 2
+
+            label = r"$\Delta a_{" + zz + r"} / a_{" + zz + r"}^{" + highsymb + r"}$"
+
+            self._plot(err['num_p_low'],
+                       err['acc_hist_err'],
+                       ymin, ymax,
+                       label,
+                       path + 'accretion_history_a_' + zz + lowsymb + '.png',
+                       confactor=confactor,
+                       yscale='linear',
+                       lowsymb=lowsymb,
+                       highsymb=highsymb,
+                       verticalline=verticalline)
 
 
     def plotvs(self, path='./', lowsymb='l', highsymb='h'):
@@ -558,12 +619,22 @@ class MHErrors(object):
         }
         myplot.plot({'x': x, 'y': y}, ax=axes, **dict(plotkws))
 
-        f = interp1d(np.absolute(y), x, bounds_error=False)
-        print(f(0), f(0.05), f(0.1), f(0.25), f(0.5), f(1), f(pi/180), f(pi/36), f(pi/18), f(pi/12), f(pi/9), f(pi/6), f(pi/4), f(pi/3), f(pi/2), f(pi))
-        # for a,b in zip(np.absolute(y), x):
-        #     print(a, b)
-        # root = np.interp([0, 0.1, 0.25, 0.5], x, np.absolute(y))
-        # print("\t" + str(root))
+        # Printing the precision
+        onesigma_min = interp1d(np.absolute(ylow), x, bounds_error=False)
+        median = interp1d(np.absolute(y), x, bounds_error=False)
+        onesigma_max = interp1d(np.absolute(yhigh), x, bounds_error=False)
+
+        for pre in [0, 0.05, 0.1, 0.25, 0.5, 1]:
+            print(str(pre)
+                  + ": %6.2e <- " % onesigma_min(pre)
+                  + " %6.2e " % median(pre)
+                  + " -> %6.2e" % onesigma_max(pre))
+
+        for den in [180, 36, 18, 12, 9, 6, 4, 3, 2, 1]:
+            print("pi / " + str(den)
+                  + ": %6.2e <- " % onesigma_min(pi/den)
+                  + " %6.2e " % median(pi/den) +
+                  " -> %6.2e" % onesigma_max(pi/den))
 
         # Second x axis
 
