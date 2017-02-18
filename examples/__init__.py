@@ -1,4 +1,5 @@
-"""Report"""
+"""Examples"""
 
-__all__ = ['r_hmp',
-           'rg_hmp']
+__all__ = ['r_hmf',
+           'rg_hmp',
+           'displacement_field']
