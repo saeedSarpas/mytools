@@ -3,8 +3,8 @@
 from __future__ import print_function
 import numpy as np
 
-from ...visualization.myplot import MyPlot
-from ...visualization.mycolordict import primarycolors
+from ..visualization.myplot import MyPlot
+from ..visualization.mycolordict import primarycolors
 
 
 class DisplacementField(object):
@@ -12,14 +12,21 @@ class DisplacementField(object):
     displacement_field.c file
     """
 
-    def __init__(self, paths, resolutions, box_length):
+    def __init__(self, paths, resolutions, box_length, vel_paths=None):
         """Initializing displacement field module by loading files"""
         if len(paths) != len(resolutions):
             print("The length of the paths and resolutions array should be"
                   " the same")
             exit()
 
+        if vel_paths is not None and len(vel_paths) != len(resolutions):
+            print("The length of the vel_paths and resolutions array should be"
+                  " the same")
+            exit()
+
+
         self.paths = paths
+        self.vel_paths = vel_paths
         self.resolutions = resolutions
         self.box_length = box_length
 
@@ -33,6 +40,18 @@ class DisplacementField(object):
         for path in paths:
             self.data[path] = np.genfromtxt(path, dtype=self.dtype)
 
+        if vel_paths is not None:
+            self.vel_data = {}
+            self.vel_dtype = [
+                ("id", np.int),
+                ("vx", np.float),
+                ("vy", np.float),
+                ("vz", np.float)]
+
+            for vel_path in vel_paths:
+                self.vel_data[vel_path] = np.genfromtxt(vel_path,
+                                                        dtype=self.vel_dtype)
+
     def plot(self):
         """Plotting the displacement of the particles from their pre-initial
         positions
@@ -44,7 +63,8 @@ class DisplacementField(object):
         min_pos = _get_init_pos(min_id, self.resolutions[0], self.box_length)
         max_pos = _get_init_pos(max_id, self.resolutions[0], self.box_length)
 
-        colors = primarycolors('RAINBOW')
+        pos_colors = primarycolors('RAINBOW')
+        vel_colors = primarycolors('RAINBOW')
 
         kws = {
             "xlabel": r"y [$Mpc$]",
@@ -56,22 +76,42 @@ class DisplacementField(object):
             "silent": True
         }
 
+        myplot = MyPlot(aspect=1.0)
+        axes = myplot.new2daxes()
+
         for path, res in zip(self.paths, self.resolutions):
             d = self.data[path]
 
+            kws['color'] = pos_colors.next()
+
+            for point in d:
+                init_pos = _get_init_pos(point['id'], res, self.box_length)
+                myplot.arrow({
+                    'init': (init_pos[1], init_pos[2]),
+                    'final': (point['y'], point['z'])
+                }, ax=axes, **dict(kws))
+
+            myplot.save(path + ".png", dpi=720)
+            myplot.plt.cla()
+
+        if self.vel_paths is None: return
+
+        for vel_path, res in zip(self.vel_paths, self.resolutions):
+            d = self.vel_data[vel_path]
+
             mp = MyPlot(aspect=1.0)
-            axes = mp.new2daxes()
-            kws['color'] = colors.next()
+            kws['color'] = vel_colors.next()
 
             for point in d:
                 init_pos = _get_init_pos(point['id'], res, self.box_length)
                 mp.arrow({
                     'init': (init_pos[1], init_pos[2]),
-                    'final': (point['y'], point['z'])
-                    }, ax=axes, **dict(kws))
+                    'final': (init_pos[1] + point['vy'],
+                              init_pos[2] + point['vz'])
+                }, ax=axes, **dict(kws))
 
-            mp.save(path + ".png", dpi=720)
-            mp.plt.cla()
+            myplot.save(vel_path + ".png", dpi=720)
+            myplot.plt.cla()
 
 
 def _get_init_pos(index, res, box_len):
