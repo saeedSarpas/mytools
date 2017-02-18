@@ -7,7 +7,7 @@ typedef struct _displacement_field_params
   char *snap[3];
   int lowResX, lowResY, lowResZ;
   int lowResBoxLen;
-  char *ascii[3];
+  char *asciiPos[3], *asciiVel[3];
 } displacement_field_params;
 
 

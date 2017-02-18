@@ -66,21 +66,29 @@ int main(int argc, char *argv[])
                          factors[i] * p->lowResY,
                          factors[i] * p->lowResZ, dims);
 
-    FILE *file = open_file(p->ascii[i], "w");
+    FILE *pos_file = open_file(p->asciiPos[i], "w");
+    FILE *vel_file = open_file(p->asciiVel[i], "w");
 
     for(j = 0; j < factors[i] * p->lowResBoxLen; j++){
       for(k = 0; k < factors[i] * p->lowResBoxLen; k++){
-        fprintf(file, "%d\t%8.6e\t%8.6e\t%8.6e\n",
+        fprintf(pos_file, "%d\t%8.6e\t%8.6e\t%8.6e\n",
                 (int)snaps[i]->particles[index + k].id,
                 snaps[i]->particles[index + k].pos[0] / 1000,
                 snaps[i]->particles[index + k].pos[1] / 1000,
                 snaps[i]->particles[index + k].pos[2] / 1000);
+
+        fprintf(vel_file, "%d\t%8.6e\t%8.6e\t%8.6e\n",
+                (int)snaps[i]->particles[index + k].id,
+                snaps[i]->particles[index + k].vel[0] / 1000,
+                snaps[i]->particles[index + k].vel[1] / 1000,
+                snaps[i]->particles[index + k].vel[2] / 1000);
       }
 
       index += resolutions[i];
     }
 
-    fclose(file);
+    fclose(pos_file);
+    fclose(vel_file);
   }
   done(_w_o_);
 
@@ -137,14 +145,23 @@ static displacement_field_params* loadconfig(const char *path)
 
   config_setting_t *outputs = cfg_findsetting(cfg, "outputs");
 
-  const char *output = cfg_getstring(outputs, "ascii_256");
-  p->ascii[0] = strdup(output);
+  const char *output = cfg_getstring(outputs, "ascii_pos_256");
+  p->asciiPos[0] = strdup(output);
 
-  output = cfg_getstring(outputs, "ascii_512");
-  p->ascii[1] = strdup(output);
+  output = cfg_getstring(outputs, "ascii_pos_512");
+  p->asciiPos[1] = strdup(output);
 
-  output = cfg_getstring(outputs, "ascii_1024");
-  p->ascii[2] = strdup(output);
+  output = cfg_getstring(outputs, "ascii_pos_1024");
+  p->asciiPos[2] = strdup(output);
+
+  output = cfg_getstring(outputs, "ascii_vel_256");
+  p->asciiVel[0] = strdup(output);
+
+  output = cfg_getstring(outputs, "ascii_vel_512");
+  p->asciiVel[1] = strdup(output);
+
+  output = cfg_getstring(outputs, "ascii_vel_1024");
+  p->asciiVel[2] = strdup(output);
 
   return p;
 }
