@@ -80,34 +80,41 @@ class DisplacementField(object):
         axes = myplot.new2daxes()
 
         for path, res in zip(self.paths, self.resolutions):
-            d = self.data[path]
+            data = self.data[path]
 
             kws['color'] = pos_colors.next()
 
-            for point in d:
-                init_pos = _get_init_pos(point['id'], res, self.box_length)
+            for disp in data:
+                init_pos = _get_init_pos(disp['id'], res, self.box_length)
                 myplot.arrow({
                     'init': (init_pos[1], init_pos[2]),
-                    'final': (point['y'], point['z'])
+                    'final': (disp['y'], disp['z'])
                 }, ax=axes, **dict(kws))
 
             myplot.save(path + ".png", dpi=720)
             myplot.plt.cla()
 
-        if self.vel_paths is None: return
+        if self.vel_paths is None:
+            return
 
-        for vel_path, res in zip(self.vel_paths, self.resolutions):
-            d = self.vel_data[vel_path]
+        for path, vel_path, res in zip(
+                self.data, self.vel_paths, self.resolutions):
+            data = self.data[path]
+            vel_data = self.vel_data[vel_path]
 
             mp = MyPlot(aspect=1.0)
             kws['color'] = vel_colors.next()
 
-            for point in d:
-                init_pos = _get_init_pos(point['id'], res, self.box_length)
+            for pos, vel in zip(data, vel_data):
+                if pos['id'] != vel['id']:
+                    print("The order of velocity and positions files are"
+                          " not the same")
+                    exit()
+
                 mp.arrow({
-                    'init': (init_pos[1], init_pos[2]),
-                    'final': (init_pos[1] + point['vy'],
-                              init_pos[2] + point['vz'])
+                    'init': (pos['y'], pos['z']),
+                    'final': (pos['y'] + vel['vy'],
+                              pos['z'] + vel['vz'])
                 }, ax=axes, **dict(kws))
 
             myplot.save(vel_path + ".png", dpi=720)
