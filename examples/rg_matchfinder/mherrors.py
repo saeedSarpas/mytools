@@ -7,7 +7,7 @@ import numpy as np
 from scipy import stats
 from scipy.interpolate import interp1d
 
-from math import sqrt, acos, pi
+from math import sqrt, acos, pi, isnan
 
 from ...examples.rg_matchfinder.mh import MatchingHalo
 from ...halofinder.rockstar import Rockstar, NOTAVLBL
@@ -23,7 +23,10 @@ MINNUMOFPARTS = 160
 class MHErrors(object):
     """Generating different errors based on matching halos"""
 
-    def __init__(self, matchinghalosfile, halos1file, halos2file):
+    def __init__(self, matchinghalosfile, halos1file, halos2file,
+                 lowmasstag='mass1', highmasstag='mass2',
+                 lowidtag='id1', highidtag='id2',
+                 lowhalotag='low', highhalotag='high'):
         """Initializing GenerateErrors object
 
         Parameters
@@ -43,7 +46,8 @@ class MHErrors(object):
         """
 
         self.matches = MatchingHalo(matchinghalosfile)
-        self.matches.load()
+        self.matches.load(lowmasstag=lowmasstag, highmasstag=highmasstag,
+                          lowidtag=lowidtag, highidtag=highidtag)
 
         self.halos = {'low': None, 'high': None}
 
@@ -56,6 +60,8 @@ class MHErrors(object):
         self.halos['high'].sortbyid()
 
         self.tags = [field[0] for field in self.halos['low'].dtype]
+
+        self.errors = {}
 
 
     def plotall(self, path='./', lowsymb='l', highsymb='h', confactor=None,
@@ -111,7 +117,7 @@ class MHErrors(object):
                        e[prop + '_err'],
                        ymin, ymax,
                        PLOTS[prop]['ylabel'],
-                       path + prop + '_' + lowsymb + '.png',
+                       path + prop + '_' + lowsymb,
                        confactor=confactor,
                        yscale=yscale,
                        lowsymb=lowsymb,
@@ -155,7 +161,7 @@ class MHErrors(object):
                        e['modulus_err'],
                        ymin, ymax,
                        MODULI[prop]['ylabel'],
-                       path + prop + '_' + lowsymb + '.png',
+                       path + prop + '_' + lowsymb,
                        confactor=confactor,
                        yscale=yscale,
                        lowsymb=lowsymb,
@@ -181,7 +187,7 @@ class MHErrors(object):
                        e['angle_err'],
                        ymin_angle, ymax_angle,
                        MODULI[prop]['ylabel_angle'],
-                       path + prop + '_angledist_' + lowsymb + '.png',
+                       path + prop + '_angledist_' + lowsymb,
                        confactor=confactor,
                        yscale=yscale_angle,
                        lowsymb=lowsymb,
@@ -199,9 +205,9 @@ class MHErrors(object):
 
         self._plot(e['num_p_low'],
                    e['c_err'],
-                   -1, 1,
+                   -1, 2,
                    r"$\Delta c / c^{" + highsymb + r"}$",
-                   path +  'c_' + lowsymb + '.png',
+                   path +  'c_' + lowsymb,
                    confactor=confactor,
                    yscale='linear',
                    lowsymb=lowsymb,
@@ -224,7 +230,7 @@ class MHErrors(object):
                    e['ang_mag_err'],
                    -1, 10,
                    r"$\Delta |\vec{J}|/\vec{J}^{" + highsymb + "}$",
-                   path + 'ang_mom_mag_' + lowsymb + '.png',
+                   path + 'ang_mom_mag_' + lowsymb,
                    confactor=confactor,
                    yscale='linear',
                    lowsymb=lowsymb,
@@ -282,7 +288,7 @@ class MHErrors(object):
                        err['acc_hist_err'],
                        ymin, ymax,
                        label,
-                       path + 'accretion_history_a_' + zz + lowsymb + '.png',
+                       path + 'accretion_history_a_' + zz + lowsymb,
                        confactor=confactor,
                        yscale='linear',
                        lowsymb=lowsymb,
@@ -295,7 +301,7 @@ class MHErrors(object):
 
         print('Plotting vs. plots...')
 
-        myplot = MyPlot()
+        myplot = MyPlot(aspect=0.9)
 
         kws = {
             'xlabel': '',
@@ -312,6 +318,8 @@ class MHErrors(object):
         kws['ylabel'] = r'$N_P^{' + highsymb + r'}$'
         myplot.plot({'x': xs1, 'y': ys1}, **dict(kws))
 
+        myplot.plt.gcf().subplots_adjust(left=0.2)
+        myplot.save(path + 'mvir_vs_num_p_high.eps', dpi=720)
         myplot.save(path + 'mvir_vs_num_p_high.png', dpi=720)
         myplot.plt.clf()
 
@@ -322,6 +330,8 @@ class MHErrors(object):
         kws['ylabel'] = r'$N_P^{' + lowsymb + r'}$'
         myplot.plot({'x': xs2, 'y': ys2}, **dict(kws))
 
+        myplot.plt.gcf().subplots_adjust(left=0.2)
+        myplot.save(path + 'mvir_vs_num_p_low_' + lowsymb + '.eps')
         myplot.save(path + 'mvir_vs_num_p_low_' + lowsymb + '.png')
         myplot.plt.clf()
 
@@ -333,7 +343,9 @@ class MHErrors(object):
 
         myplot.plot({'x': num_p_low, 'y': num_p_high}, **dict(kws))
 
+        myplot.plt.gcf().subplots_adjust(left=0.2)
         myplot.save(path + 'num_p_low_vs_num_p_high_' + lowsymb + '.png')
+        myplot.save(path + 'num_p_low_vs_num_p_high_' + lowsymb + '.eps')
         myplot.plt.clf()
 
         del myplot
@@ -475,7 +487,11 @@ class MHErrors(object):
             j2 = sqrt(high[id2]['Jx']**2 + high[id2]['Jy']**2
                       + high[id2]['Jz']**2)
 
-            output['ang_mag_err'].append((j1 - j2) / j2)
+            if j2 != 0:
+                output['ang_mag_err'].append((j1 - j2) / j2)
+            else:
+                output['ang_mag_err'].append(output['ang_mag_err'][-1] * 10)
+
 
         return output
 
@@ -520,7 +536,7 @@ class MHErrors(object):
         lowsymb, highsymb : str, optional
         """
 
-        myplot = MyPlot()
+        myplot = MyPlot(aspect=0.9)
         axes = myplot.new2daxes()
 
         xmin = np.min(num_p)
@@ -536,8 +552,11 @@ class MHErrors(object):
         xmin_box = MINNUMOFPARTS / confactor
         xmax_box = MAXNUMOFPARTS / confactor
 
-        color = get('RAINBOW')['primary_colors'][1]
-        shadow = get('RAINBOW')['primary_shadows'][0]
+        color = "#aaaaaa"
+        if lowsymb is 'l':
+            shadow = get('RAINBOW')['primary_shadows'][0]
+        else:
+            shadow = get('RAINBOW')['primary_shadows'][1]
 
         scatterkws = {
             'xmax': xmax_box,
@@ -555,14 +574,18 @@ class MHErrors(object):
 
         myplot.scatter(num_p, err, ax=axes, s=1, **dict(scatterkws))
 
-        # Plotting zero line
+        # Plotting %10 precision area
         linekws = {
             'color': get('RAINBOW')['axiscolor'],
             'alpha': 0.4,
-            'silent': True
+            'silent': True,
         }
 
         myplot.plot({'x': [xmin, xmax], 'y': [0, 0]}, ax=axes, **dict(linekws))
+
+        linekws['alpha'] = 0.15
+        myplot.plot({'x': [xmin, xmax], 'y': [-0.1, -0.1]}, ax=axes, **dict(linekws))
+        myplot.plot({'x': [xmin, xmax], 'y': [0.1, 0.1]}, ax=axes, **dict(linekws))
 
         # Plotting vertical line
         if verticalline[0] is not None:
@@ -620,22 +643,57 @@ class MHErrors(object):
         myplot.plot({'x': x, 'y': y}, ax=axes, **dict(plotkws))
 
         # Printing the precision
-        onesigma_min = interp1d(np.absolute(ylow), x, bounds_error=False)
+        # onesigma_min = interp1d(np.absolute(ylow), x, bounds_error=False)
         median = interp1d(np.absolute(y), x, bounds_error=False)
-        onesigma_max = interp1d(np.absolute(yhigh), x, bounds_error=False)
+        # onesigma_max = interp1d(np.absolute(yhigh), x, bounds_error=False)
 
-        for pre in [0, 0.05, 0.1, 0.25, 0.5, 1]:
-            print(str(pre)
-                  + ": %6.2e <- " % onesigma_min(pre)
-                  + " %6.2e " % median(pre)
-                  + " -> %6.2e" % onesigma_max(pre))
+        diff = []
+        for i in range(len(ylow)):
+            diff.append(np.absolute(ylow[i] - yhigh[i]))
+
+        diff_interp = interp1d(diff, x, bounds_error=False)
+
+        print()
+        for pre in [0.05, 0.1]:
+            # maxinter = 0 if isnan(onesigma_max(pre)) else onesigma_max(pre)
+            # mininter = 0 if isnan(onesigma_min(pre)) else onesigma_min(pre)
+
+            medianinter = 0 if isnan(median(pre)) else median(pre)
+            diffprecision = 0 if isnan(diff_interp(2 * pre)) else diff_interp(2 * pre)
+
+            print(str(pre))
+            print(" & $" + str(int(medianinter))
+                  + "$ & $" + str(int(diffprecision)) + "$")
+                  # + "       & $" + str(int(max(mininter, maxinter)))
+                  # + "$     min: " + str(int(mininter))
+                  # + "     max: " + str(int(maxinter))
+        print('-----------------------')
+        print()
 
         for den in [180, 36, 18, 12, 9, 6, 4, 3, 2, 1]:
-            print("pi / " + str(den)
-                  + ": %6.2e <- " % onesigma_min(pi/den)
-                  + " %6.2e " % median(pi/den) +
-                  " -> %6.2e" % onesigma_max(pi/den))
 
+            # maxinter = 0 if isnan(onesigma_max(pi/den)) else onesigma_max(pi/den)
+            # mininter = 0 if isnan(onesigma_min(pi/den)) else onesigma_min(pi/den)
+
+            medianinter = 0 if isnan(median(pi/den)) else median(pi/den)
+            diffprecision = 0 if isnan(diff_interp(2* pi /den)) else diff_interp(2* pi /den)
+
+            print("pi / " + str(den))
+            print(" & $" + str(int(medianinter))
+                  + "$ & $" + str(int(diffprecision)) + "$")
+                  # + "$     min: " + str(int(mininter))
+                  # + "     max: " + str(int(maxinter)))
+        print('------------------------')
+        print()
+
+        print('max median: ' + str(np.max(y)) + '    absolute: ' + str(np.max(np.absolute(y))))
+        print('max min-1sigma: ' + str(np.max(ylow)) + '    absolute: ' + str(np.max(np.absolute(ylow))))
+        print('max max-1sigma: ' + str(np.max(yhigh)) + '    absolute: ' + str(np.max(np.absolute(yhigh))))
+        print('max diff: ' + str(np.max(diff)))
+        print('min diff: ' + str(np.min(diff)))
+
+        print()
+        print()
         # Second x axis
 
         min_pow = int(np.log10(MINNUMOFPARTS))
@@ -650,7 +708,9 @@ class MHErrors(object):
         myplot.coaxis(ticksloc, tickslabels, "$N_P^{" + highsymb + "}$",
                       axes=axes, scale='log', showminorticks=False)
 
-        myplot.save(path)
+        myplot.plt.gcf().subplots_adjust(left=0.2)
+        myplot.save(path + '.eps')
+        myplot.save(path + '.png')
 
         # Cleaning up...
         myplot.plt.clf()

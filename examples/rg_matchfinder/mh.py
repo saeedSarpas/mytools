@@ -29,11 +29,12 @@ class MatchingHalo(object):
                 val = keyvalue[1].strip('\n').strip()
                 self.header[key] = _2number(val)
 
-    def load(self):
+    def load(self, lowmasstag='mass1', highmasstag='mass2',
+             lowidtag='id1', highidtag='id2'):
         """Loading matchinghalos file"""
 
-        self.datatype = [('id1', np.int), ('mass1', np.float32),
-                         ('id2', np.int), ('mass2', np.float32),
+        self.datatype = [(lowidtag, np.int), (lowmasstag, np.float32),
+                         (highidtag, np.int), (highmasstag, np.float32),
                          ('goodness', np.float32)]
 
         self.data = np.genfromtxt(self.path, skip_header=8, dtype=self.datatype)
