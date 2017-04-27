@@ -7,6 +7,9 @@
 #include "./../rg_matchfinder/matchfinder.h"
 
 
+#define HEADER_LENGTH 9
+
+
 void save_mh(halofinder*, halofinder*, matchfinder_params*, matchinghalo*);
 
 

@@ -19,6 +19,7 @@
 
 #include <stdlib.h>
 #include "./load_mh.h"
+#include "./save_mh.h"
 #include "./../../avltree/avl_insert.h"
 #include "./../../io/open_file.h"
 #include "./../../memory/allocate.h"
@@ -31,7 +32,7 @@ avltree* load_mh(char *path)
 {
   FILE *matches_file = open_file(path, "r");
 
-  go_to_line(matches_file, 9);
+  go_to_line(matches_file, HEADER_LENGTH);
 
   avltree *matches_tree = new_avltree(set_int_key, compare_int_keys);
 
@@ -69,7 +70,7 @@ int get_num_of_mh(char *path)
 
 static void go_to_line(FILE *file, int line)
 {
-  int counter;
+  int counter = 0;
   while(counter < line){
     char c = fgetc(file);
     if(c == '\n')

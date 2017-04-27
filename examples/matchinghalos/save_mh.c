@@ -38,8 +38,7 @@ void save_mh(halofinder *pri, halofinder *sec, matchfinder_params *p,
   fprintf(outputfile, "num of halos in secondary input: %" PRId64 "\n",
           sec->header->num_halos);
   fprintf(outputfile, "num of found matches: %d\n", foundmatches);
-  fprintf(outputfile,
-          "#primary_halo primary_halo_mass secondary_halo "
+  fprintf(outputfile, "primary_halo_id primary_halo_mass secondary_halo_id "
           "secondary_halo_mass goodness\n");
 
   for(i = 0; i < pri->header->num_halos; i++)
