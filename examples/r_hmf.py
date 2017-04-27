@@ -14,7 +14,7 @@ from ..visualization.mycolordict import helpercolors, primarycolors
 class RockstarHMF(object):
     """RockstarHMF class"""
 
-    def __init__(self, paths):
+    def __init__(self, paths, labels):
         """Initializing RockstarHMF class and loading rockstar file
 
         Make sure the Rockstar file contains parents ids
@@ -43,13 +43,15 @@ class RockstarHMF(object):
         if isinstance(paths, str):
             paths = [paths]
 
-        for path in paths:
-            print(path + ':')
-            self.params[path] = {}
-            self.params[path]['label'] = raw_input('label:')
-            self.params[path]['rockstar'] = Rockstar(path)
-            self.params[path]['rockstar'].load(
-                only=['mbound_vir', 'PID'], onlyhosts=True)
+        for i in range(len(paths)):
+            print(paths[i] + ':')
+            self.params[i] = {}
+            self.params[i]['label'] = labels[i]
+            self.params[i]['rockstar'] = Rockstar(paths[i])
+            self.params[i]['rockstar'].load(
+                only=['mbound_vir'], onlyhosts=False)
+
+        self.myplot = None
 
     def hmf(self):
         """Generating histogram from loaded rockstar data"""
@@ -61,28 +63,35 @@ class RockstarHMF(object):
             value['hmf'] = MyHMF(value['rockstar'].halos['mbound_vir'], 100)
             value['hmf'].hmf(nbins)
 
-    def plot(self, name):
+    def plot(self, z=0, loc='upper right'):
         """Plotting halo mass function"""
 
         kws = {}
         kws['xscale'] = 'log'
+        kws['ymin'] = 1e-7
+        kws['ymax'] = 1e0
         kws['yscale'] = 'log'
         kws['xlabel'] = '$M\\ [h^{-1}M_{\\odot}]$'
         kws['ylabel'] = '$dn / d\\ln(M) dV\\ [h^3Mpc^{-3}]$'
+        kws['silent'] = True
 
-        myplot = MyPlot()
+        self.myplot = MyPlot()
         primarycolor = primarycolors('RAINBOW')
 
-        for _, value in self.params.iteritems():
+        for i in range(len(self.params)):
             kws['color'] = primarycolor.next()
-            myplot.plot({'x': value['hmf'].m, 'y': value['hmf'].dndlnmdv},
-                        label=value['label'],
-                        **dict(kws))
+            self.myplot.plot({
+                'x': self.params[i]['hmf'].m,
+                'y': self.params[i]['hmf'].dndlnmdv
+            }, label=self.params[i]['label'], **dict(kws))
 
-        tinkerplot = Tinker08()
+        tinkerplot = Tinker08(z=z)
         kws['color'] = "#000000"
-        myplot.plot(tinkerplot, label='$Tinker 08$', **dict(kws))
+        kws['label'] = r"$Tinker 08 (z = " + str(z) + r")$"
+        self.myplot.plot(tinkerplot, **dict(kws))
 
-        myplot.legend()
+        self.myplot.legend(loc=loc)
 
-        myplot.save(name)
+    def save(self, name):
+        """Saving the hmf plot"""
+        self.myplot.save(name)
