@@ -7,7 +7,7 @@ from hmf.filters import TopHat
 import hmf.transfer_models as tm
 import hmf.fitting_functions as ff
 
-def Tinker08():
+def Tinker08(z=0):
     """Tinker halo mass function generator
 
     Returns
@@ -20,6 +20,7 @@ def Tinker08():
     hmf = MassFunction(
         hmf_model=ff.Tinker08,
         delta_h=200.0,
+        z=z,
         filter_model=TopHat,
         transfer_model=tm.EH,
         cosmo_model=Planck15)
