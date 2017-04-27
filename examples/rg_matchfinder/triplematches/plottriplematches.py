@@ -6,27 +6,29 @@ from __future__ import print_function
 
 import numpy as np
 
-from ...visualization.myplot import MyPlot
-from ...visualization.mycolordict import primarycolors, primaryshadows
+from ....visualization.myplot import MyPlot
+from ....visualization.mycolordict import primarycolors, primaryshadows
 
 
 class PlotSingleMatches(object):
     """PlotMatchingHalo class!"""
 
-    def __init__(self, path):
+    def __init__(self, path, aspect=0.48):
         """Initializing PlotMatchingHalo class and loading the match file
 
         Parameters
         ----------
         path : str
             path to the match file
+        aspect : float
+            Aspect ratio of the plot
 
         Examples
         --------
-        >>> from mytools.examples.rockstargadgetmatchfinder.plotmatchinghalo \
-        import PlotMatchingHalo as PMH
-        >>> pmh = PMH('/path/to/match/file')
-        >>> pmh.save('/path/to/output/plot/with/extension')
+        >>> from mytools.examples.rg_matchfinder.triplematches.plottriplematches \
+        import PlotSingleMatches as PSM
+        >>> psm = PSM('/path/to/match/file')
+        >>> psm.save('/path/to/output/plot/with/extension')
         """
         self.header = {}
 
@@ -69,7 +71,7 @@ class PlotSingleMatches(object):
             self.secSnap[axis] /= 1000
             self.triSnap[axis] /= 1000
 
-        self.myplot = MyPlot(aspect=0.48)
+        self.myplot = MyPlot(aspect=aspect)
 
     def plot(self, path):
         """Plotting a scatter3d of the data alongside with 3 different scatters
@@ -99,6 +101,188 @@ class PlotSingleMatches(object):
         self.myplot.save(path)
         self.myplot.plt.clf()
         self.myplot.plt.close()
+
+
+    def plotsinglehalo(self, path):
+        """Plotting dark matter halo"""
+
+        primarycolor = primarycolors('RAINBOW')
+        _ = primarycolor.next()
+        _ = primarycolor.next()
+        color3 = primarycolor.next()
+
+        kws = {}
+        kws['silent'] = True
+        kws['xlabel'] = 'x'
+        kws['ylabel'] = 'y'
+        kws['alpha'] = 1.0
+
+        lim = self._getarea(which='final')
+        kws['xmin'] = lim['x'][0]
+        kws['xmax'] = lim['x'][1]
+
+        kws['ymin'] = lim['y'][0]
+        kws['ymax'] = lim['y'][1]
+
+        kws['color'] = color3
+        self.myplot.scatter(self.triSnap['x'], self.triSnap['y'],
+                            pos='111', s=1, **dict(kws))
+
+        self.myplot.save(path, dpi=720)
+
+
+
+    def plottrace(self, path):
+        """Tracing back halo particles to their initial positions
+
+        TODO: This is a disaster, not only this method, but the whole module
+        (like these days) I should definitely make this module more modular
+        at least by using inheritance!
+        """
+
+        ax = self.myplot.new3daxes()
+
+        primarycolor = primarycolors('RAINBOW')
+        color1 = primarycolor.next()
+        color2 = primarycolor.next()
+
+        primaryshadow = primaryshadows('RAINBOW')
+        shadow1 = primaryshadow.next()
+        shadow2 = primaryshadow.next()
+
+        a = {'ic': 0.01960784313, 'snap': 1.0}
+
+        kws = {}
+        kws['silent'] = True
+        kws['xlabel'] = 'x'
+        kws['ylabel'] = 'y'
+        kws['zlabel'] = '$a$'
+        kws['alpha'] = 1.0
+
+        liminit = self._getarea(which='init')
+        limfinal = self._getarea(which='final')
+
+        kws['xmin'] = min(liminit['x'][0], limfinal['x'][0])
+        kws['xmax'] = max(liminit['x'][1], limfinal['x'][1])
+
+        kws['ymin'] = min(liminit['y'][0], limfinal['y'][0])
+        kws['ymax'] = max(liminit['y'][1], limfinal['y'][1])
+
+        kws['zmin'] = 0.0
+        kws['zmax'] = 1.0
+
+        # Primary
+        kws['color'] = shadow1
+        kws['alpha'] = 0.75
+        self.myplot.scatter3d(self.priIc['x'],
+                              self.priIc['y'],
+                              [a['ic']] * self.num_p['pri'],
+                              ax, s=48, **dict(kws))
+
+        kws['color'] = color1
+        kws['alpha'] = 0.75
+        self.myplot.scatter3d(self.priSnap['x'],
+                              self.priSnap['y'],
+                              [a['snap']] * self.num_p['pri'],
+                              ax, s=48, **dict(kws))
+
+        kws['color'] = shadow1
+        kws['alpha'] = 0.125
+        length = min(1000, self.num_p['pri'])
+        for i in range(length):
+            plotparams = {
+                'x': (self.priIc['x'][i], self.priSnap['x'][i]),
+                'y': (self.priIc['y'][i], self.priSnap['y'][i]),
+                'z': (a['ic'], a['snap'] - 0.02)
+            }
+            self.myplot.plot3d(plotparams, ax=ax, **dict(kws))
+
+        ax.w_xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+        ax.w_yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+
+        # for ii in xrange(0,360,1):
+        ii = 320
+        ax.view_init(elev=10., azim=ii)
+        self.myplot.save(path + ('-256-%03d' % ii) + '.png', dpi=120)
+        self.myplot.plt.cla()
+
+        # Secondary
+        kws['color'] = shadow2
+        kws['alpha'] = 0.75
+        self.myplot.scatter3d(self.secIc['x'],
+                              self.secIc['y'],
+                              [a['ic']] * self.num_p['sec'],
+                              ax, s=8, **dict(kws))
+
+        kws['color'] = color2
+        kws['alpha'] = 0.75
+        self.myplot.scatter3d(self.secSnap['x'],
+                              self.secSnap['y'],
+                              [a['snap']] * self.num_p['sec'],
+                              ax, s=8, **dict(kws))
+
+        kws['color'] = shadow2
+        kws['alpha'] = 0.25
+        length = min(1000, self.num_p['sec'])
+
+
+        for i in range(length):
+            plotparams = {
+                'x': (self.secIc['x'][i], self.secSnap['x'][i]),
+                'y': (self.secIc['y'][i], self.secSnap['y'][i]),
+                'z': (a['ic'], a['snap'] - 0.02)
+            }
+            self.myplot.plot3d(plotparams, ax=ax, **dict(kws))
+
+        ax.w_xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+        ax.w_yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+
+        # for ii in xrange(0,360,2):
+        ii = 320
+        ax.view_init(elev=10., azim=ii)
+        self.myplot.save(path + ('-512-%03d' % ii) + '.png', dpi=120)
+        self.myplot.plt.cla()
+        self.myplot.plt.clf()
+        self.myplot.plt.close()
+
+    def plotictraces(self, path):
+        # Plotting 2d ICs
+        mmm = MyPlot(aspect=1)
+        ax2d = mmm.new2daxes()
+
+        primaryshadow = primaryshadows('RAINBOW')
+        shadow1 = primaryshadow.next()
+        shadow2 = primaryshadow.next()
+
+        kws = {}
+        kws['silent'] = True
+        kws['xlabel'] = 'x'
+        kws['ylabel'] = 'y'
+        kws['zlabel'] = '$a$'
+        kws['alpha'] = 1.0
+
+        liminit = self._getarea(which='init')
+        limfinal = self._getarea(which='final')
+
+        kws['xmin'] = min(liminit['x'][0], limfinal['x'][0])
+        kws['xmax'] = max(liminit['x'][1], limfinal['x'][1])
+
+        kws['ymin'] = min(liminit['y'][0], limfinal['y'][0])
+        kws['ymax'] = max(liminit['y'][1], limfinal['y'][1])
+
+        kws['color'] = shadow1
+        kws['alpha'] = 1
+        mmm.scatter(self.priIc['x'], self.priIc['y'],
+                            ax=ax2d, s=48, **dict(kws))
+        mmm.save(path + '-256-ic' + '.png')
+        mmm.plt.cla()
+
+        kws['color'] = shadow2
+        kws['alpha'] = 1
+        mmm.scatter(self.secIc['x'], self.secIc['y'],
+                            ax=ax2d, s=8, **dict(kws))
+        mmm.save(path + '-512-ic' + '.png')
+        mmm.plt.cla()
 
     def _init3dscatter(self, scheme, pos='111'):
         """plot scatter3d part of the figure"""
