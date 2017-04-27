@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 import numpy as np
+import os
 
 from ..visualization.myplot import MyPlot
 from ..visualization.mycolordict import primarycolors
@@ -66,13 +67,18 @@ class DisplacementField(object):
         pos_colors = primarycolors('RAINBOW')
         vel_colors = primarycolors('RAINBOW')
 
+        xmin = min_pos[1] - 0.005 * self.box_length
+        xmax = max_pos[1] + 0.005 * self.box_length
+        ymin = min_pos[2] - 0.005 * self.box_length
+        ymax = max_pos[2] + 0.005 * self.box_length
+
         kws = {
-            "xlabel": r"y [$Mpc$]",
-            "ylabel": r"z [$Mpc$]",
-            "xmin": min_pos[1] - 0.005 * self.box_length,
-            "xmax": max_pos[1] + 0.005 * self.box_length,
-            "ymin": min_pos[2] - 0.005 * self.box_length,
-            "ymax": max_pos[2] + 0.005 * self.box_length,
+            "xlabel": r"y [$Mpc/h$]",
+            "ylabel": r"z [$Mpc/h$]",
+            "xmin": xmin,
+            "xmax": xmax,
+            "ymin": ymin,
+            "ymax": ymax,
             "silent": True
         }
 
@@ -91,7 +97,7 @@ class DisplacementField(object):
                     'final': (disp['y'], disp['z'])
                 }, ax=axes, **dict(kws))
 
-            myplot.save(path + ".png", dpi=720)
+            myplot.save(os.path.splitext(path)[0] + ".eps")
             myplot.plt.cla()
 
         if self.vel_paths is None:
@@ -117,7 +123,16 @@ class DisplacementField(object):
                               pos['z'] + vel['vz'])
                 }, ax=axes, **dict(kws))
 
-            myplot.save(vel_path + ".png", dpi=720)
+            # Velocity length scale
+            mp.arrow({
+                'init': (xmax - 1.25, ymin + 0.3),
+                'final': (xmax - 0.75, ymin + 0.3)
+            }, ax=axes, **dict(kws))
+
+            axes.annotate(r"$500 m/s$", xy=(xmax - 1.2, ymin + 0.15),
+                          color=kws['color'], fontsize=10)
+
+            myplot.save(os.path.splitext(vel_path)[0] + ".eps")
             myplot.plt.cla()
 
 
