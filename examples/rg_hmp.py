@@ -21,7 +21,7 @@ from ..visualization.mycolordict import helpercolors, primarycolors
 class RockstarGadgetHMP(object):
     """RockstarGadgetHMP class"""
 
-    def __init__(self, rockstar_path, gadget_path):
+    def __init__(self, rockstar_paths, gadget_paths, labels):
         """Constructor of RockstarGadgetHMP class
 
         Parameters
@@ -45,33 +45,37 @@ class RockstarGadgetHMP(object):
         >>> rghmp.plot('/path/to/output/file/with/extension')
         """
 
-        self.params = {}
+        self.params = []
+        self.myplot = None
 
-        if isinstance(rockstar_path, str) and isinstance(gadget_path, str):
-            rockstar_path = [rockstar_path]
-            gadget_path = [gadget_path]
+        if isinstance(rockstar_paths, str):
+            rockstar_paths = [rockstar_paths]
+            gadget_paths = [gadget_paths]
+            labels = [labels]
 
-        self.m_bins = np.logspace(10, 15, num=12+1, base=10)
+        self.m_bins = np.logspace(10, 15, num=11, base=10)
 
-        for rpath, gpath in zip(rockstar_path, gadget_path):
-            self.params[rpath] = pointer = {}
+        for i in range(len(rockstar_paths)):
+            rpath = rockstar_paths[i]
+            gpath = gadget_paths[i]
+            self.params.append({})
+            pointer = self.params[i]
 
             print(split(rpath)[1] + ' (snapshot: ' + split(gpath)[1] + '):')
 
-            pointer['label'] = raw_input('label: ')
-            lratio = float(
-                raw_input('Rockstar2Gadget length conversion: '))
+            pointer['label'] = labels[i]
+            lratio = 1000
 
             print('Loading Rockstar halos')
             pointer['rockstar'] = rockstar = Rockstar(rpath)
             rockstar.load(
                 only=['x', 'y', 'z', 'rvir', 'mbound_vir', 'PID'],
-                onlyhosts=True)
+                onlyhosts=False)
             rockstar.halos['x'] *= lratio
             rockstar.halos['y'] *= lratio
             rockstar.halos['z'] *= lratio
-            soft_len = rockstar.headers['Force_resolution_assumed'][0]
-            rockstar.headers['Softening_length'] = float(soft_len) * lratio
+            soft_len = rockstar.header['Force_resolution_assumed'][0]
+            rockstar.header['Softening_length'] = float(soft_len) * lratio
 
             rockstar.binning(self.m_bins)
 
@@ -93,16 +97,17 @@ class RockstarGadgetHMP(object):
         rhocrit = Planck15.critical_density(z).to(units.Msun / units.kpc**3) \
                   / (Planck15.H(z) / 100)
 
-        for _, _input in self.params.iteritems():
+        for i in range(len(self.params)):
+            _input = self.params[i]
             halos = _input['rockstar'].binnedhalos[_input['bin']]
 
             _input['hmp'] = MyHMP(
                 halos,
                 _input['gadget'].data,
-                float(_input['rockstar'].headers['Particle_mass'][0]))
+                float(_input['rockstar'].header['Particle_mass'][0]))
 
 
-            rmin = _input['rockstar'].headers['Softening_length'] / 2.0
+            rmin = _input['rockstar'].header['Softening_length'] / 2.0
             rmax = 2 * np.max(halos['rvir'])
             _input['rockstar'].binnedhalos['mean_rvir'] = sum(halos['rvir']) \
                                                           / len(halos['rvir'])
@@ -110,7 +115,7 @@ class RockstarGadgetHMP(object):
 
             _input['hmp'].hmp(rbins, rhocrit.value)
 
-    def plot(self, name):
+    def plot(self, nfwofs=256, loc='lower left'):
         """Plotting halo mass profile
 
         Parameters
@@ -124,16 +129,22 @@ class RockstarGadgetHMP(object):
         kws['yscale'] = 'log'
         kws['xlabel'] = '$\\log_{10}(r / kpc)$'
         kws['ylabel'] = '$\\log_{10}(\\rho / \\rho_{crit})$'
+        kws['silent'] = True
+        kws['ymin'] = 1e0
+        kws['ymax'] = 1e6
+        kws['xmin'] = 1e0
+        kws['xmax'] = 1e4
 
-        myplot = MyPlot()
+        self.myplot = MyPlot()
 
         nfwplots = []
+        values = []
         primarycolor = primarycolors('RAINBOW')
-        helpercolor = helpercolors('RAINBOW')
 
-        for _, value in self.params.iteritems():
+        for i in range(len(self.params)):
+            value = self.params[i]
             kws['color'] = primarycolor.next()
-            myplot.plot({'x': value['hmp'].r, 'y': value['hmp'].rho_rhocrit},
+            self.myplot.plot({'x': value['hmp'].r, 'y': value['hmp'].rho_rhocrit},
                         label=value['label'],
                         **dict(kws))
 
@@ -144,16 +155,22 @@ class RockstarGadgetHMP(object):
 
             if (mass, z) not in nfwplots:
                 nfwplots.append((mass, z))
-                nfwplot, _, _ = NFW(
-                    mass, value['rockstar'].binnedhalos['mean_rvir'], z)
+                values.append(value)
 
-                kws['color'] = helpercolor.next()
-                label = "NFW for %1.g SolMass" % mass
-                myplot.plot(nfwplot, label=label, **dict(kws))
+        for nfw, val, i in zip(nfwplots, values, range(len(nfwplots))):
+            nfwplot, _, _ = NFW(nfw[0], #mass
+                                val['rockstar'].binnedhalos['mean_rvir'],
+                                nfw[1], #redshift
+                                nfwofs=nfwofs)
 
-        myplot.legend()
+            kws['color'] = ["#000000", "#777777", "#aaaaaa"][i]
+            label = r"NFW ($%1.2g\  M_{\odot} h^{-1}$)" % mass
+            self.myplot.plot(nfwplot, label=label, **dict(kws))
 
-        myplot.save(name)
+        self.myplot.legend(loc=loc)
+
+    def save(self, name):
+        self.myplot.save(name)
 
 
 def _selectbin(binnedhalos, bins):
@@ -179,9 +196,9 @@ def _selectbin(binnedhalos, bins):
             print('{:3}\t({:20}, {:20})\t{:10}'.format(
                 strindex, bins[idx], bins[idx+1], nfoundhalos))
 
-        index = int(raw_input('Choose desired mass range: '))
+        return 8
 
-        if index in validinputs:
-            return index
-        else:
-            print('Your input was invalid. Please try again.')
+        # if index in validinputs:
+        #     return index
+        # else:
+        #     print('Your input was invalid. Please try again.')
