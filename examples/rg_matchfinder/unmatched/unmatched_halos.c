@@ -168,20 +168,20 @@ int main (int argc, char *argv[])
       fprintf(file, "pri_snap: %s\n", p->pri_snap);
       fprintf(file, "sec_snap: %s\n", p->sec_snap);
       fprintf(file, "output_dir: %s\n", p->output_dir);
-      fprintf(file, "Primary halo id: %d\n", i);
-      fprintf(file, "Primary halo x: %8.6f\n", pri_halos->halos[i].pos[0]);
-      fprintf(file, "Primary halo y: %8.6f\n", pri_halos->halos[i].pos[1]);
-      fprintf(file, "Primary halo z: %8.6f\n", pri_halos->halos[i].pos[2]);
-      fprintf(file, "Primary halo r: %8.6f\n", pri_halos->halos[i].r);
-      fprintf(file, "Box min x: %8.6f\n", box_x[0]);
-      fprintf(file, "Box max x: %8.6f\n", box_x[1]);
-      fprintf(file, "Box min y: %8.6f\n", box_y[0]);
-      fprintf(file, "Box max y: %8.6f\n", box_y[1]);
-      fprintf(file, "Box min z: %8.6f\n", box_z[0]);
-      fprintf(file, "Box max z: %8.6f\n", box_z[1]);
-      fprintf(file, "N_p primary halo: %d\n", (int)pri_halos->halos[i].num_p);
-      fprintf(file, "N_p primary box: %d\n", pri_list_of_points->len);
-      fprintf(file, "N_p secondary box: %d\n", sec_list_of_points->len);
+      fprintf(file, "halo_id: %d\n", i);
+      fprintf(file, "halo_x: %8.6f\n", pri_halos->halos[i].pos[0]);
+      fprintf(file, "halo_y: %8.6f\n", pri_halos->halos[i].pos[1]);
+      fprintf(file, "halo_z: %8.6f\n", pri_halos->halos[i].pos[2]);
+      fprintf(file, "halo_r: %8.6f\n", pri_halos->halos[i].r);
+      fprintf(file, "xmin: %8.6f\n", box_x[0]);
+      fprintf(file, "xmax: %8.6f\n", box_x[1]);
+      fprintf(file, "ymin: %8.6f\n", box_y[0]);
+      fprintf(file, "ymax: %8.6f\n", box_y[1]);
+      fprintf(file, "zmin: %8.6f\n", box_z[0]);
+      fprintf(file, "zmax: %8.6f\n", box_z[1]);
+      fprintf(file, "halo_n_p: %d\n", (int)pri_halos->halos[i].num_p);
+      fprintf(file, "pri_region_n_p: %d\n", pri_list_of_points->len);
+      fprintf(file, "sec_region_n_p: %d\n", sec_list_of_points->len);
 
       for (int j = 0; j < pri_halos->halos[i].num_p; j++)
         fprintf(file, "%8.6e\t%8.6e\t%8.6e\n",
