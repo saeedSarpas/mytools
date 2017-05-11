@@ -32,19 +32,35 @@ unmatched_halos_params* load_unmatched_halos_params(const char *path)
   p->matched_catalog = strdup(input);
   check_file_harsh(p->matched_catalog, "[Error] Matched catalog does not exist");
 
-  input = cfg_getstring(inputs, "pri_halos");
-  p->pri_halos = strdup(input);
-  check_file_harsh(p->pri_halos, "[Error] Primary halos does not exist");
 
-  input = cfg_getstring(inputs, "pri_snap");
-  p->pri_snap = strdup(input);
-  check_file_harsh(p->pri_snap, "[Error] Primary snapshot does not exist");
+  input = cfg_getstring(inputs, "halos256");
+  p->halos256 = strdup(input);
+  check_file_harsh(p->halos256, "[Error] 256-res halos does not exist");
 
-  input = cfg_getstring(inputs, "sec_snap");
-  p->sec_snap = strdup(input);
-  check_file_harsh(p->sec_snap, "[Error] Secondary snapshot does not exist");
+  input = cfg_getstring(inputs, "halos512");
+  p->halos512 = strdup(input);
+  check_file_harsh(p->halos512, "[Error] 512-res halos does not exist");
 
-  p->box_size = cfg_getint(inputs, "box_size");
+  input = cfg_getstring(inputs, "halos1024");
+  p->halos1024 = strdup(input);
+  check_file_harsh(p->halos1024, "[Error] 1024-res halos does not exist");
+
+
+  input = cfg_getstring(inputs, "snap256");
+  p->snap256 = strdup(input);
+  check_file_harsh(p->snap256, "[Error] 256-res snapshot does not exist");
+
+  input = cfg_getstring(inputs, "snap512");
+  p->snap512 = strdup(input);
+  check_file_harsh(p->snap512, "[Error] 512-res snapshot does not exist");
+
+  input = cfg_getstring(inputs, "snap1024");
+  p->snap1024 = strdup(input);
+  check_file_harsh(p->snap1024, "[Error] 1024-res snapshot does not exist");
+
+
+  p->window_len = cfg_getint(inputs, "window_len");
+
 
   config_setting_t* outputs = cfg_findsetting(cfg, "outputs");
 

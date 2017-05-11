@@ -20,10 +20,8 @@ DEPS := ./../../../configfile/mylibconfig.c \
         ./../../../io/write_to.c \
         ./../../../io/check_file.c \
         ./../../../io/check_dir.c \
-        ./../../../ll/ll.c \
-        ./../../../ll/ll_add.c \
-        ./../../../ll/ll_traverse.c \
         ./../../../vector/vector.c \
+        ./../../../vector/vector_push.c \
         ./../../../strings/concat/concat.c \
         ./../../../halofinder/halofinder.c \
         ./../../../halofinder/rockstar/load_rockstar_bin.c \
@@ -33,7 +31,6 @@ DEPS := ./../../../configfile/mylibconfig.c \
         ./../../../simulation/save_snap_to.c \
         ./../../../simulation/gadget/load_gadget_snap.c \
         ./../../../search/half_interval/find_ge.c \
-        ./../../../loading/simple_loading.c \
         ./../../matchinghalos/load_mh.c \
         ./unmatched_halos_config.c
 
