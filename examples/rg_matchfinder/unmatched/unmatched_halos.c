@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-/* #include <omp.h> */
+#include <omp.h>
 #include "unmatched_halos_config.h"
 #include "./../../../time/mytime.h"
 #include "./../../matchinghalos/load_mh.h"
@@ -51,8 +51,8 @@ static int compare_halos_based_on_x (const void*, int, const void*);
 static void set_matched_list(avlnode*, void*);
 static void calculate_window(float[3][2], float[3][2], halo*,
                              float, unmatched_halos_params*);
-static void find_particles_in_window(vector**, snapshot**, float[3][2]);
-static void find_halos_in_window(vector**, halofinder**, float[3][2]);
+static void find_particles_in_window(vector*, snapshot*, float[3][2]);
+static void find_halos_in_window(vector*, halofinder*, float[3][2]);
 static void fill_address(struct address_t*, unmatched_halos_params*, int);
 static void print_header(FILE*, unmatched_halos_params*, struct address_t*,
                          halo*, float[3][2], vector**, vector**);
@@ -178,9 +178,24 @@ int main (int argc, char *argv[])
 
       clock_t _f_p_h_ = start("\tFinding particles and halos inside the window");
       vector* particles_in_window[3], *halos_in_window[3];
-      find_particles_in_window(particles_in_window, snaps_x, window);
-      find_halos_in_window(halos_in_window, rockstar_x, halos_window);
+      for (int i = 0; i < 3; i++)
+        {
+          particles_in_window[i] = new_vector(128 * pow(2, 3*i), sizeof(int));
+          find_particles_in_window(particles_in_window[i], snaps_x[i], window);
+
+          halos_in_window[i] = new_vector(16 * pow(2, 3*i), sizeof(int));
+          find_halos_in_window(halos_in_window[i], rockstar_x[i], halos_window);
+        }
       done(_f_p_h_);
+
+      printf("\t %d: p256: %d, p512: %d, p1024: %d, h256: %d, h1024: %d, h1024: %d\n",
+             h_id,
+             particles_in_window[0]->logLength,
+             particles_in_window[1]->logLength,
+             particles_in_window[2]->logLength,
+             halos_in_window[0]->logLength,
+             halos_in_window[1]->logLength,
+             halos_in_window[2]->logLength);
 
 
       fill_address(&address, p, h_id);
@@ -258,6 +273,7 @@ static int sort_particles_based_on_x (const void* particle1,
 {
   const snapshotparticle* particle1_c = particle1;
   const snapshotparticle* particle2_c = particle2;
+
 
   if (particle1_c->pos[0] < particle2_c->pos[0])
     return -1;
@@ -449,66 +465,59 @@ static void calculate_window(
 
 
 static void find_particles_in_window(
-  vector* particles[3],
-  snapshot* snaps_x[3],
+  vector* particles_v,
+  snapshot* snaps_x,
   float window[3][2])
 {
-  for (int i = 0; i < 3; i++)
+  int index = find_ge(
+    &window[0][0],
+    snaps_x->particles,
+    snaps_x->header->tot_nparticles,
+    compare_particles_based_on_x);
+
+  if (index == NOT_FOUND)
+    return;
+
+  while (snaps_x->particles[index].pos[0] < window[0][1] &&
+         index < snaps_x->header->tot_nparticles)
     {
-      particles[i] = new_vector(128 * pow(2, 3*i), sizeof(int));
-
-      int index = find_ge(
-        &window[0][0],
-        snaps_x[i]->particles,
-        snaps_x[i]->header->tot_nparticles,
-        compare_particles_based_on_x);
-
-      if (index == NOT_FOUND)
-        continue;
-
-      while (snaps_x[i]->particles[index].pos[0] < window[0][1] &&
-             index < snaps_x[i]->header->tot_nparticles)
+      if (snaps_x->particles[index].pos[1] >= window[1][0] &&
+          snaps_x->particles[index].pos[1] < window[1][1] &&
+          snaps_x->particles[index].pos[2] >= window[2][0] &&
+          snaps_x->particles[index].pos[2] < window[2][1])
         {
-          if (snaps_x[i]->particles[index].pos[1] >= window[1][0] &&
-              snaps_x[i]->particles[index].pos[1] < window[1][1] &&
-              snaps_x[i]->particles[index].pos[2] >= window[2][0] &&
-              snaps_x[i]->particles[index].pos[2] < window[2][1])
-            {
-              vector_push(particles[i], &index);
-            }
-
-          index++;
+          vector_push(particles_v, &index);
         }
+
+      index++;
     }
 }
 
 static void find_halos_in_window(
-  vector* halos[3],
-  halofinder* rockstar_x[3],
+  vector* halos_v,
+  halofinder* rockstar_x,
   float window[3][2])
 {
   for (int i = 0; i < 3; i++)
     {
-      halos[i] = new_vector(16 * pow(2, 3*i), sizeof(int));
-
       int index = find_ge(
         &window[0][0],
-        rockstar_x[i]->halos,
-        rockstar_x[i]->header->num_halos,
+        rockstar_x->halos,
+        rockstar_x->header->num_halos,
         compare_halos_based_on_x);
 
       if (index == NOT_FOUND)
         continue;
 
-      while (rockstar_x[i]->halos[index].pos[0] < window[0][1] &&
-             index < rockstar_x[i]->header->num_halos)
+      while (rockstar_x->halos[index].pos[0] < window[0][1] &&
+             index < rockstar_x->header->num_halos)
         {
-          if (rockstar_x[i]->halos[index].pos[1] >= window[1][0] &&
-              rockstar_x[i]->halos[index].pos[1] < window[1][1] &&
-              rockstar_x[i]->halos[index].pos[2] >= window[2][0] &&
-              rockstar_x[i]->halos[index].pos[2] < window[2][1])
+          if (rockstar_x->halos[index].pos[1] >= window[1][0] &&
+              rockstar_x->halos[index].pos[1] < window[1][1] &&
+              rockstar_x->halos[index].pos[2] >= window[2][0] &&
+              rockstar_x->halos[index].pos[2] < window[2][1])
             {
-              vector_push(halos[i], &index);
+              vector_push(halos_v, &index);
             }
 
           index++;
