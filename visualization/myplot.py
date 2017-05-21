@@ -12,7 +12,7 @@ from matplotlib.ticker import LogFormatter
 class MyPlot(object):
     """MyPlot class"""
 
-    def __init__(self, aspect=1):
+    def __init__(self, aspect=1, figsize=None):
         """Constructor of MyPlot
 
         Parameters
@@ -21,7 +21,12 @@ class MyPlot(object):
             The aspect ratio of the axes
         """
         self.plt = plt
-        self.plt.figure(1, figsize=self.plt.figaspect(aspect))
+
+        if figsize is None:
+            self.plt.figure(1, figsize=self.plt.figaspect(aspect))
+        else:
+            self.plt.figure(1, figsize=figsize)
+
 
     def new2daxes(self, pos='111', sharex=None, sharey=None):
         """Creatign new 3d axes for plotting
